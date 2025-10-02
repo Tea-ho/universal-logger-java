@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'com.universallogger'
-version = '1.0.0'
+version = '1.0.0-java8'
 sourceCompatibility = '8'
 targetCompatibility = '8'
 
