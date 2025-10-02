@@ -1,0 +1,85 @@
+# Universal Logger Java Configuration
+version: "1.0"
+
+global:
+  appName: "JavaApp"
+  timezone: "Asia/Seoul"
+  encoding: "UTF-8"
+
+levels:
+  root: "INFO"
+  database: "DEBUG"
+  api: "INFO"
+  security: "WARN"
+
+outputs:
+  console:
+    enabled: true
+    level: "INFO"
+    format: "[{timestamp}] {level} - {logger} - {message}"
+    colors:
+      DEBUG: "cyan"
+      INFO: "green"
+      WARN: "yellow"
+      ERROR: "red"
+
+  file:
+    enabled: true
+    level: "DEBUG"
+    path: "logs/{appName}_{date}.log"
+    format: "{timestamp} | {level} | {logger} | {method}:{line} | {message}"
+    rotation:
+      maxSize: "10MB"
+      maxFiles: 30
+      compress: true
+
+  errorFile:
+    enabled: true
+    level: "ERROR"
+    path: "logs/errors_{date}.log"
+    format: "{timestamp} | {level} | {logger} | {method}:{line} | {message}"
+
+  webhook:
+    enabled: false
+    level: "ERROR"
+    url: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+    format: "🚨 *{level}* in {appName}\\n*Logger:* {logger}\\n*Message:* {message}"
+
+  email:
+    enabled: false
+    level: "CRITICAL"
+    smtp:
+      host: "smtp.gmail.com"
+      port: 587
+      username: "your-email@gmail.com"
+      password: "your-password"
+    to: ["admin@company.com"]
+    subject: "[{appName}] Critical Error Alert"
+
+  database:
+    enabled: false
+    level: "INFO"
+    database:
+      type: "mysql"
+      host: "localhost"
+      database: "logs"
+      table: "app_logs"
+      username: "logger"
+      password: "password"
+
+filters:
+  sensitiveData:
+    enabled: true
+    patterns:
+      - regex: "password=\\w+"
+        replace: "password=***"
+      - regex: "token=\\w+"
+        replace: "token=***"
+      - regex: "\\d{4}-\\d{4}-\\d{4}-\\d{4}"
+        replace: "****-****-****-****"
+
+performance:
+  async: true
+  bufferSize: 1000
+  flushInterval: 5
+  maxQueueSize: 10000

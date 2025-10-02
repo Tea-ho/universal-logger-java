@@ -1,0 +1,31 @@
+# 간단한 Java 로깅 설정
+version: "1.0"
+
+global:
+  appName: "SimpleJavaApp"
+
+levels:
+  root: "INFO"
+
+outputs:
+  console:
+    enabled: true
+    level: "INFO"
+    format: "[{timestamp}] {level} - {message}"
+    colors:
+      INFO: "green"
+      WARN: "yellow"
+      ERROR: "red"
+
+  file:
+    enabled: false
+    level: "DEBUG"
+    path: "app.log"
+    format: "{timestamp} | {level} | {message}"
+
+filters:
+  sensitiveData:
+    enabled: true
+    patterns:
+      - regex: "password=\\w+"
+        replace: "password=***"

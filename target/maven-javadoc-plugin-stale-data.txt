@@ -1,0 +1,75 @@
+@options
+@packages
+-classpath
+'C:/Users/th/.m2/repository/org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar;C:/Users/th/.m2/repository/ch/qos/logback/logback-classic/1.2.12/logback-classic-1.2.12.jar;C:/Users/th/.m2/repository/ch/qos/logback/logback-core/1.2.12/logback-core-1.2.12.jar;C:/Users/th/.m2/repository/org/yaml/snakeyaml/2.0/snakeyaml-2.0.jar;C:/Users/th/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.15.2/jackson-databind-2.15.2.jar;C:/Users/th/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.15.2/jackson-annotations-2.15.2.jar;C:/Users/th/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.15.2/jackson-core-2.15.2.jar;C:/Users/th/.m2/repository/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.15.2/jackson-dataformat-yaml-2.15.2.jar;C:/Users/th/.m2/repository/org/apache/httpcomponents/httpclient/4.5.14/httpclient-4.5.14.jar;C:/Users/th/.m2/repository/org/apache/httpcomponents/httpcore/4.4.16/httpcore-4.4.16.jar;C:/Users/th/.m2/repository/commons-logging/commons-logging/1.2/commons-logging-1.2.jar;C:/Users/th/.m2/repository/commons-codec/commons-codec/1.11/commons-codec-1.11.jar;C:/Users/th/.m2/repository/javax/mail/mail/1.4.7/mail-1.4.7.jar;C:/Users/th/.m2/repository/javax/activation/activation/1.1/activation-1.1.jar;C:/Users/th/.m2/repository/com/mysql/mysql-connector-j/8.0.33/mysql-connector-j-8.0.33.jar;C:/Users/th/.m2/repository/com/google/protobuf/protobuf-java/3.21.9/protobuf-java-3.21.9.jar'
+-encoding
+'UTF-8'
+-protected
+-source
+'8'
+-sourcepath
+'C:/Users/th/Desktop/testCode/universal-logger-java/src/main/java;C:/Users/th/Desktop/testCode/universal-logger-java/target/generated-sources/annotations'
+-author
+-bottom
+'Copyright &#169; 2025. All rights reserved.'
+-charset
+'UTF-8'
+-d
+'C:/Users/th/Desktop/testCode/universal-logger-java/target/apidocs'
+-docencoding
+'UTF-8'
+-doctitle
+'Universal Logger 1.0.0 API'
+-linkoffline
+'https://docs.oracle.com/javase/8/docs/api' 'C:/Users/th/Desktop/testCode/universal-logger-java/target/javadoc-bundle-options'
+-use
+-version
+-windowtitle
+'Universal Logger 1.0.0 API'
+com.universallogger.appenders.database
+com.universallogger.appenders
+com.universallogger.config
+com.universallogger.constants
+com.universallogger.formatters
+com.universallogger
+com.universallogger.utils
+com.universallogger.validation
+C:\Users\th\.m2\repository\org\slf4j\slf4j-api\1.7.36\slf4j-api-1.7.36.jar = 1687161264507
+C:\Users\th\.m2\repository\ch\qos\logback\logback-classic\1.2.12\logback-classic-1.2.12.jar = 1758269003849
+C:\Users\th\.m2\repository\ch\qos\logback\logback-core\1.2.12\logback-core-1.2.12.jar = 1758269003882
+C:\Users\th\.m2\repository\org\yaml\snakeyaml\2.0\snakeyaml-2.0.jar = 1758269003890
+C:\Users\th\.m2\repository\com\fasterxml\jackson\core\jackson-databind\2.15.2\jackson-databind-2.15.2.jar = 1758269003889
+C:\Users\th\.m2\repository\com\fasterxml\jackson\core\jackson-annotations\2.15.2\jackson-annotations-2.15.2.jar = 1758269003804
+C:\Users\th\.m2\repository\com\fasterxml\jackson\core\jackson-core\2.15.2\jackson-core-2.15.2.jar = 1758269003888
+C:\Users\th\.m2\repository\com\fasterxml\jackson\dataformat\jackson-dataformat-yaml\2.15.2\jackson-dataformat-yaml-2.15.2.jar = 1759274372987
+C:\Users\th\.m2\repository\org\apache\httpcomponents\httpclient\4.5.14\httpclient-4.5.14.jar = 1669833653000
+C:\Users\th\.m2\repository\org\apache\httpcomponents\httpcore\4.4.16\httpcore-4.4.16.jar = 1669455900000
+C:\Users\th\.m2\repository\commons-logging\commons-logging\1.2\commons-logging-1.2.jar = 1699419056606
+C:\Users\th\.m2\repository\commons-codec\commons-codec\1.11\commons-codec-1.11.jar = 1699419056606
+C:\Users\th\.m2\repository\javax\mail\mail\1.4.7\mail-1.4.7.jar = 1742521795719
+C:\Users\th\.m2\repository\javax\activation\activation\1.1\activation-1.1.jar = 1687161251643
+C:\Users\th\.m2\repository\com\mysql\mysql-connector-j\8.0.33\mysql-connector-j-8.0.33.jar = 1758269003920
+C:\Users\th\.m2\repository\com\google\protobuf\protobuf-java\3.21.9\protobuf-java-3.21.9.jar = 1758269003931
+C:\Users\th\Desktop\testCode\universal-logger-java\src\main\java = 1758169431985
+C:\Users\th\Desktop\testCode\universal-logger-java\target\generated-sources\annotations = 1759380450293
+C:\Users\th\Desktop\testCode\universal-logger-java\target\apidocs\allclasses-index.html = 1759380457578
+C:\Users\th\Desktop\testCode\universal-logger-java\target\apidocs\allpackages-index.html = 1759380457586
+C:\Users\th\Desktop\testCode\universal-logger-java\target\apidocs\constant-values.html = 1759380457344
+C:\Users\th\Desktop\testCode\universal-logger-java\target\apidocs\copy.svg = 1759380457651
+C:\Users\th\Desktop\testCode\universal-logger-java\target\apidocs\element-list = 1759380457263
+C:\Users\th\Desktop\testCode\universal-logger-java\target\apidocs\help-doc.html = 1759380457642
+C:\Users\th\Desktop\testCode\universal-logger-java\target\apidocs\index-all.html = 1759380457621
+C:\Users\th\Desktop\testCode\universal-logger-java\target\apidocs\index.html = 1759380457554
+C:\Users\th\Desktop\testCode\universal-logger-java\target\apidocs\link.svg = 1759380457653
+C:\Users\th\Desktop\testCode\universal-logger-java\target\apidocs\member-search-index.js = 1759380457593
+C:\Users\th\Desktop\testCode\universal-logger-java\target\apidocs\module-search-index.js = 1759380457588
+C:\Users\th\Desktop\testCode\universal-logger-java\target\apidocs\overview-summary.html = 1759380457633
+C:\Users\th\Desktop\testCode\universal-logger-java\target\apidocs\overview-tree.html = 1759380457547
+C:\Users\th\Desktop\testCode\universal-logger-java\target\apidocs\package-search-index.js = 1759380457590
+C:\Users\th\Desktop\testCode\universal-logger-java\target\apidocs\script.js = 1759380457649
+C:\Users\th\Desktop\testCode\universal-logger-java\target\apidocs\search-page.js = 1759380457657
+C:\Users\th\Desktop\testCode\universal-logger-java\target\apidocs\search.html = 1759380457629
+C:\Users\th\Desktop\testCode\universal-logger-java\target\apidocs\search.js = 1759380457656
+C:\Users\th\Desktop\testCode\universal-logger-java\target\apidocs\stylesheet.css = 1759380457645
+C:\Users\th\Desktop\testCode\universal-logger-java\target\apidocs\tag-search-index.js = 1759380457594
+C:\Users\th\Desktop\testCode\universal-logger-java\target\apidocs\type-search-index.js = 1759380457591

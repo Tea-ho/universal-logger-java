@@ -1,0 +1,23 @@
+# Universal Logger - 최소 설정 YAML 파일
+version: "1.0"
+
+# 기본 설정
+global:
+  appName: "MyApp"
+
+# 로그 레벨 설정
+levels:
+  root: "INFO"
+
+# 출력 설정
+outputs:
+  # 콘솔 출력
+  console:
+    enabled: true
+    level: "INFO"
+
+  # 파일 출력
+  file:
+    enabled: true
+    level: "DEBUG"
+    path: "logs/{appName}.log"
