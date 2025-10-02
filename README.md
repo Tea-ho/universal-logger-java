@@ -4,18 +4,37 @@ Java 애플리케이션을 위한 강력한 로깅 라이브러리로, 자동 SQ
 
 ## 📌 Java 버전별 브랜치
 
-| 브랜치 | Java 버전 | 용도 |
-|--------|----------|------|
-| **main** | Java 11+ | 최신 버전 (권장) |
-| **java8** | Java 8 | 레거시 프로젝트 지원 |
+| 브랜치 | Java 버전 | JAR 파일명 | 용도 |
+|--------|----------|-----------|------|
+| **java11** | Java 11+ | universal-logger-java-1.0.0-java11.jar | 최신 버전 (권장) |
+| **java8** | Java 8 | universal-logger-java-1.0.0-java8.jar | 레거시 프로젝트 지원 |
 
-**브랜치 전환:**
+**브랜치 전환 및 빌드:**
 ```bash
-# Java 11 버전 (main)
-git checkout main
+# Java 11 버전
+git clone https://github.com/Tea-ho/universal-logger-java.git
+cd universal-logger-java
+git checkout java11
+./gradlew clean shadowJar
+# 생성 파일: build/libs/universal-logger-java-1.0.0-java11.jar
 
 # Java 8 버전
+git clone https://github.com/Tea-ho/universal-logger-java.git
+cd universal-logger-java
 git checkout java8
+./gradlew clean shadowJar
+# 생성 파일: build/libs/universal-logger-java-1.0.0-java8.jar
+```
+
+**기존 프로젝트에 적용:**
+```bash
+# 1. 프로젝트의 libs 디렉토리 생성
+mkdir -p your-project/libs
+
+# 2. Java 버전에 맞는 JAR 복사
+cp build/libs/universal-logger-java-1.0.0-java8.jar your-project/libs/
+# 또는
+cp build/libs/universal-logger-java-1.0.0-java11.jar your-project/libs/
 ```
 
 ## 주요 기능
@@ -355,24 +374,26 @@ mvn exec:java -Dexec.mainClass="com.universallogger.examples.WebAppExample"
 
 ## 📋 요구사항
 
-**main 브랜치 (Java 11):**
-- Java 11+
-- Maven 3.6+
-- SLF4J (포함됨)
-- Logback (포함됨)
-- Jackson 2.15.2+ (YAML/JSON 파싱용)
+### java11 브랜치 (Java 11+)
+- Java 11 이상
+- Maven 3.6+ 또는 Gradle 7.0+
+- SLF4J 1.7.36 (포함됨)
+- Logback 1.2.12 (포함됨)
+- Jackson 2.15.2 (포함됨)
 
-**java8 브랜치 (Java 8):**
-- Java 8+
-- Maven 3.6+
-- SLF4J (포함됨)
-- Logback (포함됨)
-- **Jackson 2.13.5 이상** (필수)
+### java8 브랜치 (Java 8)
+- Java 8 (1.8) 이상
+- Maven 3.6+ 또는 Gradle 7.0+
+- SLF4J 1.7.36 (포함됨)
+- Logback 1.2.12 (포함됨)
+- **Jackson 2.13.5 이상** (필수, 포함됨)
   - jackson-core 2.13.5+
   - jackson-databind 2.13.5+
   - jackson-dataformat-yaml 2.13.5+
 
-⚠️ **Java 8 사용 시 주의**: Jackson 버전이 2.13.5 미만인 경우 `NoSuchMethodError` 발생
+⚠️ **Java 8 사용 시 주의**:
+- Jackson 버전이 2.13.5 미만인 경우 `NoSuchMethodError` 발생
+- 기존 프로젝트에서 Jackson 2.5.x 등 구버전 사용 시 버전 업그레이드 필요
 
 ## 🆚 Python vs Java
 
