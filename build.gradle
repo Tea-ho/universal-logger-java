@@ -23,9 +23,9 @@ dependencies {
     // YAML 파싱
     implementation 'org.yaml:snakeyaml:2.0'
 
-    // JSON 파싱
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
-    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.15.2'
+    // JSON 파싱 (Java 8 호환)
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.5'
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.13.5'
 
     // HTTP 클라이언트 (웹훅용)
     implementation 'org.apache.httpcomponents:httpclient:4.5.14'
@@ -63,10 +63,8 @@ shadowJar {
     exclude 'META-INF/*.DSA'
     exclude 'META-INF/*.RSA'
 
-    // 패키지 재배치 (충돌 방지)
-    relocate 'org.apache.http', 'com.universallogger.shaded.apache.http'
-    relocate 'org.yaml.snakeyaml', 'com.universallogger.shaded.snakeyaml'
-    relocate 'com.fasterxml.jackson', 'com.universallogger.shaded.jackson'
+    // 패키지 재배치 제거 (PHM_QUARTZ와 호환성 위해)
+    // relocate 하지 않고 그대로 포함
 }
 
 // 소스 JAR 생성
@@ -103,6 +101,8 @@ build {
 
 compileJava {
     options.encoding = 'UTF-8'
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 javadoc {

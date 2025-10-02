@@ -39,6 +39,23 @@ mvn clean compile package
     <artifactId>universal-logger</artifactId>
     <version>1.0.0</version>
 </dependency>
+
+<!-- Jackson 2.13.5 이상 필수 -->
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-core</artifactId>
+    <version>2.13.5</version>
+</dependency>
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+    <version>2.13.5</version>
+</dependency>
+<dependency>
+    <groupId>com.fasterxml.jackson.dataformat</groupId>
+    <artifactId>jackson-dataformat-yaml</artifactId>
+    <version>2.13.5</version>
+</dependency>
 ```
 
 ### 3. 3줄로 시작하기
@@ -343,7 +360,13 @@ mvn exec:java -Dexec.mainClass="com.universallogger.examples.WebAppExample"
 - Maven 3.6+
 - SLF4J (포함됨)
 - Logback (포함됨)
-- Jackson (YAML/JSON 파싱용)
+- **Jackson 2.13.5 이상** (YAML/JSON 파싱용) - **필수**
+  - jackson-core 2.13.5+
+  - jackson-databind 2.13.5+
+  - jackson-dataformat-yaml 2.13.5+
+
+⚠️ **중요**: Jackson 버전이 2.13.5 미만인 경우 `NoSuchMethodError` 발생
+- 기존 프로젝트에서 Jackson 2.5.x 등 구버전 사용 시 버전 업그레이드 필요
 
 ## 🆚 Python vs Java
 

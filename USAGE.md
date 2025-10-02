@@ -17,10 +17,17 @@ Universal Logger는 Java 애플리케이션에서 강력한 로깅 기능과 자
 
 ### 1.1 의존성 추가
 
+⚠️ **필수 요구사항**: Jackson 2.13.5 이상 버전 필요
+
 **Gradle:**
 ```gradle
 dependencies {
     implementation files('libs/universal-logger-java-1.0.0.jar')
+
+    // Jackson 2.13.5 이상 필수
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.13.5'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.5'
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.13.5'
 }
 ```
 
@@ -32,6 +39,33 @@ dependencies {
     <version>1.0.0</version>
     <scope>system</scope>
     <systemPath>${project.basedir}/libs/universal-logger-java-1.0.0.jar</systemPath>
+</dependency>
+
+<!-- Jackson 2.13.5 이상 필수 -->
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-core</artifactId>
+    <version>2.13.5</version>
+</dependency>
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+    <version>2.13.5</version>
+</dependency>
+<dependency>
+    <groupId>com.fasterxml.jackson.dataformat</groupId>
+    <artifactId>jackson-dataformat-yaml</artifactId>
+    <version>2.13.5</version>
+</dependency>
+```
+
+**기존 프로젝트에서 Jackson 버전 충돌 시:**
+```xml
+<!-- 기존 Jackson 버전을 2.13.5로 업그레이드 -->
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-core</artifactId>
+    <version>2.13.5</version>  <!-- 2.5.1 등 구버전에서 업그레이드 -->
 </dependency>
 ```
 
@@ -279,7 +313,44 @@ try {
 
 ## 7. 트러블슈팅
 
-### 7.1 SQL이 로그에 안 나타남
+### 7.1 NoSuchMethodError: YAMLFactory._createContentReference
+
+**증상:**
+```
+java.lang.NoSuchMethodError: 'com.fasterxml.jackson.core.io.ContentReference
+com.fasterxml.jackson.dataformat.yaml.YAMLFactory._createContentReference(java.lang.Object)'
+```
+
+**원인:** Jackson 버전이 2.13.5 미만
+
+**해결방법:** pom.xml에서 Jackson 버전 업그레이드
+```xml
+<!-- 기존 버전 -->
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-core</artifactId>
+    <version>2.5.1</version>  <!-- ❌ 구버전 -->
+</dependency>
+
+<!-- 업그레이드 후 -->
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-core</artifactId>
+    <version>2.13.5</version>  <!-- ✅ 2.13.5 이상 -->
+</dependency>
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+    <version>2.13.5</version>
+</dependency>
+<dependency>
+    <groupId>com.fasterxml.jackson.dataformat</groupId>
+    <artifactId>jackson-dataformat-yaml</artifactId>
+    <version>2.13.5</version>  <!-- 추가 필요 -->
+</dependency>
+```
+
+### 7.2 SQL이 로그에 안 나타남
 
 **확인 사항:**
 1. DataSource가 SqlCaptureProxy로 wrapping 되었는지 확인
@@ -299,7 +370,7 @@ try {
    C:/log/{프로젝트명}/app.log
    ```
 
-### 7.2 콘솔에만 안 나타남
+### 7.3 콘솔에만 안 나타남
 
 - 로그 파일을 확인하세요. 파일에는 기록됩니다.
 - 콘솔 출력 enabled 확인:
