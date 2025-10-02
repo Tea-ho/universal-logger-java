@@ -2,6 +2,22 @@
 
 Java 애플리케이션을 위한 강력한 로깅 라이브러리로, 자동 SQL 쿼리 캡처 및 다양한 출력 옵션을 제공합니다.
 
+## 📌 Java 버전별 브랜치
+
+| 브랜치 | Java 버전 | 용도 |
+|--------|----------|------|
+| **main** | Java 11+ | 최신 버전 (권장) |
+| **java8** | Java 8 | 레거시 프로젝트 지원 |
+
+**브랜치 전환:**
+```bash
+# Java 11 버전 (main)
+git checkout main
+
+# Java 8 버전
+git checkout java8
+```
+
 ## 주요 기능
 
 - ✅ **자동 SQL 캡처**: MyBatis, JPA, JDBC 쿼리 자동 로깅
@@ -339,11 +355,24 @@ mvn exec:java -Dexec.mainClass="com.universallogger.examples.WebAppExample"
 
 ## 📋 요구사항
 
+**main 브랜치 (Java 11):**
+- Java 11+
+- Maven 3.6+
+- SLF4J (포함됨)
+- Logback (포함됨)
+- Jackson 2.15.2+ (YAML/JSON 파싱용)
+
+**java8 브랜치 (Java 8):**
 - Java 8+
 - Maven 3.6+
 - SLF4J (포함됨)
 - Logback (포함됨)
-- Jackson (YAML/JSON 파싱용)
+- **Jackson 2.13.5 이상** (필수)
+  - jackson-core 2.13.5+
+  - jackson-databind 2.13.5+
+  - jackson-dataformat-yaml 2.13.5+
+
+⚠️ **Java 8 사용 시 주의**: Jackson 버전이 2.13.5 미만인 경우 `NoSuchMethodError` 발생
 
 ## 🆚 Python vs Java
 
