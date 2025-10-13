@@ -64,11 +64,14 @@ public class ColorFormatter extends PatternLayoutEncoder {
         String colorCode = colors.getOrDefault(levelName, "");
         String coloredLevel = colorCode + levelName + RESET;
 
+        // 클래스명과 메서드명을 함께 표시
+        String classAndMethod = getClassAndMethodName(event);
+
         return formatPattern
             .replace("{timestamp}", DATE_FORMATTER.format(LocalDateTime.now()))
             .replace("{level}", String.format("%-12s", coloredLevel)) // 컬러 코드 때문에 더 긴 포맷
-            .replace("{logger}", String.format("%-15s", event.getLoggerName()))
-            .replace("{class}", event.getLoggerName())
+            .replace("{logger}", String.format("%-15s", classAndMethod))
+            .replace("{class}", getClassName(event))
             .replace("{method}", getMethodName(event))
             .replace("{line}", String.valueOf(getLineNumber(event)))
             .replace("{thread}", event.getThreadName())
@@ -94,6 +97,41 @@ public class ColorFormatter extends PatternLayoutEncoder {
             case "grey": return "\u001B[90m";
             default: return colorName; // 이미 ANSI 코드인 경우
         }
+    }
+
+    /**
+     * 클래스명 추출 (전체 패키지 경로)
+     */
+    private String getClassName(ILoggingEvent event) {
+        StackTraceElement[] stack = event.getCallerData();
+        if (stack != null && stack.length > 0) {
+            return stack[0].getClassName();
+        }
+        return event.getLoggerName();
+    }
+
+    /**
+     * 클래스명과 메서드명을 함께 반환 (간단한 클래스명.메서드명)
+     * SQL 로깅의 경우 로거 이름에 실제 호출자 정보가 포함되어 있음
+     */
+    private String getClassAndMethodName(ILoggingEvent event) {
+        // 로거 이름을 우선 사용 (SqlCaptureProxy가 실제 호출자를 로거 이름으로 전달)
+        String loggerName = event.getLoggerName();
+        if (loggerName != null && !loggerName.startsWith("com.universallogger")) {
+            // 로거 이름이 실제 클래스 정보인 경우 (SqlCaptureProxy에서 전달)
+            return loggerName;
+        }
+
+        // 일반적인 로깅의 경우 스택에서 추출
+        StackTraceElement[] stack = event.getCallerData();
+        if (stack != null && stack.length > 0) {
+            String fullClassName = stack[0].getClassName();
+            String simpleClassName = fullClassName.substring(fullClassName.lastIndexOf('.') + 1);
+            String methodName = stack[0].getMethodName();
+            int lineNumber = stack[0].getLineNumber();
+            return simpleClassName + "." + methodName + ":" + lineNumber;
+        }
+        return loggerName;
     }
 
     /**

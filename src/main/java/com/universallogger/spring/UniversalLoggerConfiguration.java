@@ -14,12 +14,16 @@ import java.io.File;
 
 /**
  * Universal Logger Configuration for Spring (non-Boot) projects
- *
+ * <p>
  * Usage in Spring XML:
- * <context:component-scan base-package="com.universallogger.spring"/>
- *
+ * <pre>
+ * {@code <context:component-scan base-package="com.universallogger.spring"/>}
+ * </pre>
+ * <p>
  * Usage in Spring JavaConfig:
- * @Import(UniversalLoggerConfiguration.class)
+ * <pre>
+ * {@code @Import(UniversalLoggerConfiguration.class)}
+ * </pre>
  */
 @Configuration
 public class UniversalLoggerConfiguration implements BeanPostProcessor {
