@@ -15,15 +15,15 @@ Java 애플리케이션을 위한 강력한 로깅 라이브러리로, 자동 SQ
 git clone https://github.com/Tea-ho/universal-logger-java.git
 cd universal-logger-java
 git checkout java11
-./gradlew clean shadowJar
-# 생성 파일: build/libs/universal-logger-java-1.0.0-java11.jar
+mvn clean package
+# 생성 파일: target/universal-logger-java-1.0.0.jar
 
 # Java 8 버전
 git clone https://github.com/Tea-ho/universal-logger-java.git
 cd universal-logger-java
 git checkout java8
-./gradlew clean shadowJar
-# 생성 파일: build/libs/universal-logger-java-1.0.0-java8.jar
+mvn clean package
+# 생성 파일: target/universal-logger-java-1.0.0.jar
 ```
 
 **기존 프로젝트에 적용:**
@@ -32,17 +32,17 @@ git checkout java8
 mkdir -p your-project/libs
 
 # 2. Java 버전에 맞는 JAR 복사
-cp build/libs/universal-logger-java-1.0.0-java8.jar your-project/libs/
-# 또는
-cp build/libs/universal-logger-java-1.0.0-java11.jar your-project/libs/
+cp target/universal-logger-java-1.0.0.jar your-project/libs/
 ```
 
 ## 주요 기능
 
-- ✅ **자동 SQL 캡처**: MyBatis, JPA, JDBC 쿼리 자동 로깅
+- ✅ **자동 SQL 캡처**: MyBatis, JPA, Hibernate, JDBC 쿼리 자동 로깅
+- ✅ **실제 호출자 추적**: Repository/Mapper/Service 클래스의 실제 호출 위치 표시
 - ✅ **파라미터 바인딩 추적**: PreparedStatement 파라미터 자동 로깅
 - ✅ **실행 시간 측정**: 쿼리 성능 모니터링 및 슬로우 쿼리 경고
 - ✅ **다중 데이터베이스 지원**: MySQL, Oracle, MSSQL, PostgreSQL, H2
+- ✅ **프레임워크 필터링**: MyBatis, Hibernate, Spring AOP, CGLIB 자동 필터링
 - ✅ **프로젝트명 자동 감지**: `spring.application.name` 기반 로그 경로 생성
 - ✅ **표준 로그 경로**: `C:/log/{projectName}/` 자동 생성
 - ✅ **다양한 출력**: 콘솔, 파일, 에러 파일, 데이터베이스, 웹훅, 이메일
@@ -57,13 +57,11 @@ cp build/libs/universal-logger-java-1.0.0-java11.jar your-project/libs/
 ### 1. 설치
 
 ```bash
-# 자동 설치
-git clone <repository>
-cd universal-logger-java
-./install.sh
+# Maven으로 빌드
+mvn clean package
 
-# 또는 Maven으로 빌드
-mvn clean compile package
+# 생성된 JAR를 프로젝트 libs에 복사
+cp target/universal-logger-java-1.0.0.jar your-project/libs/
 ```
 
 ### 2. Maven 의존성 추가
@@ -176,6 +174,71 @@ apiLogger.info("API 요청 처리 중...");
 apiLogger.info("사용자 {}가 {}에 접근했습니다", username, endpoint);
 ```
 
+### 🔥 자동 SQL 캡처 - 실제 호출자 추적
+
+**Universal Logger의 가장 강력한 기능!**
+
+```java
+// DashboardService.java (Line 44)
+@Service
+public class DashboardService {
+    @Autowired
+    private TestRepository testRepository;
+
+    public DashboardData getDashboardData() {
+        // Repository 호출
+        List<RecentTestDto> recentTests = testRepository.findRecentTests(5);
+        return new DashboardData(recentTests);
+    }
+}
+
+// TestRepository.java (MyBatis Mapper)
+@Mapper
+public interface TestRepository {
+    List<RecentTestDto> findRecentTests(@Param("limit") int limit);
+}
+```
+
+**로그 출력 예시:**
+
+```
+2025-10-13 22:30:45 | INFO  | DashboardService.getDashboardData:44 | [SQL] SELECT * FROM tests ORDER BY created_at DESC LIMIT ? | Parameters: {1=5}
+2025-10-13 22:30:45 | INFO  | DashboardService.getDashboardData:44 | [SQL-TIME] 15ms
+```
+
+**핵심 기능:**
+- ✅ **실제 호출자 표시**: `DashboardService.getDashboardData:44` (클래스.메서드:라인번호)
+- ✅ **MyBatis Proxy 제거**: `MapperProxy$$` 같은 내부 클래스 필터링
+- ✅ **Spring AOP 제거**: `CGLIB$$`, `EnhancerBy` 등 프록시 클래스 필터링
+- ✅ **우선순위 탐색**: Mapper > Repository > Dao > Service 순으로 최적의 호출자 선택
+- ✅ **다중 프레임워크 지원**: MyBatis, JPA, Hibernate, Spring Data JPA
+
+**지원 프레임워크:**
+
+| 프레임워크 | 필터링 대상 | 결과 |
+|-----------|-----------|------|
+| **MyBatis** | MapperProxy, MapperMethod | ✅ 실제 Service/Controller 표시 |
+| **Hibernate** | org.hibernate.* | ✅ Repository/Service 표시 |
+| **Spring Data JPA** | org.springframework.data.jpa.* | ✅ Repository 메서드 표시 |
+| **Spring AOP** | CGLIB, EnhancerBy, Aspect, Interceptor | ✅ 실제 비즈니스 로직 표시 |
+| **HikariCP** | com.zaxxer.hikari | ✅ 커넥션 풀 제거 |
+
+**자동 적용 - 코드 변경 불필요!**
+
+DataSource를 사용하는 모든 Java 프로젝트에서 자동으로 SQL 캡처가 작동합니다:
+
+```java
+// Spring Boot에서 자동 적용
+@Configuration
+public class DataSourceConfig {
+    @Bean
+    public DataSource dataSource() {
+        // HikariCP, DBCP 등 어떤 DataSource든 자동 래핑
+        return new HikariDataSource(config);
+    }
+}
+```
+
 ### Logback 직접 사용 (기존 프로젝트)
 
 **기존 Logback을 사용하는 프로젝트에서도 그대로 사용 가능합니다!**
@@ -193,36 +256,6 @@ public class MyService {
         // Universal Logger의 설정이 자동으로 적용됨
         logger.info("기존 Logback 코드가 그대로 동작합니다!");
         logger.debug("설정 파일의 레벨/포맷이 적용됨");
-    }
-}
-```
-
-**혼용 사용 예시 (둘 다 사용 가능):**
-
-```java
-import com.universallogger.UniversalLogger;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-public class MixedUsage {
-    // SLF4J 스타일 (권장)
-    private static final Logger slf4jLogger =
-        UniversalLogger.getLogger("slf4j-style");
-
-    // Logback 직접 사용 (기존 코드)
-    private static final org.slf4j.Logger logbackLogger =
-        LoggerFactory.getLogger(MixedUsage.class);
-
-    static {
-        // 한 번만 초기화하면 둘 다 적용됨
-        UniversalLogger.init("logging.yml");
-    }
-
-    public void test() {
-        // 둘 다 같은 설정으로 동작
-        slf4jLogger.info("SLF4J 스타일 로그");
-        logbackLogger.info("Logback 직접 사용 로그");
-        // → 모두 logging.yml의 설정 적용됨!
     }
 }
 ```
@@ -277,7 +310,7 @@ format: "{timestamp} | {level} | {logger} | {method}:{line} | {message}"
 사용 가능한 변수:
 - `{timestamp}` - 시간
 - `{level}` - 로그 레벨
-- `{logger}` - 로거명
+- `{logger}` - 로거명 (SQL 로깅 시 실제 호출자: 클래스.메서드:라인번호)
 - `{class}` - 클래스명
 - `{method}` - 메서드명
 - `{line}` - 라인 번호
@@ -299,10 +332,15 @@ universal-logger-java/
 │   ├── formatters/
 │   │   ├── CustomFormatter.java      # 커스텀 포맷터
 │   │   └── ColorFormatter.java       # 컬러 포맷터
-│   └── appenders/
-│       ├── WebhookAppender.java      # 웹훅 어펜더
-│       ├── EmailAppender.java        # 이메일 어펜더
-│       └── DatabaseAppender.java     # DB 어펜더
+│   ├── appenders/
+│   │   ├── WebhookAppender.java      # 웹훅 어펜더
+│   │   ├── EmailAppender.java        # 이메일 어펜더
+│   │   └── DatabaseAppender.java     # DB 어펜더
+│   ├── sql/
+│   │   └── SqlCaptureProxy.java      # SQL 자동 캡처 프록시
+│   └── spring/
+│       ├── UniversalLoggerAutoConfiguration.java
+│       └── UniversalLoggerConfiguration.java
 ├── config/
 │   ├── logging.yml                   # 완전한 설정 예시
 │   └── simple.yml                    # 간단한 설정 예시
@@ -311,7 +349,6 @@ universal-logger-java/
 │   ├── BasicUsage.java               # 기본 사용법
 │   └── WebAppExample.java            # 웹앱 예시
 ├── pom.xml                           # Maven 설정
-├── install.sh                        # 자동 설치 스크립트
 └── README.md                         # 이 파일
 ```
 
@@ -376,14 +413,14 @@ mvn exec:java -Dexec.mainClass="com.universallogger.examples.WebAppExample"
 
 ### java11 브랜치 (Java 11+)
 - Java 11 이상
-- Maven 3.6+ 또는 Gradle 7.0+
+- Maven 3.6+
 - SLF4J 1.7.36 (포함됨)
 - Logback 1.2.12 (포함됨)
 - Jackson 2.15.2 (포함됨)
 
 ### java8 브랜치 (Java 8)
 - Java 8 (1.8) 이상
-- Maven 3.6+ 또는 Gradle 7.0+
+- Maven 3.6+
 - SLF4J 1.7.36 (포함됨)
 - Logback 1.2.12 (포함됨)
 - **Jackson 2.13.5 이상** (필수, 포함됨)
@@ -395,23 +432,53 @@ mvn exec:java -Dexec.mainClass="com.universallogger.examples.WebAppExample"
 - Jackson 버전이 2.13.5 미만인 경우 `NoSuchMethodError` 발생
 - 기존 프로젝트에서 Jackson 2.5.x 등 구버전 사용 시 버전 업그레이드 필요
 
-## 🆚 Python vs Java
+## 🌟 핵심 기능 요약
 
-| 기능 | Python | Java |
-|------|---------|------|
-| **설정 파일** | YAML, XML, JSON | YAML, XML, JSON |
-| **사용법** | `logger.init()` | `UniversalLogger.init()` |
-| **출력 대상** | 콘솔, 파일, DB, 웹훅, 이메일 | 콘솔, 파일, DB, 웹훅, 이메일 |
-| **성능** | asyncio 지원 | SLF4J/Logback 고성능 |
-| **Spring 통합** | ❌ | ✅ 완벽 지원 |
-| **컬러 출력** | ✅ | ✅ |
+### 1. 자동 SQL 캡처 + 실제 호출자 추적
+
+모든 SQL 쿼리를 자동으로 캡처하고, 실제 비즈니스 로직의 정확한 위치를 표시합니다:
+
+```
+✅ DashboardService.getDashboardData:44 | [SQL] SELECT * FROM tests ...
+❌ MapperProxy$$Lambda$123.invoke | [SQL] SELECT * FROM tests ...  (이전 방식)
+```
+
+### 2. 다중 프레임워크 지원
+
+MyBatis, JPA, Hibernate, Spring Data JPA 등 모든 Java ORM/데이터베이스 프레임워크와 호환됩니다.
+
+### 3. Zero Configuration
+
+DataSource만 있으면 자동으로 SQL 로깅이 활성화됩니다. 추가 설정 불필요!
+
+### 4. 호환성
+
+- ✅ Java 8, 11, 17+ 모두 지원
+- ✅ Spring Boot & Spring Framework
+- ✅ 기존 SLF4J/Logback 프로젝트와 100% 호환
+- ✅ Maven & Gradle
+
+## 📊 로그 출력 예시
+
+### 일반 로그
+```
+2025-10-13 22:30:45 | INFO  | UserService.createUser:23 | 새 사용자 생성: john_doe
+2025-10-13 22:30:45 | ERROR | PaymentService.processPayment:45 | 결제 처리 실패: 잔액 부족
+```
+
+### SQL 로그 (자동 캡처)
+```
+2025-10-13 22:30:45 | INFO  | TestRepository.findAll:15 | [SQL] SELECT * FROM tests WHERE status = ? | Parameters: {1=ACTIVE}
+2025-10-13 22:30:45 | INFO  | TestRepository.findAll:15 | [SQL-TIME] 12ms
+2025-10-13 22:30:50 | WARN  | UserRepository.findByEmail:28 | [SQL-SLOW] Execution time: 1523ms - SELECT * FROM users WHERE email = ?
+```
 
 ## 🤝 기여
 
 1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'feat: Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Create a Pull Request
 
 ## 📄 라이센스
