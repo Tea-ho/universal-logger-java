@@ -64,12 +64,127 @@ public class LoggerConfig {
     }
 
     /**
+     * Merge another configuration into this one
+     * The override configuration takes precedence
+     *
+     * @param override Configuration to merge (takes precedence)
+     */
+    public void merge(LoggerConfig override) {
+        if (override == null) {
+            return;
+        }
+
+        // Merge global config
+        if (override.getGlobal() != null) {
+            if (override.getGlobal().getAppName() != null && !override.getGlobal().getAppName().isEmpty()) {
+                this.global.setAppName(override.getGlobal().getAppName());
+            }
+            if (override.getGlobal().getTimezone() != null && !override.getGlobal().getTimezone().isEmpty()) {
+                this.global.setTimezone(override.getGlobal().getTimezone());
+            }
+            if (override.getGlobal().getEncoding() != null && !override.getGlobal().getEncoding().isEmpty()) {
+                this.global.setEncoding(override.getGlobal().getEncoding());
+            }
+        }
+
+        // Merge levels
+        if (override.getLevels() != null && !override.getLevels().isEmpty()) {
+            this.levels.putAll(override.getLevels());
+        }
+
+        // Merge outputs
+        if (override.getOutputs() != null && !override.getOutputs().isEmpty()) {
+            for (Map.Entry<String, OutputConfig> entry : override.getOutputs().entrySet()) {
+                String key = entry.getKey();
+                OutputConfig overrideOutput = entry.getValue();
+
+                if (this.outputs.containsKey(key)) {
+                    // Merge existing output config
+                    OutputConfig baseOutput = this.outputs.get(key);
+                    mergeOutputConfig(baseOutput, overrideOutput);
+                } else {
+                    // Add new output config
+                    this.outputs.put(key, overrideOutput);
+                }
+            }
+        }
+
+        // Merge filters
+        if (override.getFilters() != null && override.getFilters().getSensitiveData() != null) {
+            FiltersConfig.SensitiveDataConfig overrideSensitive = override.getFilters().getSensitiveData();
+            if (overrideSensitive.getPatterns() != null && overrideSensitive.getPatterns().length > 0) {
+                this.filters.getSensitiveData().setEnabled(overrideSensitive.isEnabled());
+                this.filters.getSensitiveData().setPatterns(overrideSensitive.getPatterns());
+            }
+        }
+
+        // Merge performance
+        if (override.getPerformance() != null) {
+            // Only override if values are explicitly set (not defaults)
+            PerformanceConfig overridePerf = override.getPerformance();
+            this.performance.setAsync(overridePerf.isAsync());
+            this.performance.setBufferSize(overridePerf.getBufferSize());
+            this.performance.setFlushInterval(overridePerf.getFlushInterval());
+            this.performance.setMaxQueueSize(overridePerf.getMaxQueueSize());
+        }
+    }
+
+    /**
+     * Merge output configurations
+     */
+    private void mergeOutputConfig(OutputConfig base, OutputConfig override) {
+        // Always override enabled flag
+        base.setEnabled(override.isEnabled());
+
+        if (override.getLevel() != null && !override.getLevel().isEmpty()) {
+            base.setLevel(override.getLevel());
+        }
+        if (override.getFormat() != null && !override.getFormat().isEmpty()) {
+            base.setFormat(override.getFormat());
+        }
+        if (override.getPath() != null && !override.getPath().isEmpty()) {
+            base.setPath(override.getPath());
+        }
+        if (override.getColors() != null && !override.getColors().isEmpty()) {
+            base.getColors().putAll(override.getColors());
+        }
+
+        // Merge rotation
+        if (override.getRotation() != null) {
+            RotationConfig overrideRotation = override.getRotation();
+            if (overrideRotation.getMaxSize() != null && !overrideRotation.getMaxSize().isEmpty()) {
+                base.getRotation().setMaxSize(overrideRotation.getMaxSize());
+            }
+            if (overrideRotation.getMaxFiles() > 0) {
+                base.getRotation().setMaxFiles(overrideRotation.getMaxFiles());
+            }
+            base.getRotation().setCompress(overrideRotation.isCompress());
+        }
+
+        // Merge database config
+        if (override.getDatabase() != null && override.getDatabase().getType() != null) {
+            base.setDatabase(override.getDatabase());
+        }
+
+        // Merge webhook config
+        if (override.getWebhook() != null && override.getWebhook().getUrl() != null) {
+            base.setWebhook(override.getWebhook());
+        }
+
+        // Merge email config
+        if (override.getEmail() != null && override.getEmail().getSmtp() != null) {
+            base.setEmail(override.getEmail());
+        }
+    }
+
+    /**
      * 글로벌 설정
+     * 기본값은 universal-logger-defaults.yml에서 로드됨
      */
     public static class GlobalConfig {
-        private String appName = "JavaApp";
-        private String timezone = "Asia/Seoul";
-        private String encoding = "UTF-8";
+        private String appName;
+        private String timezone;
+        private String encoding;
 
         public String getAppName() {
             return appName;
@@ -98,11 +213,12 @@ public class LoggerConfig {
 
     /**
      * 출력 설정
+     * 기본값은 universal-logger-defaults.yml에서 로드됨
      */
     public static class OutputConfig {
         private boolean enabled = true;
-        private String level = "INFO";
-        private String format = "{timestamp} | {level} | {logger} | {message}";
+        private String level;
+        private String format;
         private String path;
         private Map<String, String> colors = new HashMap<>();
         private RotationConfig rotation = new RotationConfig();
@@ -186,11 +302,12 @@ public class LoggerConfig {
 
     /**
      * 로테이션 설정
+     * 기본값은 universal-logger-defaults.yml에서 로드됨
      */
     public static class RotationConfig {
-        private String maxSize = "10MB";
-        private int maxFiles = 30;
-        private boolean compress = true;
+        private String maxSize;
+        private int maxFiles;
+        private boolean compress;
 
         public String getMaxSize() {
             return maxSize;
@@ -288,10 +405,11 @@ public class LoggerConfig {
 
     /**
      * 웹훅 설정
+     * 기본값은 universal-logger-defaults.yml에서 로드됨
      */
     public static class WebhookConfig {
         private String url;
-        private String format = "{message}";
+        private String format;
 
         public String getUrl() {
             return url;
@@ -312,11 +430,12 @@ public class LoggerConfig {
 
     /**
      * 이메일 설정
+     * 기본값은 universal-logger-defaults.yml에서 로드됨
      */
     public static class EmailConfig {
         private SmtpConfig smtp = new SmtpConfig();
         private String[] to;
-        private String subject = "[{appName}] Log Alert";
+        private String subject;
 
         public SmtpConfig getSmtp() {
             return smtp;
@@ -343,8 +462,8 @@ public class LoggerConfig {
         }
 
         public static class SmtpConfig {
-            private String host = "smtp.gmail.com";
-            private int port = 587;
+            private String host;
+            private int port;
             private String username;
             private String password;
 
@@ -384,6 +503,7 @@ public class LoggerConfig {
 
     /**
      * 필터 설정
+     * 기본값은 universal-logger-defaults.yml에서 로드됨
      */
     public static class FiltersConfig {
         private SensitiveDataConfig sensitiveData = new SensitiveDataConfig();
@@ -397,7 +517,7 @@ public class LoggerConfig {
         }
 
         public static class SensitiveDataConfig {
-            private boolean enabled = false;
+            private boolean enabled;
             private PatternConfig[] patterns = new PatternConfig[0];
 
             public boolean isEnabled() {
@@ -441,12 +561,13 @@ public class LoggerConfig {
 
     /**
      * 성능 설정
+     * 기본값은 universal-logger-defaults.yml에서 로드됨
      */
     public static class PerformanceConfig {
-        private boolean async = true;
-        private int bufferSize = 1000;
-        private int flushInterval = 5;
-        private int maxQueueSize = 10000;
+        private boolean async;
+        private int bufferSize;
+        private int flushInterval;
+        private int maxQueueSize;
 
         public boolean isAsync() {
             return async;

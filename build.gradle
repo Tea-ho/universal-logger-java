@@ -5,7 +5,10 @@ plugins {
 }
 
 group = 'com.universallogger'
-version = '1.0.0-java11'
+version = '1.0.0'
+// Java 버전은 각 브랜치에서 설정됩니다
+// java11 브랜치: Java 11
+// java8 브랜치: Java 8
 sourceCompatibility = '11'
 targetCompatibility = '11'
 

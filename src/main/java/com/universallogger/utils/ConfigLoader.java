@@ -21,9 +21,21 @@ import java.util.Map;
 public class ConfigLoader {
 
     /**
-     * 설정 파일 로드 (확장자 자동 감지)
+     * 설정 파일 로드 with default config merge
+     * Loads default config from JAR, then merges user config
      */
     public static LoggerConfig load(String configPath) throws Exception {
+        return load(configPath, true);
+    }
+
+    /**
+     * 설정 파일 로드 (확장자 자동 감지)
+     * @param configPath Configuration file path
+     * @param mergeDefaults Whether to merge with default configuration
+     */
+    public static LoggerConfig load(String configPath, boolean mergeDefaults) throws Exception {
+        LoggerConfig userConfig;
+
         // 클래스패스 리소스 처리
         if (configPath.startsWith("classpath:")) {
             String resourcePath = configPath.substring("classpath:".length());
@@ -36,35 +48,66 @@ public class ConfigLoader {
             switch (extension) {
                 case "yml":
                 case "yaml":
-                    return loadYamlFromStream(inputStream);
+                    userConfig = loadYamlFromStream(inputStream);
+                    break;
                 case "xml":
-                    return loadXmlFromStream(inputStream);
+                    userConfig = loadXmlFromStream(inputStream);
+                    break;
                 case "json":
-                    return loadJsonFromStream(inputStream);
+                    userConfig = loadJsonFromStream(inputStream);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unsupported config file type: " + extension);
+            }
+        } else {
+            // 파일 시스템 처리
+            File configFile = new File(configPath);
+            if (!configFile.exists()) {
+                throw new IllegalArgumentException("Config file not found: " + configPath);
+            }
+
+            String extension = getFileExtension(configPath).toLowerCase();
+
+            switch (extension) {
+                case "yml":
+                case "yaml":
+                    userConfig = loadYaml(configFile);
+                    break;
+                case "xml":
+                    userConfig = loadXml(configFile);
+                    break;
+                case "json":
+                    userConfig = loadJson(configFile);
+                    break;
                 default:
                     throw new IllegalArgumentException("Unsupported config file type: " + extension);
             }
         }
 
-        // 파일 시스템 처리
-        File configFile = new File(configPath);
-        if (!configFile.exists()) {
-            throw new IllegalArgumentException("Config file not found: " + configPath);
+        // Merge with defaults if requested
+        if (mergeDefaults) {
+            LoggerConfig defaultConfig = loadDefaultConfig();
+            defaultConfig.merge(userConfig);
+            return defaultConfig;
         }
 
-        String extension = getFileExtension(configPath).toLowerCase();
+        return userConfig;
+    }
 
-        switch (extension) {
-            case "yml":
-            case "yaml":
-                return loadYaml(configFile);
-            case "xml":
-                return loadXml(configFile);
-            case "json":
-                return loadJson(configFile);
-            default:
-                throw new IllegalArgumentException("Unsupported config file type: " + extension);
+    /**
+     * Load default configuration from JAR
+     */
+    public static LoggerConfig loadDefaultConfig() throws Exception {
+        InputStream defaultStream = ConfigLoader.class.getClassLoader()
+                .getResourceAsStream("defaults/universal-logger-defaults.yml");
+
+        if (defaultStream == null) {
+            System.out.println("[Universal Logger] Default config not found in JAR, using hardcoded defaults");
+            return createDefaultConfig();
         }
+
+        System.out.println("[Universal Logger] Loading default configuration from JAR");
+        return loadYamlFromStream(defaultStream);
     }
 
     /**
@@ -193,7 +236,7 @@ public class ConfigLoader {
         config.getGlobal().setAppName("JavaApp");
 
         // 레벨 설정
-        config.getLevels().put("root", "INFO");
+        config.getLevels().put("root", "DEBUG");
 
         // 콘솔 출력 설정
         LoggerConfig.OutputConfig consoleConfig = new LoggerConfig.OutputConfig();
