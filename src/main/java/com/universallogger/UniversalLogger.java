@@ -318,14 +318,13 @@ public class UniversalLogger {
 
     /**
      * 플레이스홀더 치환
+     * Note: {date} is not replaced here - it's used in Logback's rolling pattern
      */
     private static String replacePlaceholders(String path) {
         if (path == null) return "logs/app.log";
 
-        return path
-            .replace("{app_name}", config.getGlobal().getAppName())
-            .replace("{date}", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
-            .replace("{datetime}", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss")));
+        // Only replace {appName} - do NOT replace {date} as it's used by Logback
+        return path.replace("{appName}", config.getGlobal().getAppName());
     }
 
     /**

@@ -1,0 +1,17 @@
+# Minimal Universal Logger Configuration Example
+# This is all you need! The rest comes from JAR defaults.
+
+version: "1.0"
+
+global:
+  appName: "MyProject"  # Only specify your project name!
+
+# Optional: Override specific settings
+# levels:
+#   root: "DEBUG"
+#   com.mycompany: "TRACE"
+
+# Optional: Disable outputs you don't need
+# outputs:
+#   file:
+#     enabled: false
