@@ -96,14 +96,17 @@ public class ConfigLoader {
 
     /**
      * Load default configuration from JAR
+     * Always loads from universal-logger-defaults.yml bundled in JAR
      */
     public static LoggerConfig loadDefaultConfig() throws Exception {
         InputStream defaultStream = ConfigLoader.class.getClassLoader()
                 .getResourceAsStream("defaults/universal-logger-defaults.yml");
 
         if (defaultStream == null) {
-            System.out.println("[Universal Logger] Default config not found in JAR, using hardcoded defaults");
-            return createDefaultConfig();
+            throw new IllegalStateException(
+                "[Universal Logger] CRITICAL: defaults/universal-logger-defaults.yml not found in JAR. " +
+                "The JAR may be corrupted or not built correctly."
+            );
         }
 
         System.out.println("[Universal Logger] Loading default configuration from JAR");
@@ -155,6 +158,7 @@ public class ConfigLoader {
 
     /**
      * XML 문서 파싱 (Logback 표준 XML 형식)
+     * 하드코딩 없음 - 값이 없으면 빈 설정 반환 (defaults와 merge 시 defaults 값 사용)
      */
     private static LoggerConfig parseXmlDocument(Document doc) {
         LoggerConfig config = new LoggerConfig();
@@ -170,20 +174,21 @@ public class ConfigLoader {
             properties.put(name, value);
         }
 
-        // 앱 이름 설정
-        String appName = properties.getOrDefault("APP_NAME", "JavaApp");
-        config.getGlobal().setAppName(appName);
+        // 앱 이름 설정 (있으면)
+        String appName = properties.get("APP_NAME");
+        if (appName != null && !appName.isEmpty()) {
+            config.getGlobal().setAppName(appName);
+        }
 
-        // root 로거 레벨 추출
+        // root 로거 레벨 추출 (있으면)
         NodeList rootList = doc.getElementsByTagName("root");
         if (rootList.getLength() > 0) {
             Element root = (Element) rootList.item(0);
             String level = root.getAttribute("level");
             if (level != null && !level.isEmpty()) {
                 config.getLevels().put("root", level);
-            } else {
-                config.getLevels().put("root", "INFO");
             }
+            // level 없으면 아무것도 하지 않음 (defaults에서 가져옴)
 
             // appender-ref에서 활성화된 appender 확인
             NodeList appenderRefs = root.getElementsByTagName("appender-ref");
@@ -194,19 +199,17 @@ public class ConfigLoader {
                 if ("CONSOLE".equals(ref)) {
                     LoggerConfig.OutputConfig consoleConfig = new LoggerConfig.OutputConfig();
                     consoleConfig.setEnabled(true);
-                    consoleConfig.setLevel(config.getLevels().getOrDefault("root", "INFO"));
+                    // level은 defaults에서 가져옴
                     config.getOutputs().put("console", consoleConfig);
                 } else if ("FILE".equals(ref)) {
                     LoggerConfig.OutputConfig fileConfig = new LoggerConfig.OutputConfig();
                     fileConfig.setEnabled(true);
-                    fileConfig.setLevel("DEBUG");
-                    fileConfig.setPath("logs/" + appName + ".log");
+                    // level, path는 defaults에서 가져옴
                     config.getOutputs().put("file", fileConfig);
                 } else if ("ERROR_FILE".equals(ref)) {
                     LoggerConfig.OutputConfig errorFileConfig = new LoggerConfig.OutputConfig();
                     errorFileConfig.setEnabled(true);
-                    errorFileConfig.setLevel("ERROR");
-                    errorFileConfig.setPath("logs/" + appName + "-error.log");
+                    // level, path는 defaults에서 가져옴
                     config.getOutputs().put("error_file", errorFileConfig);
                 }
             }
@@ -224,39 +227,5 @@ public class ConfigLoader {
             return "";
         }
         return filename.substring(lastDotIndex + 1);
-    }
-
-    /**
-     * 기본 설정 생성
-     */
-    public static LoggerConfig createDefaultConfig() {
-        LoggerConfig config = new LoggerConfig();
-
-        // 글로벌 설정
-        config.getGlobal().setAppName("JavaApp");
-
-        // 레벨 설정
-        config.getLevels().put("root", "DEBUG");
-
-        // 콘솔 출력 설정
-        LoggerConfig.OutputConfig consoleConfig = new LoggerConfig.OutputConfig();
-        consoleConfig.setEnabled(true);
-        consoleConfig.setLevel("INFO");
-        consoleConfig.setFormat("[{timestamp}] {level} - {message}");
-        consoleConfig.getColors().put("DEBUG", "cyan");
-        consoleConfig.getColors().put("INFO", "green");
-        consoleConfig.getColors().put("WARN", "yellow");
-        consoleConfig.getColors().put("ERROR", "red");
-        config.getOutputs().put("console", consoleConfig);
-
-        // 파일 출력 설정
-        LoggerConfig.OutputConfig fileConfig = new LoggerConfig.OutputConfig();
-        fileConfig.setEnabled(false);
-        fileConfig.setLevel("DEBUG");
-        fileConfig.setPath("logs/{app_name}_{date}.log");
-        fileConfig.setFormat("{timestamp} | {level} | {logger} | {message}");
-        config.getOutputs().put("file", fileConfig);
-
-        return config;
     }
 }

@@ -88,9 +88,9 @@ public class UniversalLogger {
      * @param configPath 설정 파일 경로 (YAML, XML, JSON 지원)
      */
     public static synchronized void init(String configPath) {
+        // 명시적 init() 호출은 재초기화 허용 (autoInit과 달리)
         if (initialized) {
-            System.out.println("[Universal Logger] Already initialized. Skipping...");
-            return;
+            System.out.println("[Universal Logger] Re-initializing with config: " + configPath);
         }
 
         try {
