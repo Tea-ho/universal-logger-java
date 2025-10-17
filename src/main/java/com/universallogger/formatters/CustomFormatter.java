@@ -3,6 +3,7 @@ package com.universallogger.formatters;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -25,7 +26,7 @@ public class CustomFormatter extends PatternLayoutEncoder {
     @Override
     public byte[] encode(ILoggingEvent event) {
         String formattedMessage = formatMessage(event);
-        return (formattedMessage + "\n").getBytes();
+        return (formattedMessage + "\n").getBytes(StandardCharsets.UTF_8);
     }
 
     /**
