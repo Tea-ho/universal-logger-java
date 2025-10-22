@@ -206,6 +206,8 @@ public class UniversalLogger {
         thresholdFilter.setLevel(config.getLevel());
         thresholdFilter.start();
         appender.addFilter(thresholdFilter);
+        
+        appender.start();
 
         logger.addAppender(appender);
     }
@@ -263,6 +265,8 @@ public class UniversalLogger {
         thresholdFilter.setLevel(config.getLevel());
         thresholdFilter.start();
         appender.addFilter(thresholdFilter);
+        
+        appender.start();
 
         // 포맷터 설정
         CustomFormatter formatter = new CustomFormatter();
@@ -298,6 +302,13 @@ public class UniversalLogger {
         appender.setContext(loggerContext);
         appender.setName("EMAIL");
         appender.setEmailConfig(config.getEmail());
+
+        // 레벨 필터 추가 (설정된 레벨 이상만 이메일 발송)
+        ch.qos.logback.classic.filter.ThresholdFilter thresholdFilter = new ch.qos.logback.classic.filter.ThresholdFilter();
+        thresholdFilter.setLevel(config.getLevel());
+        thresholdFilter.start();
+        appender.addFilter(thresholdFilter);
+        
         appender.start();
 
         logger.addAppender(appender);
