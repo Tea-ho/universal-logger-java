@@ -7,7 +7,7 @@ import java.util.HashMap;
  * 로거 설정 클래스
  */
 public class LoggerConfig {
-    private String version = "1.0";
+    private String version;
     private GlobalConfig global = new GlobalConfig();
     private Map<String, String> levels = new HashMap<>();
     private Map<String, OutputConfig> outputs = new HashMap<>();
@@ -216,7 +216,7 @@ public class LoggerConfig {
      * 기본값은 universal-logger-defaults.yml에서 로드됨
      */
     public static class OutputConfig {
-        private boolean enabled = true;
+        private boolean enabled;
         private String level;
         private String format;
         private String path;
@@ -518,7 +518,7 @@ public class LoggerConfig {
 
         public static class SensitiveDataConfig {
             private boolean enabled;
-            private PatternConfig[] patterns = new PatternConfig[0];
+            private PatternConfig[] patterns;
 
             public boolean isEnabled() {
                 return enabled;

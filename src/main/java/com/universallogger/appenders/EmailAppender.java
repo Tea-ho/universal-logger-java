@@ -30,21 +30,49 @@ public class EmailAppender extends AppenderBase<ILoggingEvent> {
             return;
         }
 
+        // 수신자가 없으면 설정하지 않음
+        if (emailConfig.getTo() == null || emailConfig.getTo().length == 0) {
+            System.err.println("⚠️  Email appender: No recipients configured. Email notifications disabled.");
+            return;
+        }
+
         Properties props = new Properties();
         props.put("mail.smtp.host", emailConfig.getSmtp().getHost());
         props.put("mail.smtp.port", emailConfig.getSmtp().getPort());
         props.put("mail.smtp.auth", "true");
-        props.put("mail.smtp.starttls.enable", "true");
 
-        mailSession = Session.getInstance(props, new Authenticator() {
-            @Override
-            protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication(
-                    emailConfig.getSmtp().getUsername(),
-                    emailConfig.getSmtp().getPassword()
-                );
-            }
-        });
+        // 포트 465는 SSL, 587은 TLS(STARTTLS)
+        int port = emailConfig.getSmtp().getPort();
+        if (port == 465) {
+            // SSL 설정
+            props.put("mail.smtp.ssl.enable", "true");
+            props.put("mail.smtp.socketFactory.port", String.valueOf(port));
+            props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+            props.put("mail.smtp.socketFactory.fallback", "false");
+        } else {
+            // TLS(STARTTLS) 설정
+            props.put("mail.smtp.starttls.enable", "true");
+        }
+
+        // 타임아웃 설정 (5초)
+        props.put("mail.smtp.connectiontimeout", "5000");
+        props.put("mail.smtp.timeout", "5000");
+        props.put("mail.smtp.writetimeout", "5000");
+
+        try {
+            mailSession = Session.getInstance(props, new Authenticator() {
+                @Override
+                protected PasswordAuthentication getPasswordAuthentication() {
+                    return new PasswordAuthentication(
+                        emailConfig.getSmtp().getUsername(),
+                        emailConfig.getSmtp().getPassword()
+                    );
+                }
+            });
+            System.out.println("✅ Email appender configured successfully");
+        } catch (Exception e) {
+            System.err.println("⚠️  Email appender setup failed: " + e.getMessage());
+        }
     }
 
     @Override
