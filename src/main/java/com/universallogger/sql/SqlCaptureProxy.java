@@ -277,6 +277,7 @@ public class SqlCaptureProxy implements DataSource {
                     className.startsWith("com.universallogger") ||
                     className.startsWith("java.") ||
                     className.startsWith("javax.") ||
+                    className.startsWith("jakarta.") ||
                     className.startsWith("sun.") ||
                     className.startsWith("com.sun.") ||
                     className.startsWith("jdk.") ||
@@ -287,7 +288,10 @@ public class SqlCaptureProxy implements DataSource {
                     className.startsWith("org.springframework.cglib") ||
                     className.startsWith("org.springframework.transaction") ||
                     className.startsWith("org.springframework.web") ||
-                    className.startsWith("org.springframework.data.jpa") ||  // Spring Data JPA
+                    className.startsWith("org.springframework.data") ||  // Spring Data (JPA, Commons 등)
+                    className.startsWith("org.springframework.orm") ||  // Spring ORM
+                    className.contains("RepositoryComposition") ||  // Spring Data JPA internal
+                    className.contains("TaskThread") ||  // Spring async internal
                     className.contains("$Proxy") ||
                     className.contains("$$") ||  // CGLIB proxy
                     className.contains("EnhancerBy") ||  // CGLIB enhancer
@@ -534,6 +538,7 @@ public class SqlCaptureProxy implements DataSource {
                     className.startsWith("com.universallogger") ||
                     className.startsWith("java.") ||
                     className.startsWith("javax.") ||
+                    className.startsWith("jakarta.") ||
                     className.startsWith("sun.") ||
                     className.startsWith("com.sun.") ||
                     className.startsWith("jdk.") ||
@@ -544,7 +549,10 @@ public class SqlCaptureProxy implements DataSource {
                     className.startsWith("org.springframework.cglib") ||
                     className.startsWith("org.springframework.transaction") ||
                     className.startsWith("org.springframework.web") ||
-                    className.startsWith("org.springframework.data.jpa") ||  // Spring Data JPA
+                    className.startsWith("org.springframework.data") ||  // Spring Data (JPA, Commons 등)
+                    className.startsWith("org.springframework.orm") ||  // Spring ORM
+                    className.contains("RepositoryComposition") ||  // Spring Data JPA internal
+                    className.contains("TaskThread") ||  // Spring async internal
                     className.contains("$Proxy") ||
                     className.contains("$$") ||  // CGLIB proxy
                     className.contains("EnhancerBy") ||  // CGLIB enhancer
