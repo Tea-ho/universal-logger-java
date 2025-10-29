@@ -63,6 +63,12 @@ shadowJar {
     exclude 'META-INF/*.DSA'
     exclude 'META-INF/*.RSA'
 
+    // Logback과 SLF4J는 호스트 애플리케이션의 것을 사용 (버전 충돌 방지)
+    dependencies {
+        exclude(dependency('ch.qos.logback:.*'))
+        exclude(dependency('org.slf4j:.*'))
+    }
+
     // 패키지 재배치 제거 (PHM_QUARTZ와 호환성 위해)
     // relocate 하지 않고 그대로 포함
 }
