@@ -243,6 +243,13 @@ public class UniversalLogger {
         formatter.start();
 
         appender.setEncoder(formatter);
+
+        // 임계값 필터 추가 (해당 레벨 이상의 로그만 파일에 저장)
+        ch.qos.logback.classic.filter.ThresholdFilter thresholdFilter = new ch.qos.logback.classic.filter.ThresholdFilter();
+        thresholdFilter.setLevel(config.getLevel());
+        thresholdFilter.start();
+        appender.addFilter(thresholdFilter);
+
         appender.start();
 
         logger.addAppender(appender);
