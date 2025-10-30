@@ -256,7 +256,7 @@ public class SqlCaptureProxy implements DataSource {
          * SQL을 실행한 실제 호출자 정보를 추출
          * SQL에 가장 가까운 Mapper/Repository/Service를 찾음
          */
-        private String getCallerInfo() {
+        protected String getCallerInfo() {
             StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
 
             // 우선순위: Mapper > Repository > Dao > Service > 기타
@@ -408,56 +408,54 @@ public class SqlCaptureProxy implements DataSource {
 
         @Override
         public ResultSet executeQuery() throws SQLException {
-            logSqlWithParams();
             long start = System.currentTimeMillis();
             String callerInfo = getCallerInfo();
+            int rowCount = -1;
+            ResultSet rs = null;
+
             try {
-                ResultSet rs = targetPreparedStatement.executeQuery();
+                rs = targetPreparedStatement.executeQuery();
 
                 // Try to count rows using last() and getRow() if ResultSet is scrollable
-                int rowCount = -1;
                 try {
                     if (rs.getType() != ResultSet.TYPE_FORWARD_ONLY) {
                         rs.last();
                         rowCount = rs.getRow();
                         rs.beforeFirst();
-                        if (rowCount >= 0) {
-                            UniversalLogger.getLogger(callerInfo).info("[SQL-ROWS] Total: " + rowCount);
-                        }
                     }
                 } catch (SQLException e) {
                     // ResultSet might not be scrollable, ignore
                 }
 
-                // Wrap ResultSet to count rows for forward-only ResultSets
-                return new RowCountingResultSet(rs, callerInfo);
+                return rs;
             } finally {
-                logExecutionTime(System.currentTimeMillis() - start);
+                long executionTime = System.currentTimeMillis() - start;
+                logAllResults(callerInfo, rowCount, -1, executionTime);
             }
         }
 
         @Override
         public int executeUpdate() throws SQLException {
-            logSqlWithParams();
             long start = System.currentTimeMillis();
+            String callerInfo = getCallerInfo();
+            int updateCount = -1;
+
             try {
-                int updateCount = targetPreparedStatement.executeUpdate();
-                // Log update count
-                if (updateCount != -1) {
-                    String callerInfo = getCallerInfo();
-                    UniversalLogger.getLogger(callerInfo).info("[SQL-ROWS] Updates: " + updateCount);
-                }
+                updateCount = targetPreparedStatement.executeUpdate();
                 return updateCount;
             } finally {
-                logExecutionTime(System.currentTimeMillis() - start);
+                long executionTime = System.currentTimeMillis() - start;
+                logAllResults(callerInfo, -1, updateCount, executionTime);
             }
         }
 
         @Override
         public boolean execute() throws SQLException {
-            logSqlWithParams();
             long start = System.currentTimeMillis();
             String callerInfo = getCallerInfo();
+            int rowCount = -1;
+            int updateCount = -1;
+
             try {
                 boolean hasResultSet = targetPreparedStatement.execute();
 
@@ -466,15 +464,11 @@ public class SqlCaptureProxy implements DataSource {
                     ResultSet rs = targetPreparedStatement.getResultSet();
                     if (rs != null) {
                         // Try to count rows using last() and getRow() if ResultSet is scrollable
-                        int rowCount = -1;
                         try {
                             if (rs.getType() != ResultSet.TYPE_FORWARD_ONLY) {
                                 rs.last();
                                 rowCount = rs.getRow();
                                 rs.beforeFirst();
-                                if (rowCount >= 0) {
-                                    UniversalLogger.getLogger(callerInfo).info("[SQL-ROWS] Total: " + rowCount);
-                                }
                             }
                         } catch (SQLException e) {
                             // ResultSet might not be scrollable, ignore
@@ -482,26 +476,46 @@ public class SqlCaptureProxy implements DataSource {
                     }
                 } else {
                     // Query returned update count
-                    int updateCount = targetPreparedStatement.getUpdateCount();
-                    if (updateCount >= 0) {
-                        UniversalLogger.getLogger(callerInfo).info("[SQL-ROWS] Updates: " + updateCount);
-                    }
+                    updateCount = targetPreparedStatement.getUpdateCount();
                 }
 
                 return hasResultSet;
             } finally {
-                logExecutionTime(System.currentTimeMillis() - start);
+                long executionTime = System.currentTimeMillis() - start;
+                logAllResults(callerInfo, rowCount, updateCount, executionTime);
             }
         }
 
-        private void logSqlWithParams() {
+        /**
+         * SQL 실행 결과를 한 번에 로깅 (멀티스레드 환경에서 로그가 섞이지 않도록)
+         */
+        private void logAllResults(String callerInfo, int rowCount, int updateCount, long executionTime) {
             StringBuilder sb = new StringBuilder();
+
+            // 1. SQL + Parameters
             String formattedSql = formatSql(sql);
             sb.append("[SQL] ").append(formattedSql);
             if (!parameters.isEmpty()) {
                 sb.append(" | Parameters: ").append(parameters);
             }
-            String callerInfo = getCallerInfo();
+            sb.append("\n");
+
+            // 2. Row Count or Update Count
+            if (rowCount >= 0) {
+                sb.append("[SQL-ROWS] Total: ").append(rowCount).append("\n");
+            } else if (updateCount >= 0) {
+                sb.append("[SQL-ROWS] Updates: ").append(updateCount).append("\n");
+            } else {
+                sb.append("[SQL-ROWS] Total: 0\n");
+            }
+
+            // 3. Execution Time
+            if (executionTime > 1000) {
+                sb.append("[SQL-SLOW] Execution time: ").append(executionTime).append("ms");
+            } else {
+                sb.append("[SQL-TIME] ").append(executionTime).append("ms");
+            }
+
             UniversalLogger.getLogger(callerInfo).info(sb.toString());
         }
 
@@ -547,111 +561,6 @@ public class SqlCaptureProxy implements DataSource {
                 .trim();
 
             return formatted;
-        }
-
-        private void logExecutionTime(long timeMs) {
-            String callerInfo = getCallerInfo();
-            if (timeMs > 1000) {
-                UniversalLogger.getLogger(callerInfo).warn("[SQL-SLOW] Execution time: " + timeMs + "ms - " + sql);
-            } else {
-                UniversalLogger.getLogger(callerInfo).info("[SQL-TIME] " + timeMs + "ms");
-            }
-        }
-
-        /**
-         * SQL을 실행한 실제 호출자 정보를 추출
-         * SQL에 가장 가까운 Mapper/Repository/Service를 찾음
-         */
-        private String getCallerInfo() {
-            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-
-            // 우선순위: Mapper > Repository > Dao > Service > 기타
-            StackTraceElement mapperElement = null;
-            StackTraceElement repositoryElement = null;
-            StackTraceElement daoElement = null;
-            StackTraceElement serviceElement = null;
-            StackTraceElement lastValidElement = null;
-
-            // 정순으로 탐색 (SQL에 가까운 순서)
-            for (StackTraceElement element : stackTrace) {
-                String className = element.getClassName();
-                String methodName = element.getMethodName();
-
-                // 제외할 프레임워크 클래스들
-                if (className.contains("SqlCaptureProxy") ||
-                    className.startsWith("java.lang.Thread") ||
-                    className.startsWith("com.universallogger") ||
-                    className.startsWith("java.") ||
-                    className.startsWith("javax.") ||
-                    className.startsWith("jakarta.") ||
-                    className.startsWith("sun.") ||
-                    className.startsWith("com.sun.") ||
-                    className.startsWith("jdk.") ||
-                    className.startsWith("org.apache.ibatis") ||
-                    className.startsWith("org.mybatis") ||
-                    className.startsWith("org.hibernate") ||  // Hibernate
-                    className.startsWith("org.springframework.aop") ||
-                    className.startsWith("org.springframework.cglib") ||
-                    className.startsWith("org.springframework.transaction") ||
-                    className.startsWith("org.springframework.web") ||
-                    className.startsWith("org.springframework.data") ||  // Spring Data (JPA, Commons 등)
-                    className.startsWith("org.springframework.orm") ||  // Spring ORM
-                    className.contains("RepositoryComposition") ||  // Spring Data JPA internal
-                    className.contains("TaskThread") ||  // Spring async internal
-                    className.contains("$Proxy") ||
-                    className.contains("$$") ||  // CGLIB proxy
-                    className.contains("EnhancerBy") ||  // CGLIB enhancer
-                    className.contains("Aspect") ||  // AOP Aspect
-                    className.contains("Interceptor") ||  // Interceptor
-                    className.contains("MapperMethod") ||  // MyBatis MapperMethod
-                    className.contains("MapperProxy") ||  // MyBatis MapperProxy
-                    className.startsWith("com.zaxxer.hikari")) {
-                    continue;
-                }
-
-                // 유효한 애플리케이션 클래스 저장
-                lastValidElement = element;
-
-                // 각 계층별로 마지막으로 발견된 것 저장 (SQL에 가장 가까운 것)
-                // 나중에 나오는 것일수록 SQL 실행에 가까움
-                if (className.contains("Mapper")) {
-                    mapperElement = element;
-                } else if (className.contains("Repository")) {
-                    repositoryElement = element;
-                } else if (className.contains("Dao")) {
-                    daoElement = element;
-                } else if (className.contains("Service")) {
-                    serviceElement = element;
-                }
-            }
-
-            // 우선순위대로 반환: Mapper > Repository > Dao > Service > 마지막 유효한 클래스
-            StackTraceElement targetElement = null;
-            if (mapperElement != null) {
-                targetElement = mapperElement;
-            } else if (repositoryElement != null) {
-                targetElement = repositoryElement;
-            } else if (daoElement != null) {
-                targetElement = daoElement;
-            } else if (serviceElement != null) {
-                targetElement = serviceElement;
-            } else if (lastValidElement != null) {
-                targetElement = lastValidElement;
-            }
-
-            if (targetElement != null) {
-                String className = targetElement.getClassName();
-                String methodName = targetElement.getMethodName();
-                int lineNumber = targetElement.getLineNumber();
-                String simpleClassName = className.substring(className.lastIndexOf('.') + 1);
-                if (simpleClassName.contains("$")) {
-                    simpleClassName = simpleClassName.substring(0, simpleClassName.indexOf('$'));
-                }
-                // 라인 번호를 포함하여 정확한 위치 표시
-                return simpleClassName + "." + methodName + ":" + lineNumber;
-            }
-
-            return "unknown";
         }
 
         // Parameter tracking methods
