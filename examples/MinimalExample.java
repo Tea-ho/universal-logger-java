@@ -16,6 +16,6 @@ public class MinimalExample {
         UniversalLogger.warn("경고 메시지");
         UniversalLogger.error("에러 메시지");
 
-        System.out.println("\n✅ 설정 파일 없이도 정상 동작!");
+        System.out.println("\n[완료] 설정 파일 없이도 정상 동작!");
     }
 }

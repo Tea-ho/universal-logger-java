@@ -13,7 +13,7 @@ public class BasicUsage {
 
         // 1. 설정 파일로 초기화
         System.out.println("1. 설정 파일로 로거 초기화...");
-        UniversalLogger.init("config/logging.yml");
+        UniversalLogger.init("logging.yml");
 
         // 2. 기본 로그 메시지들
         System.out.println("\n2. 기본 로그 메시지 테스트:");
@@ -54,7 +54,5 @@ public class BasicUsage {
         UniversalLogger.info("사용자 정보: 이름={}, 나이={}", username, age);
 
         System.out.println("\n로그 파일들이 logs/ 디렉토리에 생성되었습니다.");
-        System.out.println("- logs/JavaApp_*.log (전체 로그)");
-        System.out.println("- logs/errors_*.log (에러만)");
     }
 }

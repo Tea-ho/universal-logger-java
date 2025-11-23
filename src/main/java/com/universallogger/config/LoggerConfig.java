@@ -5,6 +5,26 @@ import java.util.HashMap;
 
 /**
  * 로거 설정 클래스
+ *
+ * YAML/JSON 역직렬화 호환성을 위해 setter를 유지하지만,
+ * copy() 메서드를 통한 방어적 복사와 LoggerConfigBuilder를 통한
+ * 불변 스타일 설정 생성을 권장합니다.
+ *
+ * 사용법:
+ * <pre>
+ * // YAML 파일에서 로드
+ * LoggerConfig config = ConfigLoader.load("logging.yml");
+ *
+ * // 프로그래매틱 설정 (권장)
+ * LoggerConfig config = LoggerConfigBuilder.create()
+ *     .appName("my-app")
+ *     .rootLevel("DEBUG")
+ *     .console().enabled(true).and()
+ *     .build();
+ *
+ * // 방어적 복사
+ * LoggerConfig safeCopy = config.copy();
+ * </pre>
  */
 public class LoggerConfig {
     private String version;
@@ -175,6 +195,142 @@ public class LoggerConfig {
         if (override.getEmail() != null && override.getEmail().getSmtp() != null) {
             base.setEmail(override.getEmail());
         }
+    }
+
+    /**
+     * 방어적 복사 - 이 설정의 독립적인 복사본 생성
+     *
+     * 원본 설정이 변경되어도 복사본에 영향을 주지 않습니다.
+     * LoggerInstance 등에서 외부로부터 받은 설정을 안전하게 보관할 때 사용.
+     *
+     * @return 이 설정의 깊은 복사본
+     */
+    public LoggerConfig copy() {
+        LoggerConfig copy = new LoggerConfig();
+
+        copy.version = this.version;
+
+        // Global config copy
+        if (this.global != null) {
+            GlobalConfig globalCopy = new GlobalConfig();
+            globalCopy.setAppName(this.global.getAppName());
+            globalCopy.setTimezone(this.global.getTimezone());
+            globalCopy.setEncoding(this.global.getEncoding());
+            copy.global = globalCopy;
+        }
+
+        // Levels copy
+        copy.levels = new HashMap<>(this.levels);
+
+        // Outputs deep copy
+        copy.outputs = new HashMap<>();
+        for (Map.Entry<String, OutputConfig> entry : this.outputs.entrySet()) {
+            copy.outputs.put(entry.getKey(), copyOutputConfig(entry.getValue()));
+        }
+
+        // Filters copy
+        if (this.filters != null) {
+            FiltersConfig filtersCopy = new FiltersConfig();
+            if (this.filters.getSensitiveData() != null) {
+                FiltersConfig.SensitiveDataConfig sdCopy =
+                    new FiltersConfig.SensitiveDataConfig();
+                sdCopy.setEnabled(this.filters.getSensitiveData().isEnabled());
+                if (this.filters.getSensitiveData().getPatterns() != null) {
+                    FiltersConfig.SensitiveDataConfig.PatternConfig[] patterns =
+                        this.filters.getSensitiveData().getPatterns();
+                    FiltersConfig.SensitiveDataConfig.PatternConfig[] patternsCopy =
+                        new FiltersConfig.SensitiveDataConfig.PatternConfig[patterns.length];
+                    for (int i = 0; i < patterns.length; i++) {
+                        patternsCopy[i] = new FiltersConfig.SensitiveDataConfig.PatternConfig();
+                        patternsCopy[i].setRegex(patterns[i].getRegex());
+                        patternsCopy[i].setReplace(patterns[i].getReplace());
+                    }
+                    sdCopy.setPatterns(patternsCopy);
+                }
+                filtersCopy.setSensitiveData(sdCopy);
+            }
+            copy.filters = filtersCopy;
+        }
+
+        // Performance copy
+        if (this.performance != null) {
+            PerformanceConfig perfCopy = new PerformanceConfig();
+            perfCopy.setAsync(this.performance.isAsync());
+            perfCopy.setBufferSize(this.performance.getBufferSize());
+            perfCopy.setFlushInterval(this.performance.getFlushInterval());
+            perfCopy.setMaxQueueSize(this.performance.getMaxQueueSize());
+            copy.performance = perfCopy;
+        }
+
+        return copy;
+    }
+
+    /**
+     * OutputConfig 깊은 복사
+     */
+    private OutputConfig copyOutputConfig(OutputConfig original) {
+        if (original == null) return null;
+
+        OutputConfig copy = new OutputConfig();
+        copy.setEnabled(original.isEnabled());
+        copy.setLevel(original.getLevel());
+        copy.setFormat(original.getFormat());
+        copy.setPath(original.getPath());
+
+        // Colors copy
+        if (original.getColors() != null) {
+            copy.setColors(new HashMap<>(original.getColors()));
+        }
+
+        // Rotation copy
+        if (original.getRotation() != null) {
+            RotationConfig rotCopy = new RotationConfig();
+            rotCopy.setMaxSize(original.getRotation().getMaxSize());
+            rotCopy.setMaxFiles(original.getRotation().getMaxFiles());
+            rotCopy.setCompress(original.getRotation().isCompress());
+            copy.setRotation(rotCopy);
+        }
+
+        // Database copy
+        if (original.getDatabase() != null) {
+            DatabaseConfig dbCopy = new DatabaseConfig();
+            dbCopy.setType(original.getDatabase().getType());
+            dbCopy.setHost(original.getDatabase().getHost());
+            dbCopy.setPort(original.getDatabase().getPort());
+            dbCopy.setDatabase(original.getDatabase().getDatabase());
+            dbCopy.setTable(original.getDatabase().getTable());
+            dbCopy.setUsername(original.getDatabase().getUsername());
+            dbCopy.setPassword(original.getDatabase().getPassword());
+            copy.setDatabase(dbCopy);
+        }
+
+        // Webhook copy
+        if (original.getWebhook() != null) {
+            WebhookConfig whCopy = new WebhookConfig();
+            whCopy.setUrl(original.getWebhook().getUrl());
+            whCopy.setFormat(original.getWebhook().getFormat());
+            copy.setWebhook(whCopy);
+        }
+
+        // Email copy
+        if (original.getEmail() != null) {
+            EmailConfig emailCopy = new EmailConfig();
+            if (original.getEmail().getSmtp() != null) {
+                EmailConfig.SmtpConfig smtpCopy = new EmailConfig.SmtpConfig();
+                smtpCopy.setHost(original.getEmail().getSmtp().getHost());
+                smtpCopy.setPort(original.getEmail().getSmtp().getPort());
+                smtpCopy.setUsername(original.getEmail().getSmtp().getUsername());
+                smtpCopy.setPassword(original.getEmail().getSmtp().getPassword());
+                emailCopy.setSmtp(smtpCopy);
+            }
+            if (original.getEmail().getTo() != null) {
+                emailCopy.setTo(original.getEmail().getTo().clone());
+            }
+            emailCopy.setSubject(original.getEmail().getSubject());
+            copy.setEmail(emailCopy);
+        }
+
+        return copy;
     }
 
     /**
