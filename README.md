@@ -261,6 +261,61 @@ performance:
   flushInterval: 1000
 ```
 
+### 설정 파일 자동 탐색
+
+`init()` 호출 없이 바로 로깅 메서드를 사용하면 다음 순서로 설정 파일을 자동 탐색합니다:
+
+| 우선순위 | 경로 |
+|---------|------|
+| 1 | `universal-logger.yml` |
+| 2 | `config/universal-logger.yml` |
+| 3 | `universal-logger.xml` |
+| 4 | `config/universal-logger.xml` |
+| 5 | `logback.xml` |
+| 6 | `config/logback.xml` |
+| 7 | `classpath:universal-logger.yml` |
+| 8 | `classpath:logback.xml` |
+
+### 설정 우선순위
+
+프로젝트 설정 파일과 JAR 내장 기본값이 병합됩니다. **프로젝트 설정이 우선 적용**됩니다.
+
+```
+프로젝트 설정 파일 (universal-logger.yml)
+        ↓ 병합 (merge)
+JAR 내장 기본값 (defaults/universal-logger-defaults.yml)
+```
+
+**예시:**
+
+JAR 기본값:
+```yaml
+levels:
+  root: "INFO"
+outputs:
+  console:
+    enabled: true
+    level: "INFO"
+  file:
+    enabled: true
+    path: "logs/{appName}.log"
+```
+
+프로젝트 설정:
+```yaml
+levels:
+  root: "DEBUG"          # ← 프로젝트 값 적용
+outputs:
+  console:
+    level: "WARN"        # ← 프로젝트 값 적용
+  # file 설정 생략       → JAR 기본값 사용
+```
+
+결과:
+- `root` 레벨: `DEBUG` (프로젝트 설정)
+- `console.level`: `WARN` (프로젝트 설정)
+- `file` 설정: JAR 기본값 그대로 사용
+
 ---
 
 ## 주요 기능
