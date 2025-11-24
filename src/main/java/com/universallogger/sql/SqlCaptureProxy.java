@@ -259,11 +259,12 @@ public class SqlCaptureProxy implements DataSource {
         protected String getCallerInfo() {
             StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
 
-            // 우선순위: Mapper > Repository > Dao > Service > 기타
+            // 우선순위: Mapper > Repository > Dao > Service > Controller > 기타
             StackTraceElement mapperElement = null;
             StackTraceElement repositoryElement = null;
             StackTraceElement daoElement = null;
             StackTraceElement serviceElement = null;
+            StackTraceElement controllerElement = null;
             StackTraceElement lastValidElement = null;
 
             // 정순으로 탐색 (SQL에 가까운 순서)
@@ -316,10 +317,12 @@ public class SqlCaptureProxy implements DataSource {
                     daoElement = element;
                 } else if (className.contains("Service")) {
                     serviceElement = element;
+                } else if (className.contains("Controller")) {
+                    controllerElement = element;
                 }
             }
 
-            // 우선순위대로 반환: Mapper > Repository > Dao > Service > 마지막 유효한 클래스
+            // 우선순위대로 반환: Mapper > Repository > Dao > Service > Controller > 마지막 유효한 클래스
             StackTraceElement targetElement = null;
             if (mapperElement != null) {
                 targetElement = mapperElement;
@@ -329,6 +332,8 @@ public class SqlCaptureProxy implements DataSource {
                 targetElement = daoElement;
             } else if (serviceElement != null) {
                 targetElement = serviceElement;
+            } else if (controllerElement != null) {
+                targetElement = controllerElement;
             } else if (lastValidElement != null) {
                 targetElement = lastValidElement;
             }
