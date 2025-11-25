@@ -1,5 +1,7 @@
 package com.universallogger.config;
 
+import com.universallogger.constants.LoggerConstants;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,10 +33,10 @@ import java.util.Map;
  */
 public class LoggerConfigBuilder {
 
-    private String version = "1.0";
-    private String appName = "application";
-    private String timezone = "Asia/Seoul";
-    private String encoding = "UTF-8";
+    private String version = LoggerConstants.Version.CURRENT;
+    private String appName = LoggerConstants.Defaults.APP_NAME;
+    private String timezone = LoggerConstants.Defaults.TIMEZONE;
+    private String encoding = LoggerConstants.Defaults.ENCODING;
     private final Map<String, String> levels = new HashMap<>();
     private final Map<String, LoggerConfig.OutputConfig> outputs = new HashMap<>();
     private boolean asyncEnabled = false;

@@ -5,7 +5,7 @@
 version: "1.0"
 
 global:
-  appName: "JavaApp"
+  appName: "UniversalLogger"
   timezone: "Asia/Seoul"
   encoding: "UTF-8"
 
