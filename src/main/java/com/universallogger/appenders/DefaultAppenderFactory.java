@@ -150,6 +150,9 @@ public class DefaultAppenderFactory implements AppenderFactory {
             appender.setFormat(outputConfig.getWebhook().getFormat());
         }
 
+        // 임계값 필터 추가
+        addThresholdFilter(appender, outputConfig.getLevel());
+
         appender.start();
         return appender;
     }
