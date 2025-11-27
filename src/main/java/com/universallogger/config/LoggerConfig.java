@@ -33,6 +33,7 @@ public class LoggerConfig {
     private Map<String, OutputConfig> outputs = new HashMap<>();
     private FiltersConfig filters = new FiltersConfig();
     private PerformanceConfig performance = new PerformanceConfig();
+    private SqlConfig sql = new SqlConfig();
 
     // Getters and Setters
     public String getVersion() {
@@ -81,6 +82,14 @@ public class LoggerConfig {
 
     public void setPerformance(PerformanceConfig performance) {
         this.performance = performance;
+    }
+
+    public SqlConfig getSql() {
+        return sql;
+    }
+
+    public void setSql(SqlConfig sql) {
+        this.sql = sql;
     }
 
     /**
@@ -146,6 +155,12 @@ public class LoggerConfig {
             this.performance.setBufferSize(overridePerf.getBufferSize());
             this.performance.setFlushInterval(overridePerf.getFlushInterval());
             this.performance.setMaxQueueSize(overridePerf.getMaxQueueSize());
+        }
+
+        // Merge SQL config
+        if (override.getSql() != null) {
+            SqlConfig overrideSql = override.getSql();
+            this.sql.setParameterSubstitution(overrideSql.isParameterSubstitution());
         }
     }
 
@@ -260,6 +275,13 @@ public class LoggerConfig {
             perfCopy.setFlushInterval(this.performance.getFlushInterval());
             perfCopy.setMaxQueueSize(this.performance.getMaxQueueSize());
             copy.performance = perfCopy;
+        }
+
+        // SQL config copy
+        if (this.sql != null) {
+            SqlConfig sqlCopy = new SqlConfig();
+            sqlCopy.setParameterSubstitution(this.sql.isParameterSubstitution());
+            copy.sql = sqlCopy;
         }
 
         return copy;
@@ -755,6 +777,22 @@ public class LoggerConfig {
 
         public void setMaxQueueSize(int maxQueueSize) {
             this.maxQueueSize = maxQueueSize;
+        }
+    }
+
+    /**
+     * SQL 로깅 설정
+     * 기본값은 universal-logger-defaults.yml에서 로드됨
+     */
+    public static class SqlConfig {
+        private boolean parameterSubstitution = false;
+
+        public boolean isParameterSubstitution() {
+            return parameterSubstitution;
+        }
+
+        public void setParameterSubstitution(boolean parameterSubstitution) {
+            this.parameterSubstitution = parameterSubstitution;
         }
     }
 }
