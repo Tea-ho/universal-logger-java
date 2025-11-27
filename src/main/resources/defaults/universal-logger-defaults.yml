@@ -13,6 +13,9 @@ levels:
   root: "INFO"
   com.universallogger: "DEBUG"
 
+sql:
+  parameterSubstitution: false
+
 outputs:
   # Console output - enabled by default
   console:
@@ -30,7 +33,7 @@ outputs:
     enabled: true
     level: "DEBUG"
     path: "C:/log/{appName}/application.log"
-    format: "{timestamp} | {level} | {logger}:{line} | {message}"
+    format: "[{timestamp}] {level} - {logger} | {message}"
     rotation:
       maxSize: "50MB"
       maxFiles: 30
@@ -41,7 +44,7 @@ outputs:
     enabled: true
     level: "ERROR"
     path: "C:/log/{appName}/error.log"
-    format: "{timestamp} | {level} | {logger}:{line} | {message} | {exception}"
+    format: "[{timestamp}] {level} - {logger} | {message} | {exception}"
 
   # Webhook - disabled by default
   webhook:
