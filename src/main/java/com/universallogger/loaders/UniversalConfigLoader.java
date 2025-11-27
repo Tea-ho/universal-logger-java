@@ -12,26 +12,21 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 설정 로더 구현체
+ * 범용 설정 로더 구현체
  *
  * YAML, JSON, XML 포맷을 모두 지원하는 설정 로더입니다.
  * 파일 확장자에 따라 적절한 ConfigParser를 선택하여 파싱합니다.
  * 기본적으로 defaults.yml과 병합하여 설정을 로드합니다.
  *
- * Strategy Pattern 적용:
- * - ConfigLoader: Context (이 클래스)
- * - ConfigParser: Strategy Interface
- * - YamlParser, JsonParser, XmlParser: Concrete Strategies
- *
  * 사용법:
  * <pre>
- * ConfigLoader loader = new YamlConfigLoader();
+ * ConfigLoader loader = new UniversalConfigLoader();
  * LoggerConfig config = loader.load("logging.yml");   // YAML
  * LoggerConfig config = loader.load("logging.json");  // JSON
  * LoggerConfig config = loader.load("logging.xml");   // XML
  * </pre>
  */
-public class YamlConfigLoader implements ConfigLoader {
+public class UniversalConfigLoader implements ConfigLoader {
 
     private final Map<String, ConfigParser> parsers;
     private final ConfigParser defaultParser;
@@ -41,7 +36,7 @@ public class YamlConfigLoader implements ConfigLoader {
      *
      * YAML, JSON, XML 파서를 등록합니다.
      */
-    public YamlConfigLoader() {
+    public UniversalConfigLoader() {
         this.parsers = new HashMap<String, ConfigParser>();
         this.defaultParser = new YamlParser();
 
@@ -59,7 +54,7 @@ public class YamlConfigLoader implements ConfigLoader {
      * @param parsers 확장자별 파서 맵
      * @param defaultParser 기본 파서
      */
-    public YamlConfigLoader(Map<String, ConfigParser> parsers, ConfigParser defaultParser) {
+    public UniversalConfigLoader(Map<String, ConfigParser> parsers, ConfigParser defaultParser) {
         this.parsers = parsers;
         this.defaultParser = defaultParser;
     }
