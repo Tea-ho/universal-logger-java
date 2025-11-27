@@ -5,7 +5,7 @@ import com.universallogger.appenders.DefaultAppenderFactory;
 import com.universallogger.config.LoggerConfig;
 import com.universallogger.constants.LoggerConstants;
 import com.universallogger.filters.SensitiveDataFilter;
-import com.universallogger.loaders.YamlConfigLoader;
+import com.universallogger.loaders.UniversalConfigLoader;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,7 +70,7 @@ public class LoggerInstance {
         // ConfigLoader 설정 (주입 또는 기본값)
         this.configLoader = builder.configLoader != null
             ? builder.configLoader
-            : new YamlConfigLoader();
+            : new UniversalConfigLoader();
 
         // Config 설정 (방어적 복사 적용 - 외부 변경으로부터 보호)
         if (builder.config != null) {
