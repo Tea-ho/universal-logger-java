@@ -404,11 +404,24 @@ public class SqlCaptureProxy implements DataSource {
         private final PreparedStatement targetPreparedStatement;
         private final String sql;
         private final java.util.Map<Integer, Object> parameters = new java.util.HashMap<>();
+        private final boolean useParameterSubstitution;
 
         public SqlCapturePreparedStatement(PreparedStatement targetPreparedStatement, String sql) {
             super(targetPreparedStatement);
             this.targetPreparedStatement = targetPreparedStatement;
             this.sql = sql;
+
+            // 생성자에서 한 번만 설정 읽기 (성능 최적화)
+            boolean substitution = false;
+            try {
+                com.universallogger.config.LoggerConfig config = UniversalLogger.getConfig();
+                if (config != null && config.getSql() != null) {
+                    substitution = config.getSql().isParameterSubstitution();
+                }
+            } catch (Exception e) {
+                // 설정을 가져올 수 없는 경우 기본 동작 (OFF)
+            }
+            this.useParameterSubstitution = substitution;
         }
 
         @Override
@@ -560,20 +573,9 @@ public class SqlCaptureProxy implements DataSource {
         private void logAllResults(String callerInfo, int rowCount, int updateCount, long executionTime) {
             StringBuilder sb = new StringBuilder();
 
-            // 설정 확인
-            boolean useSubstitution = false;
-            try {
-                com.universallogger.config.LoggerConfig config = UniversalLogger.getConfig();
-                if (config != null && config.getSql() != null) {
-                    useSubstitution = config.getSql().isParameterSubstitution();
-                }
-            } catch (Exception e) {
-                // 설정을 가져올 수 없는 경우 기본 동작 (OFF)
-            }
-
-            // 1. SQL + Parameters
+            // 1. SQL + Parameters (생성자에서 읽은 설정 사용)
             String formattedSql = formatSql(sql);
-            if (useSubstitution && !parameters.isEmpty()) {
+            if (useParameterSubstitution && !parameters.isEmpty()) {
                 // ON: 파라미터 치환된 SQL 출력
                 String substitutedSql = substituteParameters(formattedSql, parameters);
                 sb.append("[SQL] ").append(substitutedSql).append("\n");
