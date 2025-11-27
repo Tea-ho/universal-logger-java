@@ -492,18 +492,100 @@ public class SqlCaptureProxy implements DataSource {
         }
 
         /**
+         * 파라미터 값을 SQL 문자열로 포맷팅
+         * 타입에 따라 적절한 형식으로 변환
+         */
+        private String formatParameter(Object value) {
+            if (value == null) {
+                return "NULL";
+            }
+
+            // String - 작은따옴표로 감싸고 내부 작은따옴표는 이스케이프
+            if (value instanceof String) {
+                return "'" + ((String) value).replace("'", "''") + "'";
+            }
+
+            // Date/Time - 작은따옴표로 감싸기
+            if (value instanceof java.sql.Date || value instanceof java.sql.Time ||
+                value instanceof java.sql.Timestamp || value instanceof java.util.Date) {
+                return "'" + value.toString() + "'";
+            }
+
+            // byte[] - BLOB 표시
+            if (value instanceof byte[]) {
+                return "[BLOB: " + ((byte[]) value).length + " bytes]";
+            }
+
+            // Number, Boolean - 그대로 출력
+            return value.toString();
+        }
+
+        /**
+         * SQL의 ? 플레이스홀더를 실제 파라미터 값으로 치환
+         */
+        private String substituteParameters(String sql, java.util.Map<Integer, Object> params) {
+            if (params == null || params.isEmpty()) {
+                return sql;
+            }
+
+            StringBuilder result = new StringBuilder();
+            int currentPos = 0;
+            int paramIndex = 1;
+
+            for (int i = 0; i < sql.length(); i++) {
+                if (sql.charAt(i) == '?') {
+                    // ? 이전까지의 문자열 추가
+                    result.append(sql, currentPos, i);
+
+                    // 파라미터 값 치환
+                    Object paramValue = params.get(paramIndex);
+                    result.append(formatParameter(paramValue));
+
+                    paramIndex++;
+                    currentPos = i + 1;
+                }
+            }
+
+            // 남은 문자열 추가
+            if (currentPos < sql.length()) {
+                result.append(sql, currentPos, sql.length());
+            }
+
+            return result.toString();
+        }
+
+        /**
          * SQL 실행 결과를 한 번에 로깅 (멀티스레드 환경에서 로그가 섞이지 않도록)
          */
         private void logAllResults(String callerInfo, int rowCount, int updateCount, long executionTime) {
             StringBuilder sb = new StringBuilder();
 
+            // 설정 확인
+            boolean useSubstitution = false;
+            try {
+                com.universallogger.config.LoggerConfig config = UniversalLogger.getConfig();
+                if (config != null && config.getSql() != null) {
+                    useSubstitution = config.getSql().isParameterSubstitution();
+                }
+            } catch (Exception e) {
+                // 설정을 가져올 수 없는 경우 기본 동작 (OFF)
+            }
+
             // 1. SQL + Parameters
             String formattedSql = formatSql(sql);
-            sb.append("[SQL] ").append(formattedSql);
-            if (!parameters.isEmpty()) {
-                sb.append(" | Parameters: ").append(parameters);
+            if (useSubstitution && !parameters.isEmpty()) {
+                // ON: 파라미터 치환된 SQL 출력
+                String substitutedSql = substituteParameters(formattedSql, parameters);
+                sb.append("[SQL] ").append(substitutedSql).append("\n");
+                sb.append("[SQL-PARAMS] Original: ").append(parameters).append("\n");
+            } else {
+                // OFF: 기존 형식 (? + Parameters)
+                sb.append("[SQL] ").append(formattedSql);
+                if (!parameters.isEmpty()) {
+                    sb.append(" | Parameters: ").append(parameters);
+                }
+                sb.append("\n");
             }
-            sb.append("\n");
 
             // 2. Row Count or Update Count
             if (rowCount >= 0) {
