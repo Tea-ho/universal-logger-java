@@ -2,6 +2,8 @@ package com.universallogger.spring;
 
 import com.universallogger.UniversalLogger;
 import com.universallogger.sql.SqlCaptureProxy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanPostProcessor;
@@ -28,6 +30,8 @@ import java.io.File;
 @Configuration
 public class UniversalLoggerConfiguration implements BeanPostProcessor {
 
+    private static final Logger logger = LoggerFactory.getLogger(UniversalLoggerConfiguration.class);
+
     @Value("${spring.application.name:application}")
     private String applicationName;
 
@@ -50,7 +54,7 @@ public class UniversalLoggerConfiguration implements BeanPostProcessor {
             File logDir = new File(logPath);
             if (!logDir.exists()) {
                 logDir.mkdirs();
-                System.out.println("[UniversalLogger] Created log directory: " + logPath);
+                logger.info("Created log directory: {}", logPath);
             }
 
             // 설정 파일 로드
@@ -58,17 +62,16 @@ public class UniversalLoggerConfiguration implements BeanPostProcessor {
             if (resource.exists()) {
                 File config = resource.getFile();
                 UniversalLogger.init(config.getAbsolutePath());
-                System.out.println("[UniversalLogger] Initialized with config: " + config.getAbsolutePath());
+                logger.info("Initialized with config: {}", config.getAbsolutePath());
 
                 UniversalLogger.info("[UniversalLogger] Active for project: " + projectName);
                 UniversalLogger.info("[UniversalLogger] Log directory: " + logPath);
             } else {
-                System.out.println("[UniversalLogger] Config file not found: " + configFile);
-                System.out.println("[UniversalLogger] Using default configuration");
+                logger.info("Config file not found: {}", configFile);
+                logger.info("Using default configuration");
             }
         } catch (Exception e) {
-            System.err.println("[UniversalLogger] Initialization failed: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Initialization failed", e);
         }
     }
 
@@ -80,7 +83,7 @@ public class UniversalLoggerConfiguration implements BeanPostProcessor {
                     return bean;
                 }
 
-                System.out.println("[UniversalLogger] Wrapping DataSource: " + beanName);
+                logger.info("Wrapping DataSource: {}", beanName);
                 UniversalLogger.info("[UniversalLogger] SQL logging enabled");
 
                 dataSourceWrapped = true;

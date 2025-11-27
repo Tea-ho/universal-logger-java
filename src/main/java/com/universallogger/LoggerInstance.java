@@ -48,6 +48,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class LoggerInstance {
 
+    private static final Logger logger = LoggerFactory.getLogger(LoggerInstance.class);
+
     private final LoggerConfig config;
     private final LoggerContext loggerContext;
     private final Map<String, Logger> loggers;
@@ -97,8 +99,7 @@ public class LoggerInstance {
         try {
             return configLoader.load(configPath);
         } catch (Exception e) {
-            System.err.println("[LoggerInstance] Failed to load config: " + configPath);
-            System.err.println("Error: " + e.getMessage());
+            logger.error("Failed to load config: {}", configPath, e);
             return createDefaultConfig();
         }
     }
@@ -162,7 +163,7 @@ public class LoggerInstance {
 
             return true;
         } catch (Exception e) {
-            System.err.println("[LoggerInstance] Failed to setup logging: " + e.getMessage());
+            logger.error("Failed to setup logging", e);
             return false;
         }
     }

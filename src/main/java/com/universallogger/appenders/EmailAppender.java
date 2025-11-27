@@ -32,7 +32,7 @@ public class EmailAppender extends AppenderBase<ILoggingEvent> {
 
         // 수신자가 없으면 설정하지 않음
         if (emailConfig.getTo() == null || emailConfig.getTo().length == 0) {
-            System.err.println("⚠️  Email appender: No recipients configured. Email notifications disabled.");
+            addWarn("Email appender: No recipients configured. Email notifications disabled.");
             return;
         }
 
@@ -69,9 +69,9 @@ public class EmailAppender extends AppenderBase<ILoggingEvent> {
                     );
                 }
             });
-            System.out.println("✅ Email appender configured successfully");
+            addInfo("Email appender configured successfully");
         } catch (Exception e) {
-            System.err.println("⚠️  Email appender setup failed: " + e.getMessage());
+            addError("Email appender setup failed: " + e.getMessage(), e);
         }
     }
 
