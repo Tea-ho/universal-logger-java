@@ -4,6 +4,7 @@ import com.universallogger.config.LoggerConfig;
 import com.universallogger.constants.LoggerConstants;
 
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 
@@ -32,6 +33,8 @@ import java.io.File;
  * </pre>
  */
 public final class UniversalLogger {
+
+    private static final Logger logger = LoggerFactory.getLogger(UniversalLogger.class);
 
     /**
      * Bill Pugh Singleton Holder - Thread-safe lazy initialization
@@ -70,7 +73,7 @@ public final class UniversalLogger {
                     if (path.startsWith("classpath:")) {
                         String resourcePath = path.substring("classpath:".length());
                         if (UniversalLogger.class.getClassLoader().getResource(resourcePath) != null) {
-                            System.out.println("[Universal Logger] Auto-detected config: " + path);
+                            logger.info("Auto-detected config: {}", path);
                             return LoggerInstance.builder()
                                 .configPath(path)
                                 .build();
@@ -78,7 +81,7 @@ public final class UniversalLogger {
                     } else {
                         File file = new File(path);
                         if (file.exists()) {
-                            System.out.println("[Universal Logger] Auto-detected config: " + path);
+                            logger.info("Auto-detected config: {}", path);
                             return LoggerInstance.builder()
                                 .configPath(path)
                                 .build();
@@ -91,7 +94,7 @@ public final class UniversalLogger {
             }
 
             // 설정 파일을 찾지 못한 경우 기본 설정
-            System.out.println("[Universal Logger] No config file found. Using default settings.");
+            logger.info("No config file found. Using default settings.");
             return LoggerInstance.builder().build();
         }
     }
@@ -124,16 +127,14 @@ public final class UniversalLogger {
      */
     public static synchronized void init(String configPath) {
         if (InstanceHolder.explicitlyInitialized) {
-            System.out.println("[Universal Logger] Re-initializing with config: " + configPath);
+            logger.info("Re-initializing with config: {}", configPath);
         }
 
         try {
             InstanceHolder.initialize(configPath);
-            System.out.println("[Universal Logger] Initialized with config: " + configPath);
+            logger.info("Initialized with config: {}", configPath);
         } catch (Exception e) {
-            System.err.println("[Universal Logger] Failed to initialize with config: " + configPath);
-            System.err.println("Error: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Failed to initialize with config: {}", configPath, e);
         }
     }
 
@@ -144,7 +145,7 @@ public final class UniversalLogger {
      */
     public static synchronized void init(LoggerConfig config) {
         InstanceHolder.initialize(config);
-        System.out.println("[Universal Logger] Initialized with config object.");
+        logger.info("Initialized with config object.");
     }
 
     // ========== 인스턴스 생성 (DI용) ==========

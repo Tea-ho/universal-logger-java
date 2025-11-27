@@ -1,6 +1,8 @@
 package com.universallogger.spring;
 
 import com.universallogger.UniversalLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -18,6 +20,8 @@ import java.io.File;
 @ConditionalOnClass(DataSource.class)
 @EnableConfigurationProperties(UniversalLoggerProperties.class)
 public class UniversalLoggerAutoConfiguration {
+
+    private static final Logger logger = LoggerFactory.getLogger(UniversalLoggerAutoConfiguration.class);
 
     @Value("${spring.application.name:application}")
     private String applicationName;
@@ -54,8 +58,7 @@ public class UniversalLoggerAutoConfiguration {
             UniversalLogger.info("[UniversalLogger] Log directory: " + logPath);
 
         } catch (Exception e) {
-            System.err.println("[UniversalLogger] Failed to initialize: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Failed to initialize", e);
         }
     }
 

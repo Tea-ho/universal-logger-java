@@ -2,6 +2,9 @@ package com.universallogger.appenders.database;
 
 import com.universallogger.config.LoggerConfig.DatabaseConfig;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -12,6 +15,8 @@ import java.sql.Statement;
  * 공통 로직을 구현하고 DB별 차이는 하위 클래스에서 구현
  */
 public abstract class AbstractDatabaseConnection implements DatabaseConnection {
+
+    private static final Logger logger = LoggerFactory.getLogger(AbstractDatabaseConnection.class);
 
     protected final DatabaseConfig config;
     protected Connection connection;
@@ -47,7 +52,7 @@ public abstract class AbstractDatabaseConnection implements DatabaseConnection {
                     connection.close();
                 }
             } catch (SQLException e) {
-                System.err.println("Failed to close database connection: " + e.getMessage());
+                logger.error("Failed to close database connection", e);
             }
         }
     }
@@ -66,7 +71,7 @@ public abstract class AbstractDatabaseConnection implements DatabaseConnection {
         try (Connection conn = getConnection()) {
             return conn != null && !conn.isClosed();
         } catch (SQLException e) {
-            System.err.println("Database connection test failed: " + e.getMessage());
+            logger.error("Database connection test failed", e);
             return false;
         }
     }

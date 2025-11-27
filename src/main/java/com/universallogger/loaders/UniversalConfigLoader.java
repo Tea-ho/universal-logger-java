@@ -6,6 +6,9 @@ import com.universallogger.parsers.YamlParser;
 import com.universallogger.parsers.JsonParser;
 import com.universallogger.parsers.XmlParser;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -27,6 +30,8 @@ import java.util.Map;
  * </pre>
  */
 public class UniversalConfigLoader implements ConfigLoader {
+
+    private static final Logger logger = LoggerFactory.getLogger(UniversalConfigLoader.class);
 
     private final Map<String, ConfigParser> parsers;
     private final ConfigParser defaultParser;
@@ -111,7 +116,7 @@ public class UniversalConfigLoader implements ConfigLoader {
             );
         }
 
-        System.out.println("[Universal Logger] Loading default configuration from JAR");
+        logger.info("Loading default configuration from JAR");
         return defaultParser.parse(defaultStream);
     }
 
@@ -145,8 +150,7 @@ public class UniversalConfigLoader implements ConfigLoader {
         ConfigParser parser = parsers.get(extension.toLowerCase());
 
         if (parser == null) {
-            System.out.println("[Universal Logger] Unknown file extension: " + extension +
-                             ", using default YAML parser");
+            logger.warn("Unknown file extension: {}, using default YAML parser", extension);
             return defaultParser;
         }
 
