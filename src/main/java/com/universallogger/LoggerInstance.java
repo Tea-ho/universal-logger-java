@@ -4,8 +4,8 @@ import com.universallogger.appenders.AppenderFactory;
 import com.universallogger.appenders.DefaultAppenderFactory;
 import com.universallogger.config.LoggerConfig;
 import com.universallogger.constants.LoggerConstants;
-import com.universallogger.utils.ConfigLoader;
-import com.universallogger.utils.MessageFilter;
+import com.universallogger.filters.SensitiveDataFilter;
+import com.universallogger.loaders.YamlConfigLoader;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,8 +51,9 @@ public class LoggerInstance {
     private final LoggerConfig config;
     private final LoggerContext loggerContext;
     private final Map<String, Logger> loggers;
-    private final MessageFilter messageFilter;
+    private final com.universallogger.filters.MessageFilter messageFilter;
     private final AppenderFactory appenderFactory;
+    private final com.universallogger.loaders.ConfigLoader configLoader;
     private final boolean initialized;
 
     /**
@@ -66,6 +67,11 @@ public class LoggerInstance {
             ? builder.appenderFactory
             : new DefaultAppenderFactory();
 
+        // ConfigLoader 설정 (주입 또는 기본값)
+        this.configLoader = builder.configLoader != null
+            ? builder.configLoader
+            : new YamlConfigLoader();
+
         // Config 설정 (방어적 복사 적용 - 외부 변경으로부터 보호)
         if (builder.config != null) {
             this.config = builder.config.copy();
@@ -75,8 +81,12 @@ public class LoggerInstance {
             this.config = createDefaultConfig();
         }
 
+        // MessageFilter 설정 (주입 또는 기본값)
+        this.messageFilter = builder.messageFilter != null
+            ? builder.messageFilter
+            : new SensitiveDataFilter(this.config.getFilters());
+
         this.loggerContext = initLoggerContext();
-        this.messageFilter = new MessageFilter(this.config.getFilters());
         this.initialized = setupLogging();
     }
 
@@ -85,7 +95,7 @@ public class LoggerInstance {
      */
     private LoggerConfig loadConfig(String configPath) {
         try {
-            return ConfigLoader.load(configPath);
+            return configLoader.load(configPath);
         } catch (Exception e) {
             System.err.println("[LoggerInstance] Failed to load config: " + configPath);
             System.err.println("Error: " + e.getMessage());
@@ -337,12 +347,16 @@ public class LoggerInstance {
      *
      * DI(의존성 주입) 지원:
      * - AppenderFactory 주입 가능 (테스트 시 Mock 주입)
+     * - ConfigLoader 주입 가능 (테스트 시 Mock 주입)
+     * - MessageFilter 주입 가능 (테스트 시 Mock 주입)
      * - Config 또는 configPath 지정 가능
      */
     public static class Builder {
         private String configPath;
         private LoggerConfig config;
         private AppenderFactory appenderFactory;
+        private com.universallogger.loaders.ConfigLoader configLoader;
+        private com.universallogger.filters.MessageFilter messageFilter;
 
         private Builder() {}
 
@@ -369,6 +383,26 @@ public class LoggerInstance {
          */
         public Builder appenderFactory(AppenderFactory appenderFactory) {
             this.appenderFactory = appenderFactory;
+            return this;
+        }
+
+        /**
+         * 커스텀 ConfigLoader 지정 (DI/테스트용)
+         *
+         * @param configLoader 사용할 ConfigLoader 구현체
+         */
+        public Builder configLoader(com.universallogger.loaders.ConfigLoader configLoader) {
+            this.configLoader = configLoader;
+            return this;
+        }
+
+        /**
+         * 커스텀 MessageFilter 지정 (DI/테스트용)
+         *
+         * @param messageFilter 사용할 MessageFilter 구현체
+         */
+        public Builder messageFilter(com.universallogger.filters.MessageFilter messageFilter) {
+            this.messageFilter = messageFilter;
             return this;
         }
 
