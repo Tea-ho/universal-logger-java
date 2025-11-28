@@ -40,11 +40,15 @@ outputs:
       compress: true
 
   # Error file - enabled by default
-  errorFile:
+  error_file:
     enabled: true
     level: "ERROR"
     path: "C:/log/{appName}/error.log"
     format: "[{timestamp}] {level} - {logger} | {message} | {exception}"
+    rotation:
+      maxSize: "50MB"
+      maxFiles: 30
+      compress: true
 
   # Webhook - disabled by default
   webhook:
