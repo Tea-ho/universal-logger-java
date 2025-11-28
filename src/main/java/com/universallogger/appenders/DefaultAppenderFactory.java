@@ -119,11 +119,27 @@ public class DefaultAppenderFactory implements AppenderFactory {
         appender.setContext(context);
         appender.setName("ERROR_FILE");
 
+        // 파일 경로 설정
         String filePath = replacePlaceholders(outputConfig.getPath(), appName);
         appender.setFile(filePath);
 
-        // 임계값 필터 추가 (에러 레벨 이상만)
-        addThresholdFilter(appender, outputConfig.getLevel());
+        // 롤링 정책 설정
+        SizeAndTimeBasedRollingPolicy<ILoggingEvent> rollingPolicy =
+            new SizeAndTimeBasedRollingPolicy<>();
+        rollingPolicy.setContext(context);
+        rollingPolicy.setParent(appender);
+        rollingPolicy.setFileNamePattern(filePath + ".%d{yyyy-MM-dd}.%i.gz");
+
+        if (outputConfig.getRotation() != null) {
+            rollingPolicy.setMaxFileSize(FileSize.valueOf(outputConfig.getRotation().getMaxSize()));
+            rollingPolicy.setMaxHistory(outputConfig.getRotation().getMaxFiles());
+        } else {
+            rollingPolicy.setMaxFileSize(FileSize.valueOf("10MB"));
+            rollingPolicy.setMaxHistory(30);
+        }
+        rollingPolicy.start();
+
+        appender.setRollingPolicy(rollingPolicy);
 
         // 포맷터 설정
         CustomFormatter formatter = new CustomFormatter();
@@ -132,6 +148,10 @@ public class DefaultAppenderFactory implements AppenderFactory {
         formatter.start();
 
         appender.setEncoder(formatter);
+
+        // 임계값 필터 추가 (에러 레벨 이상만)
+        addThresholdFilter(appender, outputConfig.getLevel());
+
         appender.start();
         return appender;
     }
