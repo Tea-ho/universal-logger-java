@@ -51,6 +51,9 @@ outputs:
       compress: true
 
   # Webhook - disabled by default
+  # 방화벽/네트워크 문제로 운영 시 동작이 안될 수 있음.
+  # 필요 시, 대상 도메인: hooks.slack.com, 포트: 443 (HTTPS), 방향: Outbound로 연결 허용 요청 또는 프록시 서버 설정 수정
+  # 사용이 어려운 경우, email 기능 사용
   webhook:
     enabled: false
     level: "ERROR"
@@ -59,6 +62,12 @@ outputs:
       format: "🚨 *{level}* in {appName}\\n*Logger:* {logger}\\n*Message:* {message}"
 
   # Email - disabled by default
+  # Interface IIT 기본 폼
+  # host: "smtps.hiworks.com"
+  # port: 465
+  # username: 아이디@interfaceit.co.kr
+  # passowrd: 비밀번호
+  # to: 받는사람
   email:
     enabled: false
     level: "ERROR"
