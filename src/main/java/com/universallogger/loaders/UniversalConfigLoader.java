@@ -73,7 +73,7 @@ public class UniversalConfigLoader implements ConfigLoader {
     public LoggerConfig load(String configPath, boolean mergeDefaults) throws Exception {
         LoggerConfig userConfig;
 
-        // 클래스패스 리소스 처리
+        // "classpath:" 프리픽스가 명시된 경우 (backward compatibility)
         if (configPath.startsWith("classpath:")) {
             String resourcePath = configPath.substring("classpath:".length());
             InputStream inputStream = getClass().getClassLoader().getResourceAsStream(resourcePath);
@@ -83,15 +83,41 @@ public class UniversalConfigLoader implements ConfigLoader {
 
             String extension = getFileExtension(resourcePath).toLowerCase();
             userConfig = parseFromStream(inputStream, extension);
-        } else {
-            // 파일 시스템 처리
-            File configFile = new File(configPath);
+        }
+        // "file:" 프리픽스가 명시된 경우
+        else if (configPath.startsWith("file:")) {
+            String filePath = configPath.substring("file:".length());
+            File configFile = new File(filePath);
             if (!configFile.exists()) {
-                throw new IllegalArgumentException("Config file not found: " + configPath);
+                throw new IllegalArgumentException("File not found: " + filePath);
             }
 
-            String extension = getFileExtension(configPath).toLowerCase();
+            String extension = getFileExtension(filePath).toLowerCase();
             userConfig = parseFromFile(configFile, extension);
+        }
+        // 프리픽스가 없는 경우: 스마트 탐색 (classpath 우선, file system fallback)
+        else {
+            // 1. 클래스패스에서 먼저 시도
+            InputStream inputStream = getClass().getClassLoader().getResourceAsStream(configPath);
+
+            if (inputStream != null) {
+                logger.info("Initialized with config: classpath:" + configPath);
+                String extension = getFileExtension(configPath).toLowerCase();
+                userConfig = parseFromStream(inputStream, extension);
+            }
+            // 2. 클래스패스에 없으면 파일 시스템에서 시도
+            else {
+                File configFile = new File(configPath);
+                if (configFile.exists()) {
+                    logger.info("Initialized with config: file:" + configPath);
+                    String extension = getFileExtension(configPath).toLowerCase();
+                    userConfig = parseFromFile(configFile, extension);
+                } else {
+                    throw new IllegalArgumentException(
+                        "Config file not found in classpath or file system: " + configPath
+                    );
+                }
+            }
         }
 
         // Merge with defaults if requested

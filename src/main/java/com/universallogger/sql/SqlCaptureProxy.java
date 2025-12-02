@@ -1,5 +1,6 @@
 package com.universallogger.sql;
 
+import com.universallogger.LoggerInstance;
 import com.universallogger.UniversalLogger;
 
 import javax.sql.DataSource;
@@ -10,31 +11,60 @@ import java.util.logging.Logger;
 /**
  * DataSource Proxy for automatic SQL capture
  * Works with any database (MySQL, Oracle, MSSQL, MongoDB JDBC, etc.)
+ *
+ * Supports both static API and instance-based approach:
+ * - Static API: new SqlCaptureProxy(dataSource) - uses UniversalLogger singleton
+ * - Instance-based: new SqlCaptureProxy(dataSource, loggerInstance) - uses injected instance
  */
 public class SqlCaptureProxy implements DataSource {
 
     private final DataSource targetDataSource;
     private final boolean enabled;
+    private final LoggerInstance loggerInstance;
 
+    /**
+     * Constructor with static API (backward compatibility)
+     */
     public SqlCaptureProxy(DataSource targetDataSource) {
-        this(targetDataSource, true);
+        this(targetDataSource, true, null);
     }
 
+    /**
+     * Constructor with static API and enabled flag (backward compatibility)
+     */
     public SqlCaptureProxy(DataSource targetDataSource, boolean enabled) {
+        this(targetDataSource, enabled, null);
+    }
+
+    /**
+     * Constructor with instance-based LoggerInstance (recommended)
+     *
+     * @param targetDataSource The actual DataSource to wrap
+     * @param loggerInstance The LoggerInstance to use for logging
+     */
+    public SqlCaptureProxy(DataSource targetDataSource, LoggerInstance loggerInstance) {
+        this(targetDataSource, true, loggerInstance);
+    }
+
+    /**
+     * Full constructor (internal use)
+     */
+    private SqlCaptureProxy(DataSource targetDataSource, boolean enabled, LoggerInstance loggerInstance) {
         this.targetDataSource = targetDataSource;
         this.enabled = enabled;
+        this.loggerInstance = loggerInstance;
     }
 
     @Override
     public Connection getConnection() throws SQLException {
         Connection connection = targetDataSource.getConnection();
-        return enabled ? new SqlCaptureConnection(connection) : connection;
+        return enabled ? new SqlCaptureConnection(connection, loggerInstance) : connection;
     }
 
     @Override
     public Connection getConnection(String username, String password) throws SQLException {
         Connection connection = targetDataSource.getConnection(username, password);
-        return enabled ? new SqlCaptureConnection(connection) : connection;
+        return enabled ? new SqlCaptureConnection(connection, loggerInstance) : connection;
     }
 
     // Delegate methods
@@ -81,14 +111,16 @@ public class SqlCaptureProxy implements DataSource {
      */
     private static class SqlCaptureConnection implements Connection {
         private final Connection targetConnection;
+        private final LoggerInstance loggerInstance;
 
-        public SqlCaptureConnection(Connection targetConnection) {
+        public SqlCaptureConnection(Connection targetConnection, LoggerInstance loggerInstance) {
             this.targetConnection = targetConnection;
+            this.loggerInstance = loggerInstance;
         }
 
         @Override
         public Statement createStatement() throws SQLException {
-            return new SqlCaptureStatement(targetConnection.createStatement());
+            return new SqlCaptureStatement(targetConnection.createStatement(), loggerInstance);
         }
 
         @Override
@@ -97,17 +129,18 @@ public class SqlCaptureProxy implements DataSource {
             try {
                 return new SqlCapturePreparedStatement(
                     targetConnection.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY),
-                    sql
+                    sql,
+                    loggerInstance
                 );
             } catch (SQLException e) {
                 // Fallback to default if scrollable not supported
-                return new SqlCapturePreparedStatement(targetConnection.prepareStatement(sql), sql);
+                return new SqlCapturePreparedStatement(targetConnection.prepareStatement(sql), sql, loggerInstance);
             }
         }
 
         @Override
         public CallableStatement prepareCall(String sql) throws SQLException {
-            return new SqlCaptureCallableStatement(targetConnection.prepareCall(sql), sql);
+            return new SqlCaptureCallableStatement(targetConnection.prepareCall(sql), sql, loggerInstance);
         }
 
         // Delegate all other methods
@@ -126,15 +159,16 @@ public class SqlCaptureProxy implements DataSource {
         @Override public int getTransactionIsolation() throws SQLException { return targetConnection.getTransactionIsolation(); }
         @Override public SQLWarning getWarnings() throws SQLException { return targetConnection.getWarnings(); }
         @Override public void clearWarnings() throws SQLException { targetConnection.clearWarnings(); }
-        @Override public Statement createStatement(int resultSetType, int resultSetConcurrency) throws SQLException { return new SqlCaptureStatement(targetConnection.createStatement(resultSetType, resultSetConcurrency)); }
+        @Override public Statement createStatement(int resultSetType, int resultSetConcurrency) throws SQLException { return new SqlCaptureStatement(targetConnection.createStatement(resultSetType, resultSetConcurrency), loggerInstance); }
         @Override public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
             // Force SCROLLABLE result set for row counting
             return new SqlCapturePreparedStatement(
                 targetConnection.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY),
-                sql
+                sql,
+                loggerInstance
             );
         }
-        @Override public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency) throws SQLException { return new SqlCaptureCallableStatement(targetConnection.prepareCall(sql, resultSetType, resultSetConcurrency), sql); }
+        @Override public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency) throws SQLException { return new SqlCaptureCallableStatement(targetConnection.prepareCall(sql, resultSetType, resultSetConcurrency), sql, loggerInstance); }
         @Override public java.util.Map<String, Class<?>> getTypeMap() throws SQLException { return targetConnection.getTypeMap(); }
         @Override public void setTypeMap(java.util.Map<String, Class<?>> map) throws SQLException { targetConnection.setTypeMap(map); }
         @Override public void setHoldability(int holdability) throws SQLException { targetConnection.setHoldability(holdability); }
@@ -143,12 +177,12 @@ public class SqlCaptureProxy implements DataSource {
         @Override public Savepoint setSavepoint(String name) throws SQLException { return targetConnection.setSavepoint(name); }
         @Override public void rollback(Savepoint savepoint) throws SQLException { targetConnection.rollback(savepoint); }
         @Override public void releaseSavepoint(Savepoint savepoint) throws SQLException { targetConnection.releaseSavepoint(savepoint); }
-        @Override public Statement createStatement(int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException { return new SqlCaptureStatement(targetConnection.createStatement(resultSetType, resultSetConcurrency, resultSetHoldability)); }
-        @Override public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException { return new SqlCapturePreparedStatement(targetConnection.prepareStatement(sql, resultSetType, resultSetConcurrency, resultSetHoldability), sql); }
-        @Override public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException { return new SqlCaptureCallableStatement(targetConnection.prepareCall(sql, resultSetType, resultSetConcurrency, resultSetHoldability), sql); }
-        @Override public PreparedStatement prepareStatement(String sql, int autoGeneratedKeys) throws SQLException { return new SqlCapturePreparedStatement(targetConnection.prepareStatement(sql, autoGeneratedKeys), sql); }
-        @Override public PreparedStatement prepareStatement(String sql, int[] columnIndexes) throws SQLException { return new SqlCapturePreparedStatement(targetConnection.prepareStatement(sql, columnIndexes), sql); }
-        @Override public PreparedStatement prepareStatement(String sql, String[] columnNames) throws SQLException { return new SqlCapturePreparedStatement(targetConnection.prepareStatement(sql, columnNames), sql); }
+        @Override public Statement createStatement(int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException { return new SqlCaptureStatement(targetConnection.createStatement(resultSetType, resultSetConcurrency, resultSetHoldability), loggerInstance); }
+        @Override public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException { return new SqlCapturePreparedStatement(targetConnection.prepareStatement(sql, resultSetType, resultSetConcurrency, resultSetHoldability), sql, loggerInstance); }
+        @Override public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException { return new SqlCaptureCallableStatement(targetConnection.prepareCall(sql, resultSetType, resultSetConcurrency, resultSetHoldability), sql, loggerInstance); }
+        @Override public PreparedStatement prepareStatement(String sql, int autoGeneratedKeys) throws SQLException { return new SqlCapturePreparedStatement(targetConnection.prepareStatement(sql, autoGeneratedKeys), sql, loggerInstance); }
+        @Override public PreparedStatement prepareStatement(String sql, int[] columnIndexes) throws SQLException { return new SqlCapturePreparedStatement(targetConnection.prepareStatement(sql, columnIndexes), sql, loggerInstance); }
+        @Override public PreparedStatement prepareStatement(String sql, String[] columnNames) throws SQLException { return new SqlCapturePreparedStatement(targetConnection.prepareStatement(sql, columnNames), sql, loggerInstance); }
         @Override public Clob createClob() throws SQLException { return targetConnection.createClob(); }
         @Override public Blob createBlob() throws SQLException { return targetConnection.createBlob(); }
         @Override public NClob createNClob() throws SQLException { return targetConnection.createNClob(); }
@@ -174,10 +208,12 @@ public class SqlCaptureProxy implements DataSource {
      * Statement wrapper for SQL capture
      */
     private static class SqlCaptureStatement implements Statement {
-        private final Statement targetStatement;
+        protected final Statement targetStatement;
+        protected final LoggerInstance loggerInstance;
 
-        public SqlCaptureStatement(Statement targetStatement) {
+        public SqlCaptureStatement(Statement targetStatement, LoggerInstance loggerInstance) {
             this.targetStatement = targetStatement;
+            this.loggerInstance = loggerInstance;
         }
 
         @Override
@@ -207,7 +243,11 @@ public class SqlCaptureProxy implements DataSource {
                         rowCount = rs.getRow();
                         rs.beforeFirst();
                         if (rowCount >= 0) {
-                            UniversalLogger.getLogger(callerInfo).info("[SQL-ROWS] Total: " + rowCount);
+                            if (loggerInstance != null) {
+                                loggerInstance.getLogger(callerInfo).info("[SQL-ROWS] Total: " + rowCount);
+                            } else {
+                                UniversalLogger.getLogger(callerInfo).info("[SQL-ROWS] Total: " + rowCount);
+                            }
                         }
                     }
                 } catch (SQLException e) {
@@ -215,7 +255,7 @@ public class SqlCaptureProxy implements DataSource {
                 }
 
                 // Wrap ResultSet to count rows for forward-only ResultSets
-                return new RowCountingResultSet(rs, callerInfo);
+                return new RowCountingResultSet(rs, callerInfo, loggerInstance);
             } finally {
                 logExecutionTime(sql, System.currentTimeMillis() - start);
             }
@@ -230,7 +270,11 @@ public class SqlCaptureProxy implements DataSource {
                 // Log update count
                 if (updateCount != -1) {
                     String callerInfo = getCallerInfo();
-                    UniversalLogger.getLogger(callerInfo).info("[SQL-ROWS] Updates: " + updateCount);
+                    if (loggerInstance != null) {
+                        loggerInstance.getLogger(callerInfo).info("[SQL-ROWS] Updates: " + updateCount);
+                    } else {
+                        UniversalLogger.getLogger(callerInfo).info("[SQL-ROWS] Updates: " + updateCount);
+                    }
                 }
                 return updateCount;
             } finally {
@@ -240,15 +284,29 @@ public class SqlCaptureProxy implements DataSource {
 
         private void logSql(String sql) {
             String callerInfo = getCallerInfo();
-            UniversalLogger.getLogger(callerInfo).info("[SQL] " + sql);
+            if (loggerInstance != null) {
+                loggerInstance.getLogger(callerInfo).info("[SQL] " + sql);
+            } else {
+                // Fallback to static API for backward compatibility
+                UniversalLogger.getLogger(callerInfo).info("[SQL] " + sql);
+            }
         }
 
         private void logExecutionTime(String sql, long timeMs) {
             String callerInfo = getCallerInfo();
-            if (timeMs > 1000) {
-                UniversalLogger.getLogger(callerInfo).warn("[SQL-SLOW] Execution time: " + timeMs + "ms - " + sql);
+            if (loggerInstance != null) {
+                if (timeMs > 1000) {
+                    loggerInstance.getLogger(callerInfo).warn("[SQL-SLOW] Execution time: " + timeMs + "ms - " + sql);
+                } else {
+                    loggerInstance.getLogger(callerInfo).info("[SQL-TIME] " + timeMs + "ms");
+                }
             } else {
-                UniversalLogger.getLogger(callerInfo).info("[SQL-TIME] " + timeMs + "ms");
+                // Fallback to static API for backward compatibility
+                if (timeMs > 1000) {
+                    UniversalLogger.getLogger(callerInfo).warn("[SQL-SLOW] Execution time: " + timeMs + "ms - " + sql);
+                } else {
+                    UniversalLogger.getLogger(callerInfo).info("[SQL-TIME] " + timeMs + "ms");
+                }
             }
         }
 
@@ -406,15 +464,25 @@ public class SqlCaptureProxy implements DataSource {
         private final java.util.Map<Integer, Object> parameters = new java.util.HashMap<>();
         private final boolean useParameterSubstitution;
 
-        public SqlCapturePreparedStatement(PreparedStatement targetPreparedStatement, String sql) {
-            super(targetPreparedStatement);
+        public SqlCapturePreparedStatement(PreparedStatement targetPreparedStatement, String sql, LoggerInstance loggerInstance) {
+            super(targetPreparedStatement, loggerInstance);
             this.targetPreparedStatement = targetPreparedStatement;
             this.sql = sql;
 
             // 생성자에서 한 번만 설정 읽기 (성능 최적화)
             boolean substitution = false;
             try {
-                com.universallogger.config.LoggerConfig config = UniversalLogger.getConfig();
+                com.universallogger.config.LoggerConfig config;
+                if (loggerInstance != null) {
+                    config = loggerInstance.getConfig();
+                } else {
+                    // DEBUG: loggerInstance가 null인 이유 파악
+                    System.err.println("⚠️ WARNING: SqlCapturePreparedStatement created with NULL loggerInstance!");
+                    System.err.println("⚠️ SQL: " + sql);
+                    System.err.println("⚠️ This will trigger UniversalLogger static initialization!");
+                    new Exception("Stack trace for NULL loggerInstance").printStackTrace(System.err);
+                    config = UniversalLogger.getConfig();
+                }
                 if (config != null && config.getSql() != null) {
                     substitution = config.getSql().isParameterSubstitution();
                 }
@@ -605,7 +673,12 @@ public class SqlCaptureProxy implements DataSource {
                 sb.append("[SQL-TIME] ").append(executionTime).append("ms");
             }
 
-            UniversalLogger.getLogger(callerInfo).info(sb.toString());
+            if (loggerInstance != null) {
+                loggerInstance.getLogger(callerInfo).info(sb.toString());
+            } else {
+                // Fallback to static API for backward compatibility
+                UniversalLogger.getLogger(callerInfo).info(sb.toString());
+            }
         }
 
         /**
@@ -715,8 +788,8 @@ public class SqlCaptureProxy implements DataSource {
     private static class SqlCaptureCallableStatement extends SqlCapturePreparedStatement implements CallableStatement {
         private final CallableStatement targetCallableStatement;
 
-        public SqlCaptureCallableStatement(CallableStatement targetCallableStatement, String sql) {
-            super(targetCallableStatement, sql);
+        public SqlCaptureCallableStatement(CallableStatement targetCallableStatement, String sql, LoggerInstance loggerInstance) {
+            super(targetCallableStatement, sql, loggerInstance);
             this.targetCallableStatement = targetCallableStatement;
         }
 
@@ -843,13 +916,15 @@ public class SqlCaptureProxy implements DataSource {
     private static class RowCountingResultSet implements ResultSet {
         private final ResultSet targetResultSet;
         private final String callerInfo;
+        private final LoggerInstance loggerInstance;
         private int rows = 0;
         private int currentRow = 0;
         private boolean countLogged = false;
 
-        public RowCountingResultSet(ResultSet targetResultSet, String callerInfo) {
+        public RowCountingResultSet(ResultSet targetResultSet, String callerInfo, LoggerInstance loggerInstance) {
             this.targetResultSet = targetResultSet;
             this.callerInfo = callerInfo;
+            this.loggerInstance = loggerInstance;
         }
 
         @Override
@@ -899,7 +974,11 @@ public class SqlCaptureProxy implements DataSource {
             if (!countLogged && rows > 0) {
                 countLogged = true;
                 // Log in Universal Logger style
-                UniversalLogger.getLogger(callerInfo).info("[SQL-ROWS] Total: " + rows);
+                if (loggerInstance != null) {
+                    loggerInstance.getLogger(callerInfo).info("[SQL-ROWS] Total: " + rows);
+                } else {
+                    UniversalLogger.getLogger(callerInfo).info("[SQL-ROWS] Total: " + rows);
+                }
             }
         }
 
