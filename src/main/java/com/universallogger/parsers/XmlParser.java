@@ -100,7 +100,7 @@ public class XmlParser implements ConfigParser {
             } else if ("FILE".equals(ref)) {
                 config.getOutputs().put("file", outputConfig);
             } else if ("ERROR_FILE".equals(ref)) {
-                config.getOutputs().put("error_file", outputConfig);
+                config.getOutputs().put("errorFile", outputConfig);
             }
         }
     }

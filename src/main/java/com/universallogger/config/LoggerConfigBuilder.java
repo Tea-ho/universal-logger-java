@@ -131,7 +131,7 @@ public class LoggerConfigBuilder {
      * 에러 파일 출력 설정 빌더
      */
     public FileOutputBuilder errorFile() {
-        return new FileOutputBuilder(this, "error_file");
+        return new FileOutputBuilder(this, "errorFile");
     }
 
     /**
@@ -329,7 +329,7 @@ public class LoggerConfigBuilder {
         FileOutputBuilder(LoggerConfigBuilder parent, String outputKey) {
             this.parent = parent;
             this.outputKey = outputKey;
-            if ("error_file".equals(outputKey)) {
+            if ("errorFile".equals(outputKey)) {
                 this.level = "ERROR";
                 this.path = "logs/{appName}-error.log";
             }

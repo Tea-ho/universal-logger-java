@@ -196,9 +196,9 @@ public class LoggerInstance {
         }
 
         // 에러 파일 앱펜더
-        if (isOutputEnabled(outputs, "error_file")) {
+        if (isOutputEnabled(outputs, "errorFile")) {
             Appender<ILoggingEvent> appender = appenderFactory.createErrorFileAppender(
-                loggerContext, outputs.get("error_file"), appName);
+                loggerContext, outputs.get("errorFile"), appName);
             rootLogger.addAppender(appender);
         }
 
