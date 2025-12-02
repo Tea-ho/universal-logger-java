@@ -40,7 +40,7 @@ outputs:
       compress: true
 
   # Error file - enabled by default
-  error_file:
+  errorFile:
     enabled: true
     level: "ERROR"
     path: "C:/log/{appName}/error.log"
