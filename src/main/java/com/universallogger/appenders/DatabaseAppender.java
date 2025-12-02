@@ -132,7 +132,7 @@ public class DatabaseAppender extends AppenderBase<ILoggingEvent> {
     }
 
     @Override
-    protected void append(ILoggingEvent event) {
+    protected synchronized void append(ILoggingEvent event) {
         if (insertStatement == null) {
             return;
         }

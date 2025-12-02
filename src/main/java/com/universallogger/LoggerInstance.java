@@ -49,6 +49,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class LoggerInstance {
 
     private static final Logger logger = LoggerFactory.getLogger(LoggerInstance.class);
+    private static final Object CONTEXT_LOCK = new Object();
+    private static volatile boolean contextInitialized = false;
 
     private final LoggerConfig config;
     private final LoggerContext loggerContext;
@@ -128,10 +130,22 @@ public class LoggerInstance {
 
     /**
      * LoggerContext 초기화
+     *
+     * Thread-safe: 여러 LoggerInstance가 동시에 생성되어도 context.reset()은 한 번만 실행됨
      */
     private LoggerContext initLoggerContext() {
         LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
-        context.reset();
+
+        // Double-checked locking으로 context reset 동기화
+        if (!contextInitialized) {
+            synchronized (CONTEXT_LOCK) {
+                if (!contextInitialized) {
+                    context.reset();
+                    contextInitialized = true;
+                }
+            }
+        }
+
         return context;
     }
 
