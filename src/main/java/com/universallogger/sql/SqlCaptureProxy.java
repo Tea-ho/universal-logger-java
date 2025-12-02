@@ -641,10 +641,9 @@ public class SqlCaptureProxy implements DataSource {
             // 1. SQL + Parameters (생성자에서 읽은 설정 사용)
             String formattedSql = formatSql(sql);
             if (useParameterSubstitution && !parameters.isEmpty()) {
-                // ON: 파라미터 치환된 SQL 출력
+                // ON: 파라미터 치환된 SQL 출력 (Original 파라미터는 이미 SQL에 포함되어 있으므로 생략)
                 String substitutedSql = substituteParameters(formattedSql, parameters);
                 sb.append("[SQL] ").append(substitutedSql).append("\n");
-                sb.append("[SQL-PARAMS] Original: ").append(parameters).append("\n");
             } else {
                 // OFF: 기존 형식 (? + Parameters)
                 sb.append("[SQL] ").append(formattedSql);
