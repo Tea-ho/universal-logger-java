@@ -476,11 +476,7 @@ public class SqlCaptureProxy implements DataSource {
                 if (loggerInstance != null) {
                     config = loggerInstance.getConfig();
                 } else {
-                    // DEBUG: loggerInstance가 null인 이유 파악
-                    System.err.println("⚠️ WARNING: SqlCapturePreparedStatement created with NULL loggerInstance!");
-                    System.err.println("⚠️ SQL: " + sql);
-                    System.err.println("⚠️ This will trigger UniversalLogger static initialization!");
-                    new Exception("Stack trace for NULL loggerInstance").printStackTrace(System.err);
+                    // Static API 사용 시 fallback
                     config = UniversalLogger.getConfig();
                 }
                 if (config != null && config.getSql() != null) {
