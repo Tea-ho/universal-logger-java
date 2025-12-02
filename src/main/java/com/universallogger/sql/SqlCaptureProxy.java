@@ -6,6 +6,7 @@ import com.universallogger.UniversalLogger;
 import javax.sql.DataSource;
 import java.io.PrintWriter;
 import java.sql.*;
+import java.util.Collections;
 import java.util.logging.Logger;
 
 /**
@@ -461,7 +462,7 @@ public class SqlCaptureProxy implements DataSource {
     private static class SqlCapturePreparedStatement extends SqlCaptureStatement implements PreparedStatement {
         private final PreparedStatement targetPreparedStatement;
         private final String sql;
-        private final java.util.Map<Integer, Object> parameters = new java.util.HashMap<>();
+        private final java.util.Map<Integer, Object> parameters = Collections.synchronizedMap(new java.util.HashMap<>());
         private final boolean useParameterSubstitution;
 
         public SqlCapturePreparedStatement(PreparedStatement targetPreparedStatement, String sql, LoggerInstance loggerInstance) {
