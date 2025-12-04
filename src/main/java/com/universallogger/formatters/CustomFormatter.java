@@ -60,17 +60,16 @@ public class CustomFormatter extends PatternLayoutEncoder {
 
     /**
      * 로거 정보 반환
-     * SQL 로깅: [Dao클래스:줄] [호출부:줄]
-     * 일반 로깅: [클래스.메서드:줄]
+     * SQL 로깅: SqlCaptureProxy가 설정한 로거 이름 사용 (클래스.메서드:줄)
+     * 일반 로깅: 스택 트레이스 분석으로 호출자 추출 (클래스.메서드:줄)
      */
     private String getLoggerInfo(ILoggingEvent event) {
         String loggerName = event.getLoggerName();
 
         // SQL 로깅인지 확인 (SqlCaptureProxy가 "클래스명.메서드명:줄번호" 형식으로 전달)
         if (loggerName != null && loggerName.contains(":") && loggerName.contains(".")) {
-            // SQL 로깅의 경우: [Dao정보] [호출부정보]
-            String callerInfo = extractCallerInfo();
-            return loggerName + "] [" + callerInfo;
+            // SQL 로깅의 경우: 이미 SqlCaptureProxy가 설정한 로거 이름 사용
+            return loggerName;
         }
 
         // 일반 로깅의 경우 스택 트레이스를 직접 분석
