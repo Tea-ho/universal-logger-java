@@ -15,7 +15,7 @@ public class CustomFormatter extends PatternLayoutEncoder {
     private static final DateTimeFormatter DATE_FORMATTER =
         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    private String pattern = "{timestamp} | {level} | {logger} | {message}";
+    private String pattern = "[{timestamp}] [{level}] [{thread}] [{logger}] {message}";
 
     public void setPattern(String pattern) {
         if (pattern != null && !pattern.trim().isEmpty()) {
@@ -33,17 +33,17 @@ public class CustomFormatter extends PatternLayoutEncoder {
      * 메시지 포맷팅
      */
     private String formatMessage(ILoggingEvent event) {
-        // 클래스명과 메서드명을 함께 표시
-        String classAndMethod = getClassAndMethodName(event);
+        // 로거 정보 생성
+        String loggerInfo = getLoggerInfo(event);
 
         return this.pattern
             .replace("{timestamp}", DATE_FORMATTER.format(LocalDateTime.now()))
             .replace("{level}", String.format("%-5s", event.getLevel().toString()))
-            .replace("{logger}", String.format("%-15s", classAndMethod))
+            .replace("{thread}", event.getThreadName())
+            .replace("{logger}", loggerInfo)
             .replace("{class}", getClassName(event))
             .replace("{method}", getMethodName(event))
             .replace("{line}", String.valueOf(getLineNumber(event)))
-            .replace("{thread}", event.getThreadName())
             .replace("{message}", event.getFormattedMessage());
     }
 
@@ -56,6 +56,25 @@ public class CustomFormatter extends PatternLayoutEncoder {
             return stack[0].getClassName();
         }
         return event.getLoggerName();
+    }
+
+    /**
+     * 로거 정보 반환
+     * SQL 로깅: [Dao클래스:줄] [호출부:줄]
+     * 일반 로깅: [클래스.메서드:줄]
+     */
+    private String getLoggerInfo(ILoggingEvent event) {
+        String loggerName = event.getLoggerName();
+
+        // SQL 로깅인지 확인 (SqlCaptureProxy가 "클래스명.메서드명:줄번호" 형식으로 전달)
+        if (loggerName != null && loggerName.contains(":") && loggerName.contains(".")) {
+            // SQL 로깅의 경우: [Dao정보] [호출부정보]
+            String callerInfo = extractCallerInfo();
+            return loggerName + "] [" + callerInfo;
+        }
+
+        // 일반 로깅의 경우 스택 트레이스를 직접 분석
+        return extractCallerInfo();
     }
 
     /**
