@@ -3,47 +3,79 @@ package com.universallogger.spring;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Configuration properties for UniversalLogger
+ * Universal Logger 설정 프로퍼티
+ *
+ * Spring Boot에서 application.yml/properties로 설정 가능
+ *
+ * 사용 예:
+ * <pre>
+ * universal-logger:
+ *   enabled: true
+ *   config-path: "config/universal-logger.yml"
+ *   sql-capture:
+ *     enabled: true
+ * </pre>
  */
 @ConfigurationProperties(prefix = "universal-logger")
 public class UniversalLoggerProperties {
 
     /**
-     * Enable/disable SQL logging
+     * Universal Logger 활성화 여부
+     * 기본값: true
      */
-    private boolean sqlLoggingEnabled = true;
+    private boolean enabled = true;
 
     /**
-     * Path to custom configuration file
+     * 설정 파일 경로
+     * 기본값: config/universal-logger.yml
      */
-    private String configFile;
+    private String configPath = "config/universal-logger.yml";
 
     /**
-     * Enable/disable automatic initialization
+     * SQL 캡처 설정
      */
-    private boolean autoInit = true;
+    private SqlCaptureConfig sqlCapture = new SqlCaptureConfig();
 
-    public boolean isSqlLoggingEnabled() {
-        return sqlLoggingEnabled;
+    public boolean isEnabled() {
+        return enabled;
     }
 
-    public void setSqlLoggingEnabled(boolean sqlLoggingEnabled) {
-        this.sqlLoggingEnabled = sqlLoggingEnabled;
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
     }
 
-    public String getConfigFile() {
-        return configFile;
+    public String getConfigPath() {
+        return configPath;
     }
 
-    public void setConfigFile(String configFile) {
-        this.configFile = configFile;
+    public void setConfigPath(String configPath) {
+        this.configPath = configPath;
     }
 
-    public boolean isAutoInit() {
-        return autoInit;
+    public SqlCaptureConfig getSqlCapture() {
+        return sqlCapture;
     }
 
-    public void setAutoInit(boolean autoInit) {
-        this.autoInit = autoInit;
+    public void setSqlCapture(SqlCaptureConfig sqlCapture) {
+        this.sqlCapture = sqlCapture;
+    }
+
+    /**
+     * SQL 캡처 설정
+     */
+    public static class SqlCaptureConfig {
+        /**
+         * SQL 캡처 활성화 여부
+         * 기본값: true
+         */
+        private boolean enabled = true;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
     }
 }

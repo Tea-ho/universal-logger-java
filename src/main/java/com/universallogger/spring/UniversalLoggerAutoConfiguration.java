@@ -1,25 +1,50 @@
 package com.universallogger.spring;
 
-import com.universallogger.UniversalLogger;
+import com.universallogger.LoggerInstance;
+import com.universallogger.sql.SqlCaptureProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.annotation.Bean;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 
-import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
-import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Spring Boot Auto Configuration for UniversalLogger
- * Automatically wraps DataSource for SQL logging
+ *
+ * 자동으로 활성화됩니다:
+ * - 의존성에 universal-logger-java가 포함되어 있으면 자동 활성화
+ * - application.yml에서 설정 가능
+ *
+ * 사용자가 별도로 Configuration 클래스를 만들 필요 없음!
+ *
+ * 사용 예 (application.yml):
+ * <pre>
+ * universal-logger:
+ *   enabled: true
+ *   config-path: "config/universal-logger.yml"
+ *   sql-capture:
+ *     enabled: true
+ * </pre>
  */
-@Configuration
-@ConditionalOnClass(DataSource.class)
+@AutoConfiguration
+@ConditionalOnClass({LoggerInstance.class, DataSource.class})
+@ConditionalOnProperty(prefix = "universal-logger", name = "enabled", havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(UniversalLoggerProperties.class)
-public class UniversalLoggerAutoConfiguration {
+@Order(Ordered.HIGHEST_PRECEDENCE)
+public class UniversalLoggerAutoConfiguration implements BeanPostProcessor, ApplicationContextAware {
 
     private static final Logger logger = LoggerFactory.getLogger(UniversalLoggerAutoConfiguration.class);
 
@@ -27,41 +52,65 @@ public class UniversalLoggerAutoConfiguration {
     private String applicationName;
 
     private final UniversalLoggerProperties properties;
+    private final Set<String> wrappedDataSources = new HashSet<>();
+    private ApplicationContext applicationContext;
 
     public UniversalLoggerAutoConfiguration(UniversalLoggerProperties properties) {
         this.properties = properties;
     }
 
-    @PostConstruct
-    public void initializeUniversalLogger() {
-        try {
-            // Auto-detect project name
-            String projectName = applicationName.replaceAll("[^a-zA-Z0-9_-]", "_");
-
-            // Set log path: C:/log/{projectName}/
-            String logPath = "C:/log/" + projectName + "/";
-
-            // Create log directory
-            File logDir = new File(logPath);
-            if (!logDir.exists()) {
-                logDir.mkdirs();
-            }
-
-            // Initialize UniversalLogger with auto-generated config
-            if (properties.getConfigFile() != null && !properties.getConfigFile().isEmpty()) {
-                UniversalLogger.init(properties.getConfigFile());
-            }
-            // Note: If no config file specified, UniversalLogger will be initialized
-            // by the user's configuration class (UniversalLoggerConfig)
-
-            UniversalLogger.info("[UniversalLogger] Initialized for project: " + projectName);
-            UniversalLogger.info("[UniversalLogger] Log directory: " + logPath);
-
-        } catch (Exception e) {
-            logger.error("Failed to initialize", e);
-        }
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
     }
 
-    // DataSource wrapping is handled by BeanPostProcessor instead
-    // to avoid Bean definition conflicts
+    /**
+     * LoggerInstance Bean 생성
+     */
+    @Bean
+    public LoggerInstance loggerInstance() {
+        logger.info("🚀 Initializing UniversalLogger for application: {}", applicationName);
+
+        LoggerInstance instance = LoggerInstance.builder()
+                .configPath(properties.getConfigPath())
+                .build();
+
+        logger.info("✅ UniversalLogger initialized successfully");
+        return instance;
+    }
+
+    /**
+     * DataSource를 SqlCaptureProxy로 자동 래핑
+     */
+    @Override
+    public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+        // SQL 캡처가 활성화되고, bean이 DataSource인 경우
+        if (properties.getSqlCapture().isEnabled() && bean instanceof DataSource) {
+            // 이미 SqlCaptureProxy로 래핑된 경우 스킵
+            if (bean instanceof SqlCaptureProxy) {
+                return bean;
+            }
+
+            // 중복 래핑 방지
+            if (wrappedDataSources.contains(beanName)) {
+                return bean;
+            }
+
+            wrappedDataSources.add(beanName);
+
+            // LoggerInstance 가져오기
+            LoggerInstance loggerInstance = null;
+            try {
+                loggerInstance = applicationContext.getBean(LoggerInstance.class);
+                if (loggerInstance != null) {
+                    loggerInstance.info("🔍 SQL logging enabled - DataSource '{}' wrapped", beanName);
+                }
+            } catch (Exception e) {
+                logger.warn("⚠️ LoggerInstance not found, using fallback");
+            }
+
+            return new SqlCaptureProxy((DataSource) bean, loggerInstance);
+        }
+        return bean;
+    }
 }
