@@ -2,6 +2,8 @@ package com.universallogger.formatters;
 
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 
+import java.nio.charset.StandardCharsets;
+
 /**
  * 커스텀 포맷터 - 파일 출력용
  * Logback의 PatternLayoutEncoder를 사용하여 표준 패턴 지원
@@ -9,6 +11,11 @@ import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 public class CustomFormatter extends PatternLayoutEncoder {
 
     private String customPattern = "%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] [%logger{50}] %msg%n";
+
+    public CustomFormatter() {
+        // UTF-8 인코딩 설정
+        setCharset(StandardCharsets.UTF_8);
+    }
 
     @Override
     public void setPattern(String pattern) {
