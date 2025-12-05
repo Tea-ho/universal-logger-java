@@ -6,6 +6,8 @@ import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.pattern.color.*;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -25,6 +27,11 @@ public class ColorFormatter extends PatternLayoutEncoder {
     }
 
     private String customPattern = "%d{yyyy-MM-dd HH:mm:ss} %highlight(%-5level) %cyan([%thread]) %boldMagenta([%logger{50}]) %msg%n";
+
+    public ColorFormatter() {
+        // UTF-8 인코딩 설정
+        setCharset(StandardCharsets.UTF_8);
+    }
 
     @Override
     public void setPattern(String pattern) {
