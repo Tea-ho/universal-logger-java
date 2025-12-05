@@ -312,69 +312,11 @@ public class SqlCaptureProxy implements DataSource {
         }
 
         /**
-         * SQL을 실행한 실제 호출자 정보를 추출
-         * 표준 로깅 라이브러리 방식: 순방향 탐색하여 첫 번째 애플리케이션 클래스 반환
+         * SQL 로깅을 위한 logger 이름 반환
+         * 스택 트레이스 분석 없이 고정된 이름 사용
          */
         protected String getCallerInfo() {
-            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-
-            // 순방향 탐색: 프레임워크 클래스를 제외한 첫 번째 애플리케이션 클래스
-            for (StackTraceElement element : stackTrace) {
-                String className = element.getClassName();
-
-                // 프레임워크/라이브러리 클래스 제외
-                if (isFrameworkClass(className)) {
-                    continue;
-                }
-
-                // 첫 번째 애플리케이션 클래스 발견
-                String methodName = element.getMethodName();
-                int lineNumber = element.getLineNumber();
-                String simpleClassName = className.substring(className.lastIndexOf('.') + 1);
-
-                // 내부 클래스 처리 (예: MyClass$1 -> MyClass)
-                if (simpleClassName.contains("$")) {
-                    simpleClassName = simpleClassName.substring(0, simpleClassName.indexOf('$'));
-                }
-
-                return simpleClassName + "." + methodName + ":" + lineNumber;
-            }
-
-            return "unknown";
-        }
-
-        /**
-         * 프레임워크/라이브러리 클래스 여부 판단
-         * 표준 로깅 라이브러리(Logback, Log4j2)와 동일한 방식
-         */
-        private boolean isFrameworkClass(String className) {
-            return className.contains("SqlCaptureProxy") ||
-                   className.startsWith("java.lang.Thread") ||
-                   className.startsWith("com.universallogger") ||
-                   className.startsWith("java.") ||
-                   className.startsWith("javax.") ||
-                   className.startsWith("jakarta.") ||
-                   className.startsWith("sun.") ||
-                   className.startsWith("com.sun.") ||
-                   className.startsWith("jdk.") ||
-                   className.startsWith("org.apache.ibatis") ||
-                   className.startsWith("org.mybatis") ||
-                   className.startsWith("org.hibernate") ||
-                   className.startsWith("org.springframework.aop") ||
-                   className.startsWith("org.springframework.cglib") ||
-                   className.startsWith("org.springframework.transaction") ||
-                   className.startsWith("org.springframework.web") ||
-                   className.startsWith("org.springframework.data") ||
-                   className.startsWith("org.springframework.orm") ||
-                   className.contains("RepositoryComposition") ||
-                   className.contains("TaskThread") ||
-                   className.contains("$Proxy") ||
-                   className.contains("$$EnhancerBy") ||
-                   className.contains("Aspect") ||
-                   className.contains("Interceptor") ||
-                   className.contains("MapperMethod") ||
-                   className.contains("MapperProxy") ||
-                   className.startsWith("com.zaxxer.hikari");
+            return "UniversalLogging";
         }
 
         // Delegate methods
