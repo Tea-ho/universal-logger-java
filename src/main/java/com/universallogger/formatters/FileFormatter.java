@@ -10,7 +10,7 @@ import java.nio.charset.StandardCharsets;
  */
 public class FileFormatter extends PatternLayoutEncoder {
 
-    private String customPattern = "%d{yyyy-MM-dd HH:mm:ss} %-5level %thread %logger{50} %msg%n";
+    private String defaultPattern = "%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{50} %msg%n";
 
     public FileFormatter() {
         // UTF-8 인코딩 설정
@@ -19,41 +19,27 @@ public class FileFormatter extends PatternLayoutEncoder {
 
     @Override
     public void setPattern(String pattern) {
+        // 사용자 패턴이 제공되면 그대로 사용, 없으면 기본 패턴 사용
         if (pattern != null && !pattern.trim().isEmpty()) {
-            this.customPattern = convertPatternToLogback(pattern);
+            super.setPattern(pattern);
+        } else {
+            super.setPattern(defaultPattern);
         }
-        super.setPattern(this.customPattern);
     }
 
     @Override
     public void start() {
         // 패턴이 설정되지 않았으면 기본 패턴 사용
         if (getPattern() == null || getPattern().trim().isEmpty()) {
-            super.setPattern(this.customPattern);
+            super.setPattern(defaultPattern);
         }
         super.start();
     }
 
     /**
-     * Universal Logger 패턴을 Logback 패턴으로 변환
+     * 기본 패턴 반환 (문서화/참고용)
      */
-    private String convertPatternToLogback(String pattern) {
-        String converted = pattern
-            .replace("{timestamp}", "%d{yyyy-MM-dd HH:mm:ss}")
-            .replace("{level}", "%-5level")
-            .replace("{thread}", "[%thread]")
-            .replace("{logger}", "[%logger{50}]")
-            .replace("{class}", "%class")
-            .replace("{method}", "%method")
-            .replace("{line}", "%line")
-            .replace("{message}", "%msg")
-            .replace("{exception}", "%ex");
-
-        // 줄바꿈 추가 (없으면)
-        if (!converted.endsWith("%n") && !converted.endsWith("\n")) {
-            converted += "%n";
-        }
-
-        return converted;
+    public String getDefaultPattern() {
+        return defaultPattern;
     }
 }
