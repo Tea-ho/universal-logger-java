@@ -26,7 +26,7 @@ public class ConsoleFormatter extends PatternLayoutEncoder {
         DEFAULT_COLORS.put("CRITICAL", "magenta");
     }
 
-    private String customPattern = "%d{yyyy-MM-dd HH:mm:ss} %highlight(%-5level) %cyan(%thread) %boldMagenta(%logger{50}) %msg%n";
+    private String defaultPattern = "%d{yyyy-MM-dd HH:mm:ss} %highlight(%-5level) %cyan([%thread]) %boldMagenta(%logger{50}) %msg%n";
 
     public ConsoleFormatter() {
         // UTF-8 인코딩 설정
@@ -35,48 +35,33 @@ public class ConsoleFormatter extends PatternLayoutEncoder {
 
     @Override
     public void setPattern(String pattern) {
+        // 사용자 패턴이 제공되면 그대로 사용, 없으면 기본 패턴 사용
         if (pattern != null && !pattern.trim().isEmpty()) {
-            this.customPattern = convertPatternToLogback(pattern);
+            super.setPattern(pattern);
+        } else {
+            super.setPattern(defaultPattern);
         }
-        super.setPattern(this.customPattern);
     }
 
     @Override
     public void start() {
         // 패턴이 설정되지 않았으면 기본 패턴 사용
         if (getPattern() == null || getPattern().trim().isEmpty()) {
-            super.setPattern(this.customPattern);
+            super.setPattern(defaultPattern);
         }
         super.start();
     }
 
     /**
-     * Universal Logger 패턴을 Logback 패턴으로 변환
+     * 기본 패턴 반환 (문서화/참고용)
      */
-    private String convertPatternToLogback(String pattern) {
-        String converted = pattern
-            .replace("{timestamp}", "%d{yyyy-MM-dd HH:mm:ss}")
-            .replace("{level}", "%highlight(%-5level)")
-            .replace("{thread}", "%cyan(%thread)")
-            .replace("{logger}", "%boldMagenta(%logger{50})")
-            .replace("{class}", "%class")
-            .replace("{method}", "%method")
-            .replace("{line}", "%line")
-            .replace("{logger:line}", "%boldMagenta(%logger{50}:%line)")
-            .replace("{message}", "%msg")
-            .replace("{exception}", "%ex");
-
-        // 줄바꿈 추가 (없으면)
-        if (!converted.endsWith("%n") && !converted.endsWith("\n")) {
-            converted += "%n";
-        }
-
-        return converted;
+    public String getDefaultPattern() {
+        return defaultPattern;
     }
 
     public void setColors(Map<String, String> colors) {
-        // Logback의 내장 컬러 기능을 사용하므로,
-        // 사용자 정의 색상은 패턴에서 직접 지정
-        // 이 메서드는 호환성을 위해 유지
+        // 호환성을 위해 유지
+        // 색상 변경은 패턴 문자열에서 직접 지정
+        // 예: %red(%level), %green(%msg) 등
     }
 }

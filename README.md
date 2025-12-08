@@ -318,6 +318,161 @@ outputs:
 
 ---
 
+## 로그 포맷 패턴 가이드
+
+Universal Logger는 **Logback 패턴**을 직접 사용합니다. 사용자 정의 패턴을 자유롭게 설정할 수 있습니다.
+
+### 기본 패턴 예시
+
+```yaml
+outputs:
+  console:
+    format: "%d{yyyy-MM-dd HH:mm:ss} %highlight(%-5level) %cyan([%thread]) %boldMagenta(%logger{50}) %msg%n"
+
+  file:
+    format: "%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{50} %msg%n"
+```
+
+### 주요 패턴 변수
+
+| 패턴 | 설명 | 예시 |
+|------|------|------|
+| `%d{날짜포맷}` | 타임스탬프 | `%d{yyyy-MM-dd HH:mm:ss.SSS}` |
+| `%-5level` | 로그 레벨 (왼쪽 정렬, 5자리) | `INFO `, `ERROR` |
+| `%thread` | 스레드 이름 | `main`, `http-nio-8080-exec-1` |
+| `%logger{길이}` | 로거 이름 (최대 길이 지정) | `c.u.MyService` (50자로 축약) |
+| `%logger{0}` | 로거 이름 (짧은 형식) | `MyService` |
+| `%logger` | 로거 전체 이름 | `com.universallogger.MyService` |
+| `%class` | 클래스 이름 | `com.example.MyClass` |
+| `%method` | 메서드 이름 | `processRequest` |
+| `%line` | 라인 번호 | `42` |
+| `%msg` | 로그 메시지 | `User logged in` |
+| `%n` | 줄바꿈 | (개행 문자) |
+| `%ex` | 예외 스택 트레이스 | (전체 스택 트레이스) |
+| `%ex{short}` | 예외 (짧은 형식) | (첫 줄만) |
+
+### 컬러 지원 (콘솔 전용)
+
+| 패턴 | 설명 | 사용 예시 |
+|------|------|-----------|
+| `%black(...)` | 검정 | `%black(%msg)` |
+| `%red(...)` | 빨강 | `%red(%level)` |
+| `%green(...)` | 초록 | `%green(%msg)` |
+| `%yellow(...)` | 노랑 | `%yellow(%logger)` |
+| `%blue(...)` | 파랑 | `%blue(%thread)` |
+| `%magenta(...)` | 마젠타 | `%magenta(%class)` |
+| `%cyan(...)` | 시안 | `%cyan(%method)` |
+| `%white(...)` | 흰색 | `%white(%msg)` |
+| `%boldRed(...)` | 굵은 빨강 | `%boldRed(%level)` |
+| `%boldMagenta(...)` | 굵은 마젠타 | `%boldMagenta(%logger)` |
+| `%highlight(...)` | 레벨별 자동 색상 | `%highlight(%-5level)` |
+
+### 실전 패턴 예시
+
+#### 1. 심플 패턴
+```yaml
+format: "%d{HH:mm:ss} %-5level %logger{0} - %msg%n"
+```
+출력:
+```
+14:23:45 INFO  MyService - User logged in
+```
+
+#### 2. 상세 패턴
+```yaml
+format: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+```
+출력:
+```
+2025-01-15 14:23:45.123 [http-nio-8080-exec-1] INFO  c.u.MyService - User logged in
+```
+
+#### 3. 디버그용 패턴 (클래스명, 메서드, 라인 포함)
+```yaml
+format: "%d{HH:mm:ss} %-5level %logger.%method:%line - %msg%n"
+```
+출력:
+```
+14:23:45 DEBUG MyService.processRequest:42 - Processing user: 123
+```
+
+#### 4. 컬러풀 콘솔 패턴
+```yaml
+format: "%d{HH:mm:ss} %highlight(%-5level) %cyan([%thread]) %boldMagenta(%logger{30}) - %msg%n"
+```
+출력 (색상 적용):
+```
+14:23:45 INFO  [main] MyService - Application started
+```
+
+#### 5. 프로덕션 파일 패턴
+```yaml
+format: "%d{yyyy-MM-dd HH:mm:ss} | %-5level | [%thread] | %logger{50} | %msg%n"
+```
+출력:
+```
+2025-01-15 14:23:45 | INFO  | [main] | com.universallogger.MyService | Application started
+```
+
+#### 6. JSON 스타일 패턴
+```yaml
+format: '{"timestamp":"%d{yyyy-MM-dd HH:mm:ss}","level":"%-5level","thread":"%thread","logger":"%logger","message":"%msg"}%n'
+```
+출력:
+```json
+{"timestamp":"2025-01-15 14:23:45","level":"INFO ","thread":"main","logger":"MyService","message":"User logged in"}
+```
+
+### 날짜 포맷 커스터마이징
+
+| 패턴 | 출력 예시 |
+|------|-----------|
+| `%d{yyyy-MM-dd HH:mm:ss}` | `2025-01-15 14:23:45` |
+| `%d{yyyy-MM-dd HH:mm:ss.SSS}` | `2025-01-15 14:23:45.123` |
+| `%d{HH:mm:ss}` | `14:23:45` |
+| `%d{HH:mm:ss.SSS}` | `14:23:45.123` |
+| `%d{yyyy/MM/dd}` | `2025/01/15` |
+| `%d{ISO8601}` | `2025-01-15T14:23:45,123+0900` |
+
+### MDC (Mapped Diagnostic Context) 사용
+
+애플리케이션 컨텍스트 정보를 로그에 추가할 수 있습니다.
+
+```java
+// MDC에 값 설정
+import org.slf4j.MDC;
+
+MDC.put("userId", "user123");
+MDC.put("requestId", "req-456");
+logger.info("Processing request");
+MDC.clear();
+```
+
+```yaml
+# 패턴에 MDC 변수 사용
+format: "%d{HH:mm:ss} [%X{requestId}] [%X{userId}] %-5level %logger - %msg%n"
+```
+
+출력:
+```
+14:23:45 [req-456] [user123] INFO  MyService - Processing request
+```
+
+### 로거 이름 길이 조정
+
+| 패턴 | 입력 | 출력 |
+|------|------|------|
+| `%logger` | `com.example.service.UserService` | `com.example.service.UserService` (전체) |
+| `%logger{0}` | `com.example.service.UserService` | `UserService` (클래스명만) |
+| `%logger{10}` | `com.example.service.UserService` | `c.e.s.UserService` (10자로 축약) |
+| `%logger{30}` | `com.example.service.UserService` | `c.e.service.UserService` (30자로 축약) |
+
+### 참고 자료
+
+Logback 공식 문서: https://logback.qos.ch/manual/layouts.html#conversionWord
+
+---
+
 ## 주요 기능
 
 ### SQL 자동 캡처
