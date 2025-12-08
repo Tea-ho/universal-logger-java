@@ -21,7 +21,7 @@ outputs:
   console:
     enabled: true
     level: "INFO"
-    format: "[{timestamp}] [{level}] [{thread}] [{logger}] {message}"
+    format: "[%d{yyyy-MM-dd HH:mm:ss}] %highlight(%-5level) %cyan([%thread]) %boldMagenta([%logger{50}:%line]) %msg%n"
     colors:
       DEBUG: "cyan"
       INFO: "green"
@@ -33,7 +33,7 @@ outputs:
     enabled: true
     level: "DEBUG"
     path: "C:/log/{appName}/application.log"
-    format: "[{timestamp}] [{level}] [{thread}] [{logger}] {message}"
+    format: "[%d{yyyy-MM-dd HH:mm:ss}] [%-5level] [%thread] [%logger{50}:%line] %msg%n"
     rotation:
       maxSize: "50MB"
       maxFiles: 30
@@ -44,7 +44,7 @@ outputs:
     enabled: true
     level: "ERROR"
     path: "C:/log/{appName}/error.log"
-    format: "[{timestamp}] [{level}] [{thread}] [{logger}] {message} | {exception}"
+    format: "[%d{yyyy-MM-dd HH:mm:ss}] [%-5level] [%thread] [%logger{50}:%line] %msg%n%ex"
     rotation:
       maxSize: "50MB"
       maxFiles: 30
