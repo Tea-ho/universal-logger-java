@@ -1,8 +1,8 @@
 package com.universallogger.appenders;
 
 import com.universallogger.config.LoggerConfig;
-import com.universallogger.formatters.ColorFormatter;
-import com.universallogger.formatters.CustomFormatter;
+import com.universallogger.formatters.ConsoleFormatter;
+import com.universallogger.formatters.FileFormatter;
 
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.filter.ThresholdFilter;
@@ -46,8 +46,8 @@ public class DefaultAppenderFactory implements AppenderFactory {
         appender.setContext(context);
         appender.setName("CONSOLE");
 
-        // 컬러 포맷터 설정
-        ColorFormatter formatter = new ColorFormatter();
+        // 콘솔 포맷터 설정 (컬러 지원)
+        ConsoleFormatter formatter = new ConsoleFormatter();
         formatter.setContext(context);
         formatter.setPattern(outputConfig.getFormat());
         formatter.setColors(outputConfig.getColors());
@@ -94,8 +94,8 @@ public class DefaultAppenderFactory implements AppenderFactory {
 
         appender.setRollingPolicy(rollingPolicy);
 
-        // 포맷터 설정
-        CustomFormatter formatter = new CustomFormatter();
+        // 파일 포맷터 설정
+        FileFormatter formatter = new FileFormatter();
         formatter.setContext(context);
         formatter.setPattern(outputConfig.getFormat());
         formatter.start();
@@ -141,8 +141,8 @@ public class DefaultAppenderFactory implements AppenderFactory {
 
         appender.setRollingPolicy(rollingPolicy);
 
-        // 포맷터 설정
-        CustomFormatter formatter = new CustomFormatter();
+        // 파일 포맷터 설정
+        FileFormatter formatter = new FileFormatter();
         formatter.setContext(context);
         formatter.setPattern(outputConfig.getFormat());
         formatter.start();

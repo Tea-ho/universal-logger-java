@@ -12,10 +12,10 @@ import java.util.Map;
 import java.util.HashMap;
 
 /**
- * 컬러 포맷터 - 콘솔 출력용
+ * 콘솔 포맷터 - 콘솔 출력용 (컬러 지원)
  * Logback의 PatternLayoutEncoder를 사용하여 표준 패턴 및 컬러 기능 지원
  */
-public class ColorFormatter extends PatternLayoutEncoder {
+public class ConsoleFormatter extends PatternLayoutEncoder {
 
     private static final Map<String, String> DEFAULT_COLORS = new HashMap<>();
     static {
@@ -26,9 +26,9 @@ public class ColorFormatter extends PatternLayoutEncoder {
         DEFAULT_COLORS.put("CRITICAL", "magenta");
     }
 
-    private String customPattern = "%d{yyyy-MM-dd HH:mm:ss} %highlight(%-5level) %cyan([%thread]) %boldMagenta([%logger{50}]) %msg%n";
+    private String customPattern = "%d{yyyy-MM-dd HH:mm:ss} %highlight(%-5level) %cyan(%thread) %boldMagenta(%logger{50}) %msg%n";
 
-    public ColorFormatter() {
+    public ConsoleFormatter() {
         // UTF-8 인코딩 설정
         setCharset(StandardCharsets.UTF_8);
     }
@@ -57,11 +57,12 @@ public class ColorFormatter extends PatternLayoutEncoder {
         String converted = pattern
             .replace("{timestamp}", "%d{yyyy-MM-dd HH:mm:ss}")
             .replace("{level}", "%highlight(%-5level)")
-            .replace("{thread}", "%cyan([%thread])")
-            .replace("{logger}", "%boldMagenta([%logger{50}])")
+            .replace("{thread}", "%cyan(%thread)")
+            .replace("{logger}", "%boldMagenta(%logger{50})")
             .replace("{class}", "%class")
             .replace("{method}", "%method")
             .replace("{line}", "%line")
+            .replace("{logger:line}", "%boldMagenta(%logger{50}:%line)")
             .replace("{message}", "%msg")
             .replace("{exception}", "%ex");
 
