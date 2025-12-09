@@ -21,9 +21,6 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * LoggerInstance - 인스턴스 기반 로거 구현
  *
- * OOP 원칙을 준수하여 정적 상태 대신 인스턴스 필드 사용.
- * DI(의존성 주입) 및 테스트 용이성 지원.
- *
  * 사용법:
  * <pre>
  * // Builder를 통한 생성

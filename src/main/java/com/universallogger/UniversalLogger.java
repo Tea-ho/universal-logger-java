@@ -37,7 +37,7 @@ public final class UniversalLogger {
     private static final Logger logger = LoggerFactory.getLogger(UniversalLogger.class);
 
     /**
-     * Bill Pugh Singleton Holder - Thread-safe lazy initialization
+     * Bill Pugh 싱글톤 홀더 - Thread-safe한 지연 초기화 제공
      */
     private static class InstanceHolder {
         private static volatile LoggerInstance INSTANCE;
