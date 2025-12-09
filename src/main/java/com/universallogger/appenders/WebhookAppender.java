@@ -96,12 +96,58 @@ public class WebhookAppender extends AppenderBase<ILoggingEvent> {
     }
 
     private String formatMessage(ILoggingEvent event) {
+        String exceptionTrace = getStackTrace(event);
         return format
                 .replace("{timestamp}", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
                 .replace("{level}", event.getLevel().toString())
                 .replace("{logger}", event.getLoggerName())
                 .replace("{message}", event.getFormattedMessage())
+                .replace("{exception}", exceptionTrace)
                 .replace("{app_name}", "JavaApp");
+    }
+
+    private String getStackTrace(ILoggingEvent event) {
+        if (event.getThrowableProxy() == null) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        ch.qos.logback.classic.spi.IThrowableProxy throwableProxy = event.getThrowableProxy();
+
+        // Exception class and message
+        sb.append(throwableProxy.getClassName());
+        if (throwableProxy.getMessage() != null) {
+            sb.append(": ").append(throwableProxy.getMessage());
+        }
+        sb.append("\n");
+
+        // Stack trace elements
+        ch.qos.logback.classic.spi.StackTraceElementProxy[] stackTrace = throwableProxy.getStackTraceElementProxyArray();
+        if (stackTrace != null) {
+            for (ch.qos.logback.classic.spi.StackTraceElementProxy element : stackTrace) {
+                sb.append("    at ").append(element.getStackTraceElement().toString()).append("\n");
+            }
+        }
+
+        // Caused by (if any)
+        ch.qos.logback.classic.spi.IThrowableProxy cause = throwableProxy.getCause();
+        while (cause != null) {
+            sb.append("Caused by: ").append(cause.getClassName());
+            if (cause.getMessage() != null) {
+                sb.append(": ").append(cause.getMessage());
+            }
+            sb.append("\n");
+
+            ch.qos.logback.classic.spi.StackTraceElementProxy[] causeStackTrace = cause.getStackTraceElementProxyArray();
+            if (causeStackTrace != null) {
+                for (ch.qos.logback.classic.spi.StackTraceElementProxy element : causeStackTrace) {
+                    sb.append("    at ").append(element.getStackTraceElement().toString()).append("\n");
+                }
+            }
+            cause = cause.getCause();
+        }
+
+        return sb.toString().trim();
     }
 
     private String escapeJson(String text) {
