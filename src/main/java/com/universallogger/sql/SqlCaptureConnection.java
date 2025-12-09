@@ -1,0 +1,106 @@
+package com.universallogger.sql;
+
+import com.universallogger.LoggerInstance;
+
+import java.sql.*;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.Executor;
+
+/**
+ * Connection wrapper for SQL capture
+ */
+class SqlCaptureConnection implements Connection {
+    private final Connection targetConnection;
+    private final LoggerInstance loggerInstance;
+
+    public SqlCaptureConnection(Connection targetConnection, LoggerInstance loggerInstance) {
+        this.targetConnection = targetConnection;
+        this.loggerInstance = loggerInstance;
+    }
+
+    @Override
+    public Statement createStatement() throws SQLException {
+        return new SqlCaptureStatement(targetConnection.createStatement(), loggerInstance);
+    }
+
+    @Override
+    public PreparedStatement prepareStatement(String sql) throws SQLException {
+        // Create PreparedStatement with SCROLLABLE result set for row counting
+        try {
+            return new SqlCapturePreparedStatement(
+                targetConnection.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY),
+                sql,
+                loggerInstance
+            );
+        } catch (SQLException e) {
+            // Fallback to default if scrollable not supported
+            return new SqlCapturePreparedStatement(targetConnection.prepareStatement(sql), sql, loggerInstance);
+        }
+    }
+
+    @Override
+    public CallableStatement prepareCall(String sql) throws SQLException {
+        return new SqlCaptureCallableStatement(targetConnection.prepareCall(sql), sql, loggerInstance);
+    }
+
+    // Delegate all other methods
+    @Override public void close() throws SQLException { targetConnection.close(); }
+    @Override public boolean isClosed() throws SQLException { return targetConnection.isClosed(); }
+    @Override public void commit() throws SQLException { targetConnection.commit(); }
+    @Override public void rollback() throws SQLException { targetConnection.rollback(); }
+    @Override public void setAutoCommit(boolean autoCommit) throws SQLException { targetConnection.setAutoCommit(autoCommit); }
+    @Override public boolean getAutoCommit() throws SQLException { return targetConnection.getAutoCommit(); }
+    @Override public DatabaseMetaData getMetaData() throws SQLException { return targetConnection.getMetaData(); }
+    @Override public void setReadOnly(boolean readOnly) throws SQLException { targetConnection.setReadOnly(readOnly); }
+    @Override public boolean isReadOnly() throws SQLException { return targetConnection.isReadOnly(); }
+    @Override public void setCatalog(String catalog) throws SQLException { targetConnection.setCatalog(catalog); }
+    @Override public String getCatalog() throws SQLException { return targetConnection.getCatalog(); }
+    @Override public void setTransactionIsolation(int level) throws SQLException { targetConnection.setTransactionIsolation(level); }
+    @Override public int getTransactionIsolation() throws SQLException { return targetConnection.getTransactionIsolation(); }
+    @Override public SQLWarning getWarnings() throws SQLException { return targetConnection.getWarnings(); }
+    @Override public void clearWarnings() throws SQLException { targetConnection.clearWarnings(); }
+    @Override public Statement createStatement(int resultSetType, int resultSetConcurrency) throws SQLException { return new SqlCaptureStatement(targetConnection.createStatement(resultSetType, resultSetConcurrency), loggerInstance); }
+    @Override public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
+        // Force SCROLLABLE result set for row counting
+        return new SqlCapturePreparedStatement(
+            targetConnection.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY),
+            sql,
+            loggerInstance
+        );
+    }
+    @Override public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency) throws SQLException { return new SqlCaptureCallableStatement(targetConnection.prepareCall(sql, resultSetType, resultSetConcurrency), sql, loggerInstance); }
+    @Override public Map<String, Class<?>> getTypeMap() throws SQLException { return targetConnection.getTypeMap(); }
+    @Override public void setTypeMap(Map<String, Class<?>> map) throws SQLException { targetConnection.setTypeMap(map); }
+    @Override public void setHoldability(int holdability) throws SQLException { targetConnection.setHoldability(holdability); }
+    @Override public int getHoldability() throws SQLException { return targetConnection.getHoldability(); }
+    @Override public Savepoint setSavepoint() throws SQLException { return targetConnection.setSavepoint(); }
+    @Override public Savepoint setSavepoint(String name) throws SQLException { return targetConnection.setSavepoint(name); }
+    @Override public void rollback(Savepoint savepoint) throws SQLException { targetConnection.rollback(savepoint); }
+    @Override public void releaseSavepoint(Savepoint savepoint) throws SQLException { targetConnection.releaseSavepoint(savepoint); }
+    @Override public Statement createStatement(int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException { return new SqlCaptureStatement(targetConnection.createStatement(resultSetType, resultSetConcurrency, resultSetHoldability), loggerInstance); }
+    @Override public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException { return new SqlCapturePreparedStatement(targetConnection.prepareStatement(sql, resultSetType, resultSetConcurrency, resultSetHoldability), sql, loggerInstance); }
+    @Override public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException { return new SqlCaptureCallableStatement(targetConnection.prepareCall(sql, resultSetType, resultSetConcurrency, resultSetHoldability), sql, loggerInstance); }
+    @Override public PreparedStatement prepareStatement(String sql, int autoGeneratedKeys) throws SQLException { return new SqlCapturePreparedStatement(targetConnection.prepareStatement(sql, autoGeneratedKeys), sql, loggerInstance); }
+    @Override public PreparedStatement prepareStatement(String sql, int[] columnIndexes) throws SQLException { return new SqlCapturePreparedStatement(targetConnection.prepareStatement(sql, columnIndexes), sql, loggerInstance); }
+    @Override public PreparedStatement prepareStatement(String sql, String[] columnNames) throws SQLException { return new SqlCapturePreparedStatement(targetConnection.prepareStatement(sql, columnNames), sql, loggerInstance); }
+    @Override public Clob createClob() throws SQLException { return targetConnection.createClob(); }
+    @Override public Blob createBlob() throws SQLException { return targetConnection.createBlob(); }
+    @Override public NClob createNClob() throws SQLException { return targetConnection.createNClob(); }
+    @Override public SQLXML createSQLXML() throws SQLException { return targetConnection.createSQLXML(); }
+    @Override public boolean isValid(int timeout) throws SQLException { return targetConnection.isValid(timeout); }
+    @Override public void setClientInfo(String name, String value) { try { targetConnection.setClientInfo(name, value); } catch (Exception e) {} }
+    @Override public void setClientInfo(Properties properties) { try { targetConnection.setClientInfo(properties); } catch (Exception e) {} }
+    @Override public String getClientInfo(String name) throws SQLException { return targetConnection.getClientInfo(name); }
+    @Override public Properties getClientInfo() throws SQLException { return targetConnection.getClientInfo(); }
+    @Override public Array createArrayOf(String typeName, Object[] elements) throws SQLException { return targetConnection.createArrayOf(typeName, elements); }
+    @Override public Struct createStruct(String typeName, Object[] attributes) throws SQLException { return targetConnection.createStruct(typeName, attributes); }
+    @Override public void setSchema(String schema) throws SQLException { targetConnection.setSchema(schema); }
+    @Override public String getSchema() throws SQLException { return targetConnection.getSchema(); }
+    @Override public void abort(Executor executor) throws SQLException { targetConnection.abort(executor); }
+    @Override public void setNetworkTimeout(Executor executor, int milliseconds) throws SQLException { targetConnection.setNetworkTimeout(executor, milliseconds); }
+    @Override public int getNetworkTimeout() throws SQLException { return targetConnection.getNetworkTimeout(); }
+    @Override public String nativeSQL(String sql) throws SQLException { return targetConnection.nativeSQL(sql); }
+    @Override public <T> T unwrap(Class<T> iface) throws SQLException { return targetConnection.unwrap(iface); }
+    @Override public boolean isWrapperFor(Class<?> iface) throws SQLException { return targetConnection.isWrapperFor(iface); }
+}
