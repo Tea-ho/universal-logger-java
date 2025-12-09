@@ -8,14 +8,6 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 
 /**
  * AppenderFactory - 앱펜더 생성을 위한 팩토리 인터페이스
- *
- * 개방-폐쇄 원칙(OCP) 준수:
- * - 새로운 앱펜더 타입 추가 시 이 인터페이스를 구현하는 클래스만 수정
- * - 기존 코드 변경 없이 확장 가능
- *
- * 단일 책임 원칙(SRP) 준수:
- * - 앱펜더 생성 로직만 담당
- * - LoggerInstance에서 앱펜더 생성 책임 분리
  */
 public interface AppenderFactory {
 

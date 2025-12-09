@@ -21,11 +21,6 @@ import java.time.format.DateTimeFormatter;
  * - PostgreSQL
  * - MSSQL (SQL Server)
  * - H2
- *
- * OOP 개선사항:
- * - Factory 패턴 활용으로 단일 책임 원칙(SRP) 준수
- * - 개방-폐쇄 원칙(OCP) 준수 - 새 DB 추가 시 Factory만 수정
- * - 의존성 역전 원칙(DIP) 준수 - DatabaseConnection 인터페이스에 의존
  */
 public class DatabaseAppender extends AppenderBase<ILoggingEvent> {
 
