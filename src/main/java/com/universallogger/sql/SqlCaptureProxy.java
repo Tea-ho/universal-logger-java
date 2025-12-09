@@ -9,18 +9,18 @@ import java.sql.SQLException;
 import java.util.logging.Logger;
 
 /**
- * DataSource Proxy for automatic SQL capture
- * Works with any database (MySQL, Oracle, MSSQL, MongoDB JDBC, etc.)
+ * SQL 자동 캡처를 위한 DataSource 프록시
+ * 모든 데이터베이스 지원 (MySQL, Oracle, MSSQL, MongoDB JDBC 등)
  *
- * Supports both static API and instance-based approach:
- * - Static API: new SqlCaptureProxy(dataSource) - uses UniversalLogger singleton
- * - Instance-based: new SqlCaptureProxy(dataSource, loggerInstance) - uses injected instance
+ * Static API와 인스턴스 기반 방식 모두 지원:
+ * - Static API: new SqlCaptureProxy(dataSource) - UniversalLogger 싱글톤 사용
+ * - Instance-based: new SqlCaptureProxy(dataSource, loggerInstance) - 주입된 인스턴스 사용
  *
- * This class has been refactored for better separation of concerns:
- * - SqlFormatter: SQL formatting logic
- * - ParameterSubstitutor: Parameter substitution logic
- * - SqlLogger: SQL logging logic
- * - SqlCaptureConnection, SqlCaptureStatement, SqlCapturePreparedStatement: Separate wrapper classes
+ * 관심사 분리를 위해 리팩토링됨:
+ * - SqlFormatter: SQL 포맷팅 로직
+ * - ParameterSubstitutor: 파라미터 치환 로직
+ * - SqlLogger: SQL 로깅 로직
+ * - SqlCaptureConnection, SqlCaptureStatement, SqlCapturePreparedStatement: 별도 래퍼 클래스들
  */
 public class SqlCaptureProxy implements DataSource {
 
@@ -29,31 +29,31 @@ public class SqlCaptureProxy implements DataSource {
     private final LoggerInstance loggerInstance;
 
     /**
-     * Constructor with static API (backward compatibility)
+     * Static API 생성자 (하위 호환성)
      */
     public SqlCaptureProxy(DataSource targetDataSource) {
         this(targetDataSource, true, null);
     }
 
     /**
-     * Constructor with static API and enabled flag (backward compatibility)
+     * Static API + 활성화 플래그 생성자 (하위 호환성)
      */
     public SqlCaptureProxy(DataSource targetDataSource, boolean enabled) {
         this(targetDataSource, enabled, null);
     }
 
     /**
-     * Constructor with instance-based LoggerInstance (recommended)
+     * 인스턴스 기반 LoggerInstance 생성자 (권장)
      *
-     * @param targetDataSource The actual DataSource to wrap
-     * @param loggerInstance The LoggerInstance to use for logging
+     * @param targetDataSource 래핑할 실제 DataSource
+     * @param loggerInstance 로깅에 사용할 LoggerInstance
      */
     public SqlCaptureProxy(DataSource targetDataSource, LoggerInstance loggerInstance) {
         this(targetDataSource, true, loggerInstance);
     }
 
     /**
-     * Full constructor (internal use)
+     * 전체 생성자 (내부 사용)
      */
     private SqlCaptureProxy(DataSource targetDataSource, boolean enabled, LoggerInstance loggerInstance) {
         this.targetDataSource = targetDataSource;
@@ -73,7 +73,7 @@ public class SqlCaptureProxy implements DataSource {
         return enabled ? new SqlCaptureConnection(connection, loggerInstance) : connection;
     }
 
-    // Delegate methods
+    // 위임 메서드들
     @Override
     public PrintWriter getLogWriter() throws SQLException {
         return targetDataSource.getLogWriter();
