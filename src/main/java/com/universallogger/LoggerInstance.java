@@ -81,7 +81,7 @@ public class LoggerInstance {
         } else if (builder.configPath != null) {
             this.config = loadConfig(builder.configPath);
         } else {
-            this.config = createDefaultConfig();
+            this.config = loadDefaultConfig();
         }
 
         // MessageFilter 설정 (주입 또는 기본값)
@@ -100,31 +100,21 @@ public class LoggerInstance {
         try {
             return configLoader.load(configPath);
         } catch (Exception e) {
-            logger.error("Failed to load config: {}", configPath, e);
-            return createDefaultConfig();
+            logger.error("Failed to load config: {}, falling back to defaults.yml", configPath, e);
+            return loadDefaultConfig();
         }
     }
 
     /**
-     * 기본 설정 생성
+     * 기본 설정 로드 (defaults.yml)
      */
-    private LoggerConfig createDefaultConfig() {
-        LoggerConfig defaultConfig = new LoggerConfig();
-
-        defaultConfig.getGlobal().setAppName(LoggerConstants.Defaults.APP_NAME);
-        defaultConfig.getLevels().put("root", LoggerConstants.Defaults.LOG_LEVEL);
-
-        LoggerConfig.OutputConfig consoleConfig = new LoggerConfig.OutputConfig();
-        consoleConfig.setEnabled(true);
-        consoleConfig.setLevel("INFO");
-        consoleConfig.setFormat("[%d{yyyy-MM-dd HH:mm:ss}] %-5level %logger{36} - %msg%n");
-        defaultConfig.getOutputs().put("console", consoleConfig);
-
-        LoggerConfig.OutputConfig fileConfig = new LoggerConfig.OutputConfig();
-        fileConfig.setEnabled(false);
-        defaultConfig.getOutputs().put("file", fileConfig);
-
-        return defaultConfig;
+    private LoggerConfig loadDefaultConfig() {
+        try {
+            return configLoader.loadDefaultConfig();
+        } catch (Exception e) {
+            logger.error("CRITICAL: Cannot load defaults/universal-logger-defaults.yml", e);
+            throw new IllegalStateException("Failed to load default configuration from JAR", e);
+        }
     }
 
     /**
