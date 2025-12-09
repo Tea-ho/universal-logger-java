@@ -158,9 +158,8 @@ public class LoggerConfig {
         }
 
         // Merge SQL config
-        if (override.getSql() != null) {
-            SqlConfig overrideSql = override.getSql();
-            this.sql.setParameterSubstitution(overrideSql.isParameterSubstitution());
+        if (override.getSql() != null && override.getSql().getParameterSubstitution() != null) {
+            this.sql.setParameterSubstitution(override.getSql().getParameterSubstitution());
         }
     }
 
@@ -785,13 +784,17 @@ public class LoggerConfig {
      * 기본값은 universal-logger-defaults.yml에서 로드됨
      */
     public static class SqlConfig {
-        private boolean parameterSubstitution = false;
+        private Boolean parameterSubstitution;
 
         public boolean isParameterSubstitution() {
+            return parameterSubstitution != null ? parameterSubstitution : false;
+        }
+
+        public Boolean getParameterSubstitution() {
             return parameterSubstitution;
         }
 
-        public void setParameterSubstitution(boolean parameterSubstitution) {
+        public void setParameterSubstitution(Boolean parameterSubstitution) {
             this.parameterSubstitution = parameterSubstitution;
         }
     }
