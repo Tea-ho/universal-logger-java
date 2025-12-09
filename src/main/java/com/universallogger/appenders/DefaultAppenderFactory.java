@@ -27,8 +27,6 @@ import ch.qos.logback.core.util.FileSize;
  */
 public class DefaultAppenderFactory implements AppenderFactory {
 
-    private static final String DEFAULT_LOG_PATH = "logs/app.log";
-
     /**
      * 기본 생성자
      */
@@ -82,14 +80,8 @@ public class DefaultAppenderFactory implements AppenderFactory {
         rollingPolicy.setContext(context);
         rollingPolicy.setParent(appender);
         rollingPolicy.setFileNamePattern(filePath + ".%d{yyyy-MM-dd}.%i.gz");
-
-        if (outputConfig.getRotation() != null) {
-            rollingPolicy.setMaxFileSize(FileSize.valueOf(outputConfig.getRotation().getMaxSize()));
-            rollingPolicy.setMaxHistory(outputConfig.getRotation().getMaxFiles());
-        } else {
-            rollingPolicy.setMaxFileSize(FileSize.valueOf("10MB"));
-            rollingPolicy.setMaxHistory(30);
-        }
+        rollingPolicy.setMaxFileSize(FileSize.valueOf(outputConfig.getRotation().getMaxSize()));
+        rollingPolicy.setMaxHistory(outputConfig.getRotation().getMaxFiles());
         rollingPolicy.start();
 
         appender.setRollingPolicy(rollingPolicy);
@@ -117,7 +109,7 @@ public class DefaultAppenderFactory implements AppenderFactory {
 
         RollingFileAppender<ILoggingEvent> appender = new RollingFileAppender<>();
         appender.setContext(context);
-        appender.setName("ERROR_FILE");
+        appender.setName("ERRORFILE");
 
         // 파일 경로 설정
         String filePath = replacePlaceholders(outputConfig.getPath(), appName);
@@ -129,14 +121,8 @@ public class DefaultAppenderFactory implements AppenderFactory {
         rollingPolicy.setContext(context);
         rollingPolicy.setParent(appender);
         rollingPolicy.setFileNamePattern(filePath + ".%d{yyyy-MM-dd}.%i.gz");
-
-        if (outputConfig.getRotation() != null) {
-            rollingPolicy.setMaxFileSize(FileSize.valueOf(outputConfig.getRotation().getMaxSize()));
-            rollingPolicy.setMaxHistory(outputConfig.getRotation().getMaxFiles());
-        } else {
-            rollingPolicy.setMaxFileSize(FileSize.valueOf("10MB"));
-            rollingPolicy.setMaxHistory(30);
-        }
+        rollingPolicy.setMaxFileSize(FileSize.valueOf(outputConfig.getRotation().getMaxSize()));
+        rollingPolicy.setMaxHistory(outputConfig.getRotation().getMaxFiles());
         rollingPolicy.start();
 
         appender.setRollingPolicy(rollingPolicy);
@@ -233,7 +219,7 @@ public class DefaultAppenderFactory implements AppenderFactory {
      */
     private String replacePlaceholders(String path, String appName) {
         if (path == null) {
-            return DEFAULT_LOG_PATH;
+            return path;
         }
         if (appName != null) {
             return path.replace("{appName}", appName);
