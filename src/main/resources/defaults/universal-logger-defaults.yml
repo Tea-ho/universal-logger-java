@@ -14,7 +14,7 @@ levels:
   com.universallogger: "DEBUG"
 
 sql:
-  parameterSubstitution: false
+  parameterSubstitution: true
 
 outputs:
   # Console output - enabled by default
