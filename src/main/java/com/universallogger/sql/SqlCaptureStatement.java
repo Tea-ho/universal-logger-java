@@ -11,15 +11,21 @@ class SqlCaptureStatement implements Statement {
     protected final Statement targetStatement;
     protected final LoggerInstance loggerInstance;
     protected final SqlLogger sqlLogger;
+    protected final boolean sqlLoggingEnabled;
 
-    public SqlCaptureStatement(Statement targetStatement, LoggerInstance loggerInstance) {
+    public SqlCaptureStatement(Statement targetStatement, LoggerInstance loggerInstance, boolean sqlLoggingEnabled) {
         this.targetStatement = targetStatement;
         this.loggerInstance = loggerInstance;
         this.sqlLogger = new SqlLogger(loggerInstance);
+        this.sqlLoggingEnabled = sqlLoggingEnabled;
     }
 
     @Override
     public boolean execute(String sql) throws SQLException {
+        if (!sqlLoggingEnabled) {
+            return targetStatement.execute(sql);
+        }
+
         String callerInfo = sqlLogger.getCallerInfo();
         sqlLogger.logSql(sql, callerInfo);
         long start = System.currentTimeMillis();
@@ -32,6 +38,10 @@ class SqlCaptureStatement implements Statement {
 
     @Override
     public ResultSet executeQuery(String sql) throws SQLException {
+        if (!sqlLoggingEnabled) {
+            return targetStatement.executeQuery(sql);
+        }
+
         String callerInfo = sqlLogger.getCallerInfo();
         sqlLogger.logSql(sql, callerInfo);
         long start = System.currentTimeMillis();
@@ -62,6 +72,10 @@ class SqlCaptureStatement implements Statement {
 
     @Override
     public int executeUpdate(String sql) throws SQLException {
+        if (!sqlLoggingEnabled) {
+            return targetStatement.executeUpdate(sql);
+        }
+
         String callerInfo = sqlLogger.getCallerInfo();
         sqlLogger.logSql(sql, callerInfo);
         long start = System.currentTimeMillis();

@@ -22,12 +22,14 @@ class SqlCapturePreparedStatement extends SqlCaptureStatement implements Prepare
     private final boolean useParameterSubstitution;
 
     public SqlCapturePreparedStatement(PreparedStatement targetPreparedStatement, String sql, LoggerInstance loggerInstance) {
-        super(targetPreparedStatement, loggerInstance);
+        // 생성자에서 한 번만 설정 읽기 (성능 최적화)
+        super(targetPreparedStatement, loggerInstance, getSqlLoggingEnabled(loggerInstance));
         this.targetPreparedStatement = targetPreparedStatement;
         this.sql = sql;
+        this.useParameterSubstitution = sqlLoggingEnabled; // 부모의 sqlLoggingEnabled 사용
+    }
 
-        // 생성자에서 한 번만 설정 읽기 (성능 최적화)
-        boolean substitution = false;
+    private static boolean getSqlLoggingEnabled(LoggerInstance loggerInstance) {
         try {
             com.universallogger.config.LoggerConfig config;
             if (loggerInstance != null) {
@@ -37,16 +39,21 @@ class SqlCapturePreparedStatement extends SqlCaptureStatement implements Prepare
                 config = UniversalLogger.getConfig();
             }
             if (config != null && config.getSql() != null) {
-                substitution = config.getSql().isParameterSubstitution();
+                return config.getSql().isParameterSubstitution();
             }
         } catch (Exception e) {
             // 설정을 가져올 수 없는 경우 기본 동작 (OFF)
         }
-        this.useParameterSubstitution = substitution;
+        return false;
     }
 
     @Override
     public ResultSet executeQuery() throws SQLException {
+        // parameterSubstitution이 false면 SQL 로깅하지 않음
+        if (!useParameterSubstitution) {
+            return targetPreparedStatement.executeQuery();
+        }
+
         long start = System.currentTimeMillis();
         String callerInfo = sqlLogger.getCallerInfo();
         int rowCount = -1;
@@ -75,6 +82,11 @@ class SqlCapturePreparedStatement extends SqlCaptureStatement implements Prepare
 
     @Override
     public int executeUpdate() throws SQLException {
+        // parameterSubstitution이 false면 SQL 로깅하지 않음
+        if (!useParameterSubstitution) {
+            return targetPreparedStatement.executeUpdate();
+        }
+
         long start = System.currentTimeMillis();
         String callerInfo = sqlLogger.getCallerInfo();
         int updateCount = -1;
@@ -90,6 +102,11 @@ class SqlCapturePreparedStatement extends SqlCaptureStatement implements Prepare
 
     @Override
     public boolean execute() throws SQLException {
+        // parameterSubstitution이 false면 SQL 로깅하지 않음
+        if (!useParameterSubstitution) {
+            return targetPreparedStatement.execute();
+        }
+
         long start = System.currentTimeMillis();
         String callerInfo = sqlLogger.getCallerInfo();
         int rowCount = -1;
