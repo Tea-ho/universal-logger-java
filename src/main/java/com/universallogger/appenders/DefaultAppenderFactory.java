@@ -16,9 +16,6 @@ import ch.qos.logback.core.util.FileSize;
 /**
  * DefaultAppenderFactory - AppenderFactory의 기본 구현
  *
- * 각 앱펜더 타입에 대한 생성 로직을 캡슐화.
- * 단일 책임 원칙(SRP) 준수 - 앱펜더 생성만 담당.
- *
  * 사용법:
  * <pre>
  * AppenderFactory factory = new DefaultAppenderFactory();
