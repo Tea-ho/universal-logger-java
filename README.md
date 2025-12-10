@@ -1,27 +1,35 @@
 # Universal Logger for Java
 
-Java 애플리케이션을 위한 범용 로깅 라이브러리. 설정 파일 하나로 콘솔, 파일, DB, 웹훅, 이메일 로깅을 지원합니다.
+Java 애플리케이션을 위한 범용 로깅 라이브러리. 설정 파일 하나로 콘솔, 파일, DB, 웹훅, 이메일 로깅과 SQL 자동 캡처를 지원합니다.
+
+## 주요 특징
+
+- **제로 설정**: Spring Boot에서 의존성 추가만으로 자동 활성화
+- **SQL 자동 캡처**: MyBatis, JPA, Hibernate SQL을 자동으로 로깅
+- **다양한 출력 지원**: 콘솔, 파일, 데이터베이스, 웹훅, 이메일
+- **다중 포맷 지원**: YAML, XML, JSON 설정 파일
+- **민감 정보 마스킹**: 비밀번호, 카드번호 등 자동 마스킹
+- **유연한 사용 방식**: Static API, 인스턴스 기반, Spring DI 모두 지원
 
 ## 빠른 시작
 
-### 1. JAR 설치
+### 1. Maven/Gradle 설치
 
-```bash
-# 빌드
-./gradlew shadowJar
-
-# JAR 복사
-cp build/libs/universal-logger-1.0.0.jar your-project/libs/
+**Maven:**
+```xml
+<dependency>
+    <groupId>com.universallogger</groupId>
+    <artifactId>universal-logger</artifactId>
+    <version>1.0.0</version>
+</dependency>
 ```
-
-### 2. 의존성 추가
 
 **Gradle:**
 ```gradle
-implementation files('libs/universal-logger-1.0.0.jar')
+implementation 'com.universallogger:universal-logger:1.0.0'
 ```
 
-**Maven:**
+**로컬 JAR 사용 (Maven):**
 ```xml
 <dependency>
     <groupId>com.universallogger</groupId>
@@ -32,25 +40,84 @@ implementation files('libs/universal-logger-1.0.0.jar')
 </dependency>
 ```
 
-### 3. 기본 사용
+### 2. 설정 파일 (선택 사항)
 
+`src/main/resources/universal-logger.yml`:
+```yaml
+version: "1.0"
+
+global:
+  appName: "MyApp"
+
+outputs:
+  console:
+    enabled: true
+    level: "INFO"
+
+  file:
+    enabled: true
+    path: "logs/{appName}.log"
+```
+
+### 3. 사용하기
+
+**가장 간단한 방법:**
 ```java
 import com.universallogger.UniversalLogger;
 
-// 설정 파일로 초기화
-UniversalLogger.init("logging.yml");
-
-// 로깅
+// 초기화 없이 바로 사용 (자동으로 설정 파일 탐색)
 UniversalLogger.info("Hello World!");
 UniversalLogger.debug("Debug message: {}", value);
 UniversalLogger.error("Error occurred", exception);
+```
+
+**명시적 초기화:**
+```java
+// 설정 파일 지정
+UniversalLogger.init("config/logging.yml");
+UniversalLogger.info("Application started");
 ```
 
 ---
 
 ## 사용법
 
-### 방법 1: Static API (기존 방식)
+### 방법 1: 제로 설정 (Spring Boot)
+
+Spring Boot 프로젝트에서는 **의존성만 추가하면 자동으로 활성화**됩니다.
+
+**application.yml (선택 사항):**
+```yaml
+spring:
+  application:
+    name: MyApp
+
+universal-logger:
+  enabled: true  # 기본값: true
+  config-path: "config/universal-logger.yml"  # 기본값: config/universal-logger.yml
+  sql-capture:
+    enabled: true  # 기본값: true (SQL 자동 캡처)
+```
+
+**사용:**
+```java
+@Service
+public class UserService {
+    private final LoggerInstance logger;
+
+    // Spring이 자동으로 주입
+    public UserService(LoggerInstance logger) {
+        this.logger = logger;
+    }
+
+    public void createUser(User user) {
+        logger.info("Creating user: {}", user.getName());
+        // SQL 쿼리가 자동으로 로깅됨!
+    }
+}
+```
+
+### 방법 2: Static API (기존 방식)
 
 가장 간단한 방법. 기존 코드와 100% 호환됩니다.
 
@@ -70,9 +137,9 @@ Logger logger = UniversalLogger.getLogger("MyService");
 logger.info("Processing request: {}", requestId);
 ```
 
-### 방법 2: 인스턴스 기반 (DI 지원)
+### 방법 3: 인스턴스 기반 (일반 Spring, 테스트)
 
-테스트와 DI(의존성 주입)가 필요한 경우 사용합니다.
+Spring Boot가 아닌 일반 Spring 또는 테스트 환경에서 사용합니다.
 
 ```java
 import com.universallogger.LoggerInstance;
@@ -86,15 +153,13 @@ logger.info("Message from instance");
 
 // Spring에서 Bean으로 등록
 @Configuration
-public class LoggerConfig {
-    @Bean
-    public LoggerInstance logger() {
-        return UniversalLogger.createInstance("logging.yml");
-    }
+@Import(UniversalLoggerConfiguration.class)  // 일반 Spring용 자동 설정
+public class AppConfig {
+    // LoggerInstance Bean이 자동 생성됨
 }
 ```
 
-### 방법 3: Builder 패턴 (코드로 설정)
+### 방법 4: Builder 패턴 (코드로 설정)
 
 설정 파일 없이 코드에서 직접 설정할 때 사용합니다.
 
@@ -475,28 +540,97 @@ Logback 공식 문서: https://logback.qos.ch/manual/layouts.html#conversionWord
 
 ## 주요 기능
 
-### SQL 자동 캡처
+### 1. SQL 자동 캡처
 
-MyBatis, JPA, Hibernate 등에서 실행되는 SQL을 자동으로 캡처합니다.
+MyBatis, JPA, Hibernate 등에서 실행되는 SQL을 **자동으로 캡처**합니다.
 
+**Spring Boot (자동 활성화):**
+```yaml
+universal-logger:
+  sql-capture:
+    enabled: true  # 기본값: true
 ```
-2025-01-15 10:30:45 | INFO | UserService.findUser:25 | [SQL] SELECT * FROM users WHERE id = ? | Parameters: {1=123}
-2025-01-15 10:30:45 | INFO | UserService.findUser:25 | [SQL-TIME] 15ms
+
+**일반 Java (수동 설정):**
+```java
+import com.universallogger.sql.SqlCaptureProxy;
+
+// DataSource 래핑
+DataSource originalDataSource = ...;
+DataSource loggingDataSource = new SqlCaptureProxy(originalDataSource);
 ```
 
-### 다중 데이터베이스 지원
+**로그 출력 예시:**
+```
+2025-01-15 10:30:45 | INFO | [SQL] SELECT * FROM users WHERE id = ?
+2025-01-15 10:30:45 | INFO | [SQL-PARAMS] Parameters: [123]
+2025-01-15 10:30:45 | INFO | [SQL-RESULT] Rows affected: 1
+2025-01-15 10:30:45 | INFO | [SQL-TIME] Execution time: 15ms
+```
 
-MySQL, Oracle, PostgreSQL, MSSQL, H2를 지원합니다.
+**지원 프레임워크:**
+- MyBatis
+- JPA (Hibernate, EclipseLink)
+- Spring JDBC
+- 순수 JDBC
+
+### 2. 다중 포맷 지원 (YAML, XML, JSON)
+
+설정 파일을 **YAML, XML, JSON** 형식으로 작성할 수 있습니다.
+
+**자동 탐색 순서:**
+```
+1. universal-logger.yml
+2. config/universal-logger.yml
+3. universal-logger.xml
+4. config/universal-logger.xml
+5. universal-logger.json
+6. classpath:universal-logger.yml
+```
+
+**XML 예시:**
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<loggerConfig>
+    <global>
+        <appName>MyApp</appName>
+    </global>
+    <outputs>
+        <console enabled="true" level="INFO"/>
+        <file enabled="true" path="logs/app.log"/>
+    </outputs>
+</loggerConfig>
+```
+
+### 3. 다중 데이터베이스 지원
+
+로그를 **데이터베이스에 직접 저장**할 수 있습니다.
+
+**지원 DB:**
+- MySQL
+- Oracle
+- PostgreSQL
+- MSSQL (SQL Server)
+- H2
 
 ```yaml
-database:
-  type: "postgresql"  # mysql, oracle, postgresql, mssql, h2
-  host: "localhost"
-  port: 5432
-  database: "logs"
+outputs:
+  database:
+    enabled: true
+    level: "INFO"
+    database:
+      type: "mysql"
+      host: "localhost"
+      port: 3306
+      database: "app_logs"
+      table: "logs"
+      username: "root"
+      password: "password"
 ```
 
-### 민감 정보 마스킹
+### 4. 민감 정보 자동 마스킹
+
+비밀번호, 카드번호 등을 **자동으로 마스킹**합니다.
 
 ```yaml
 filters:
@@ -505,17 +639,76 @@ filters:
     patterns:
       - regex: "password=\\w+"
         replace: "password=***"
+      - regex: "\\d{4}-\\d{4}-\\d{4}-\\d{4}"
+        replace: "****-****-****-****"
 ```
 
-### 웹훅 알림 (Slack, Discord 등)
+**적용 예시:**
+```
+입력: "User login: password=mySecret123"
+출력: "User login: password=***"
+
+입력: "Card: 1234-5678-9012-3456"
+출력: "Card: ****-****-****-****"
+```
+
+### 5. 웹훅 알림 (Slack, Discord 등)
+
+에러 발생 시 **Slack, Discord, Teams**로 즉시 알림을 받을 수 있습니다.
 
 ```yaml
-webhook:
-  enabled: true
-  level: "ERROR"
+outputs:
   webhook:
-    url: "https://hooks.slack.com/services/..."
-    format: "json"
+    enabled: true
+    level: "ERROR"
+    webhook:
+      url: "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+      format: "json"
+```
+
+---
+
+## Spring Boot 통합
+
+### 자동 설정
+
+Spring Boot 프로젝트에서는 **의존성만 추가하면 자동으로 활성화**됩니다.
+
+**기능:**
+- `LoggerInstance` Bean 자동 생성
+- DataSource 자동 래핑 (SQL 캡처)
+- application.yml 설정 지원
+
+**application.yml 설정:**
+```yaml
+spring:
+  application:
+    name: MyApp
+
+universal-logger:
+  enabled: true  # UniversalLogger 활성화 (기본값: true)
+  config-path: "config/universal-logger.yml"  # 설정 파일 경로
+  sql-capture:
+    enabled: true  # SQL 자동 캡처 (기본값: true)
+```
+
+### 일반 Spring 프로젝트
+
+Spring Boot가 아닌 일반 Spring에서는 `UniversalLoggerConfiguration`을 임포트합니다.
+
+```java
+@Configuration
+@Import(UniversalLoggerConfiguration.class)
+public class AppConfig {
+    // LoggerInstance Bean이 자동 생성됨
+}
+```
+
+**application.properties:**
+```properties
+spring.application.name=MyApp
+universal-logger.config-path=config/universal-logger.yml
+universal-logger.sql-capture.enabled=true
 ```
 
 ---
@@ -524,12 +717,14 @@ webhook:
 
 ### UniversalLogger (Static API)
 
+싱글톤 패턴을 사용하는 정적 API입니다.
+
 | 메서드 | 설명 |
 |--------|------|
 | `init(String configPath)` | 설정 파일로 초기화 |
 | `init(LoggerConfig config)` | 설정 객체로 초기화 |
 | `getInstance()` | 싱글톤 LoggerInstance 반환 |
-| `createInstance(String configPath)` | 새 LoggerInstance 생성 |
+| `createInstance(String configPath)` | 새 LoggerInstance 생성 (독립 인스턴스) |
 | `createInstance(LoggerConfig config)` | 새 LoggerInstance 생성 |
 | `getLogger(String name)` | SLF4J Logger 반환 |
 | `getLogger(Class<?> clazz)` | SLF4J Logger 반환 |
@@ -539,10 +734,13 @@ webhook:
 
 ### LoggerInstance (Instance API)
 
+인스턴스 기반 API로 DI 및 멀티 인스턴스를 지원합니다.
+
 | 메서드 | 설명 |
 |--------|------|
-| `builder()` | Builder 생성 |
+| `builder()` | Builder 패턴으로 생성 |
 | `getLogger(String name)` | SLF4J Logger 반환 |
+| `getLogger(Class<?> clazz)` | SLF4J Logger 반환 |
 | `trace/debug/info/warn/error(...)` | 로깅 메서드 |
 | `getConfig()` | 현재 설정 반환 |
 | `isInitialized()` | 초기화 상태 확인 |
@@ -551,10 +749,24 @@ webhook:
 
 | 메서드 | 설명 |
 |--------|------|
-| `configPath(String path)` | 설정 파일 경로 |
-| `config(LoggerConfig config)` | 설정 객체 |
-| `appenderFactory(AppenderFactory factory)` | 커스텀 Factory (DI/테스트용) |
+| `configPath(String path)` | 설정 파일 경로 지정 |
+| `config(LoggerConfig config)` | 설정 객체 직접 지정 |
+| `appenderFactory(AppenderFactory)` | 커스텀 Appender Factory (DI/테스트) |
+| `configLoader(ConfigLoader)` | 커스텀 Config Loader (DI/테스트) |
+| `messageFilter(MessageFilter)` | 커스텀 Message Filter (DI/테스트) |
 | `build()` | LoggerInstance 생성 |
+
+### SqlCaptureProxy
+
+DataSource를 래핑하여 SQL을 자동 캡처합니다.
+
+```java
+// Static API 사용 (UniversalLogger 싱글톤)
+DataSource wrapped = new SqlCaptureProxy(originalDataSource);
+
+// 인스턴스 기반 (LoggerInstance 주입)
+DataSource wrapped = new SqlCaptureProxy(originalDataSource, loggerInstance);
+```
 
 ### LoggerConfigBuilder
 
