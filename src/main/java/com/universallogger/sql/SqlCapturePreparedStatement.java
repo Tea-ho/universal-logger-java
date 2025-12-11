@@ -21,6 +21,9 @@ class SqlCapturePreparedStatement extends SqlCaptureStatement implements Prepare
     private final Map<Integer, Object> parameters = Collections.synchronizedMap(new java.util.HashMap<>());
     private final boolean useParameterSubstitution;
 
+    // MyBatis가 execute() 후 getUpdateCount()를 호출할 때를 대비한 캐시
+    private int cachedUpdateCount = -1;
+
     public SqlCapturePreparedStatement(PreparedStatement targetPreparedStatement, String sql, LoggerInstance loggerInstance) {
         // 생성자에서 한 번만 설정 읽기 (성능 최적화)
         super(targetPreparedStatement, loggerInstance, getSqlLoggingEnabled(loggerInstance));
@@ -82,7 +85,6 @@ class SqlCapturePreparedStatement extends SqlCaptureStatement implements Prepare
 
     @Override
     public int executeUpdate() throws SQLException {
-        // parameterSubstitution이 false면 SQL 로깅하지 않음
         if (!useParameterSubstitution) {
             return targetPreparedStatement.executeUpdate();
         }
@@ -102,7 +104,6 @@ class SqlCapturePreparedStatement extends SqlCaptureStatement implements Prepare
 
     @Override
     public boolean execute() throws SQLException {
-        // parameterSubstitution이 false면 SQL 로깅하지 않음
         if (!useParameterSubstitution) {
             return targetPreparedStatement.execute();
         }
@@ -116,10 +117,8 @@ class SqlCapturePreparedStatement extends SqlCaptureStatement implements Prepare
             boolean hasResultSet = targetPreparedStatement.execute();
 
             if (hasResultSet) {
-                // Query returned a ResultSet - count rows
                 ResultSet rs = targetPreparedStatement.getResultSet();
                 if (rs != null) {
-                    // Try to count rows using last() and getRow() if ResultSet is scrollable
                     try {
                         if (rs.getType() != ResultSet.TYPE_FORWARD_ONLY) {
                             rs.last();
@@ -131,8 +130,8 @@ class SqlCapturePreparedStatement extends SqlCaptureStatement implements Prepare
                     }
                 }
             } else {
-                // Query returned update count
                 updateCount = targetPreparedStatement.getUpdateCount();
+                cachedUpdateCount = updateCount;
             }
 
             return hasResultSet;
@@ -140,6 +139,14 @@ class SqlCapturePreparedStatement extends SqlCaptureStatement implements Prepare
             long executionTime = System.currentTimeMillis() - start;
             sqlLogger.logAllResults(sql, parameters, rowCount, updateCount, executionTime, useParameterSubstitution, callerInfo);
         }
+    }
+
+    @Override
+    public int getUpdateCount() throws SQLException {
+        if (cachedUpdateCount != -1) {
+            return cachedUpdateCount;
+        }
+        return targetPreparedStatement.getUpdateCount();
     }
 
     // Parameter tracking methods
