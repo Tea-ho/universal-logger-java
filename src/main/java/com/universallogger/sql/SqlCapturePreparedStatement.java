@@ -144,7 +144,9 @@ class SqlCapturePreparedStatement extends SqlCaptureStatement implements Prepare
     @Override
     public int getUpdateCount() throws SQLException {
         if (cachedUpdateCount != -1) {
-            return cachedUpdateCount;
+            int result = cachedUpdateCount;
+            cachedUpdateCount = -1; // 캐시 초기화하여 다음 호출시 실제 값 반환
+            return result;
         }
         return targetPreparedStatement.getUpdateCount();
     }
