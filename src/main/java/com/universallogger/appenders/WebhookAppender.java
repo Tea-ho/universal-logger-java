@@ -151,7 +151,20 @@ public class WebhookAppender extends AppenderBase<ILoggingEvent> {
     }
 
     private String escapeJson(String text) {
-        return text.replace("\"", "\\\"").replace("\n", "\\n");
+        if (text == null) {
+            return "";
+        }
+
+        // JSON 특수 문자 이스케이프 처리
+        // 주의: 백슬래시를 가장 먼저 처리해야 함
+        return text
+            .replace("\\", "\\\\")     // 백슬래시 (가장 먼저 처리)
+            .replace("\"", "\\\"")     // 따옴표
+            .replace("\n", "\\n")      // 개행
+            .replace("\r", "\\r")      // 캐리지 리턴
+            .replace("\t", "\\t")      // 탭
+            .replace("\b", "\\b")      // 백스페이스
+            .replace("\f", "\\f");     // 폼 피드
     }
 
     public void setUrl(String url) {
