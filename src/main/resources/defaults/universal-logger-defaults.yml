@@ -80,19 +80,6 @@ outputs:
       to: []
       subject: "[{appName}] Error Alert"
 
-  # Database - disabled by default
-  database:
-    enabled: false
-    level: "INFO"
-    database:
-      type: "mysql"
-      host: "localhost"
-      port: 3306
-      database: "logs"
-      table: "app_logs"
-      username: ""
-      password: ""
-
 # Sensitive data filters
 filters:
   sensitiveData:

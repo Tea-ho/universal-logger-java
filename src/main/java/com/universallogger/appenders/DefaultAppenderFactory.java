@@ -180,23 +180,6 @@ public class DefaultAppenderFactory implements AppenderFactory {
         return appender;
     }
 
-    @Override
-    public Appender<ILoggingEvent> createDatabaseAppender(
-            LoggerContext context,
-            LoggerConfig.OutputConfig outputConfig) {
-
-        DatabaseAppender appender = new DatabaseAppender();
-        appender.setContext(context);
-        appender.setName("DATABASE");
-
-        if (outputConfig.getDatabase() != null) {
-            appender.setDatabaseConfig(outputConfig.getDatabase());
-        }
-
-        appender.start();
-        return appender;
-    }
-
     // ========== Helper Methods ==========
 
     /**

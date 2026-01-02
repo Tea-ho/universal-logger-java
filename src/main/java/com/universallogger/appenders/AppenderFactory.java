@@ -76,16 +76,4 @@ public interface AppenderFactory {
         LoggerContext context,
         LoggerConfig.OutputConfig outputConfig
     );
-
-    /**
-     * 데이터베이스 앱펜더 생성
-     *
-     * @param context LoggerContext
-     * @param outputConfig 출력 설정
-     * @return 설정된 데이터베이스 앱펜더
-     */
-    Appender<ILoggingEvent> createDatabaseAppender(
-        LoggerContext context,
-        LoggerConfig.OutputConfig outputConfig
-    );
 }

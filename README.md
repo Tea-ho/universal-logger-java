@@ -1,12 +1,12 @@
 # Universal Logger for Java
 
-Java 애플리케이션을 위한 범용 로깅 라이브러리. 설정 파일 하나로 콘솔, 파일, DB, 웹훅, 이메일 로깅과 SQL 자동 캡처를 지원합니다.
+Java 애플리케이션을 위한 범용 로깅 라이브러리. 설정 파일 하나로 콘솔, 파일, 웹훅, 이메일 로깅과 SQL 자동 캡처를 지원합니다.
 
 ## 주요 특징
 
 - **제로 설정**: Spring Boot에서 의존성 추가만으로 자동 활성화
 - **SQL 자동 캡처**: MyBatis, JPA, Hibernate SQL을 자동으로 로깅
-- **다양한 출력 지원**: 콘솔, 파일, 데이터베이스, 웹훅, 이메일
+- **다양한 출력 지원**: 콘솔, 파일, 웹훅, 이메일
 - **다중 포맷 지원**: YAML, XML, JSON 설정 파일
 - **민감 정보 마스킹**: 비밀번호, 카드번호 등 자동 마스킹
 - **유연한 사용 방식**: Static API, 인스턴스 기반, Spring DI 모두 지원
@@ -299,18 +299,6 @@ outputs:
         - "admin@example.com"
       subject: "[{appName}] Error Alert"
 
-  database:
-    enabled: false
-    level: "INFO"
-    database:
-      type: "mysql"      # mysql, oracle, postgresql, mssql, h2
-      host: "localhost"
-      port: 3306
-      database: "logs"
-      table: "app_logs"
-      username: "root"
-      password: "password"
-
 filters:
   sensitiveData:
     enabled: true
@@ -602,33 +590,7 @@ DataSource loggingDataSource = new SqlCaptureProxy(originalDataSource);
 </loggerConfig>
 ```
 
-### 3. 다중 데이터베이스 지원
-
-로그를 **데이터베이스에 직접 저장**할 수 있습니다.
-
-**지원 DB:**
-- MySQL
-- Oracle
-- PostgreSQL
-- MSSQL (SQL Server)
-- H2
-
-```yaml
-outputs:
-  database:
-    enabled: true
-    level: "INFO"
-    database:
-      type: "mysql"
-      host: "localhost"
-      port: 3306
-      database: "app_logs"
-      table: "logs"
-      username: "root"
-      password: "password"
-```
-
-### 4. 민감 정보 자동 마스킹
+### 3. 민감 정보 자동 마스킹
 
 비밀번호, 카드번호 등을 **자동으로 마스킹**합니다.
 
@@ -652,7 +614,7 @@ filters:
 출력: "Card: ****-****-****-****"
 ```
 
-### 5. 웹훅 알림 (Slack, Discord 등)
+### 4. 웹훅 알림 (Slack, Discord 등)
 
 에러 발생 시 **Slack, Discord, Teams**로 즉시 알림을 받을 수 있습니다.
 
@@ -780,7 +742,6 @@ LoggerConfigBuilder.create()
     .errorFile().enabled(true).level("ERROR").and()
     .webhook().enabled(true).url("...").and()
     .email().enabled(true).smtpHost("...").to("admin@...").and()
-    .database().enabled(true).type("mysql").host("localhost").and()
     .async(true)
     .sensitiveDataFilter(true)
     .build();
