@@ -195,11 +195,6 @@ public class LoggerConfig {
             base.getRotation().setCompress(overrideRotation.isCompress());
         }
 
-        // Merge database config
-        if (override.getDatabase() != null && override.getDatabase().getType() != null) {
-            base.setDatabase(override.getDatabase());
-        }
-
         // Merge webhook config
         if (override.getWebhook() != null && override.getWebhook().getUrl() != null) {
             base.setWebhook(override.getWebhook());
@@ -312,19 +307,6 @@ public class LoggerConfig {
             copy.setRotation(rotCopy);
         }
 
-        // Database copy
-        if (original.getDatabase() != null) {
-            DatabaseConfig dbCopy = new DatabaseConfig();
-            dbCopy.setType(original.getDatabase().getType());
-            dbCopy.setHost(original.getDatabase().getHost());
-            dbCopy.setPort(original.getDatabase().getPort());
-            dbCopy.setDatabase(original.getDatabase().getDatabase());
-            dbCopy.setTable(original.getDatabase().getTable());
-            dbCopy.setUsername(original.getDatabase().getUsername());
-            dbCopy.setPassword(original.getDatabase().getPassword());
-            copy.setDatabase(dbCopy);
-        }
-
         // Webhook copy
         if (original.getWebhook() != null) {
             WebhookConfig whCopy = new WebhookConfig();
@@ -399,7 +381,6 @@ public class LoggerConfig {
         private String path;
         private Map<String, String> colors = new HashMap<>();
         private RotationConfig rotation = new RotationConfig();
-        private DatabaseConfig database = new DatabaseConfig();
         private WebhookConfig webhook = new WebhookConfig();
         private EmailConfig email = new EmailConfig();
 
@@ -452,14 +433,6 @@ public class LoggerConfig {
             this.rotation = rotation;
         }
 
-        public DatabaseConfig getDatabase() {
-            return database;
-        }
-
-        public void setDatabase(DatabaseConfig database) {
-            this.database = database;
-        }
-
         public WebhookConfig getWebhook() {
             return webhook;
         }
@@ -508,75 +481,6 @@ public class LoggerConfig {
 
         public void setCompress(boolean compress) {
             this.compress = compress;
-        }
-    }
-
-    /**
-     * 데이터베이스 설정
-     */
-    public static class DatabaseConfig {
-        private String type;
-        private String host;
-        private int port;
-        private String database;
-        private String table;
-        private String username;
-        private String password;
-
-        public String getType() {
-            return type;
-        }
-
-        public void setType(String type) {
-            this.type = type;
-        }
-
-        public String getHost() {
-            return host;
-        }
-
-        public void setHost(String host) {
-            this.host = host;
-        }
-
-        public int getPort() {
-            return port;
-        }
-
-        public void setPort(int port) {
-            this.port = port;
-        }
-
-        public String getDatabase() {
-            return database;
-        }
-
-        public void setDatabase(String database) {
-            this.database = database;
-        }
-
-        public String getTable() {
-            return table;
-        }
-
-        public void setTable(String table) {
-            this.table = table;
-        }
-
-        public String getUsername() {
-            return username;
-        }
-
-        public void setUsername(String username) {
-            this.username = username;
-        }
-
-        public String getPassword() {
-            return password;
-        }
-
-        public void setPassword(String password) {
-            this.password = password;
         }
     }
 

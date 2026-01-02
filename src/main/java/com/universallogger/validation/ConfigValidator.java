@@ -1,7 +1,6 @@
 package com.universallogger.validation;
 
 import com.universallogger.config.LoggerConfig;
-import com.universallogger.config.LoggerConfig.DatabaseConfig;
 import com.universallogger.constants.LoggerConstants;
 
 import java.util.ArrayList;
@@ -87,11 +86,6 @@ public class ConfigValidator {
             validateFileOutput(name, output, result);
         }
 
-        // 데이터베이스 출력 검증
-        if ("database".equals(name)) {
-            validateDatabaseConfig(output.getDatabase(), result);
-        }
-
         // 웹훅 출력 검증
         if ("webhook".equals(name)) {
             validateWebhookConfig(output.getWebhook(), result);
@@ -120,38 +114,6 @@ public class ConfigValidator {
             if (rotation.getMaxFiles() <= 0) {
                 result.addWarning("Max files must be positive for output '" + name + "'");
             }
-        }
-    }
-
-    /**
-     * 데이터베이스 설정 검증
-     */
-    private static void validateDatabaseConfig(DatabaseConfig config, ValidationResult result) {
-        if (config == null) {
-            result.addError("Database config is required when database output is enabled");
-            return;
-        }
-
-        if (config.getType() == null || config.getType().trim().isEmpty()) {
-            result.addError("Database type is not set");
-        } else if (!isValidDatabaseType(config.getType())) {
-            result.addError("Unsupported database type: " + config.getType());
-        }
-
-        if (config.getHost() == null || config.getHost().trim().isEmpty()) {
-            result.addError("Database host is not set");
-        }
-
-        if (config.getDatabase() == null || config.getDatabase().trim().isEmpty()) {
-            result.addError("Database name is not set");
-        }
-
-        if (config.getUsername() == null || config.getUsername().trim().isEmpty()) {
-            result.addError("Database username is not set");
-        }
-
-        if (config.getPassword() == null || config.getPassword().trim().isEmpty()) {
-            result.addWarning("Database password is not set");
         }
     }
 
@@ -210,23 +172,6 @@ public class ConfigValidator {
                LoggerConstants.LogLevel.INFO.equals(upperLevel) ||
                LoggerConstants.LogLevel.WARN.equals(upperLevel) ||
                LoggerConstants.LogLevel.ERROR.equals(upperLevel);
-    }
-
-    /**
-     * 데이터베이스 타입 유효성 확인
-     */
-    private static boolean isValidDatabaseType(String type) {
-        if (type == null) {
-            return false;
-        }
-        String lowerType = type.toLowerCase();
-        return LoggerConstants.DatabaseType.MYSQL.equals(lowerType) ||
-               LoggerConstants.DatabaseType.ORACLE.equals(lowerType) ||
-               LoggerConstants.DatabaseType.MSSQL.equals(lowerType) ||
-               "sqlserver".equals(lowerType) ||
-               LoggerConstants.DatabaseType.POSTGRESQL.equals(lowerType) ||
-               "postgres".equals(lowerType) ||
-               LoggerConstants.DatabaseType.H2.equals(lowerType);
     }
 
     /**

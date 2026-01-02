@@ -153,7 +153,7 @@ public class DefaultAppenderFactory implements AppenderFactory {
             appender.setFormat(outputConfig.getWebhook().getFormat());
         }
 
-        // 임계값 필터 추가
+        // 임계값 필터 추가 (레벨 필터링)
         addThresholdFilter(appender, outputConfig.getLevel());
 
         appender.start();
@@ -175,23 +175,6 @@ public class DefaultAppenderFactory implements AppenderFactory {
 
         // 임계값 필터 추가
         addThresholdFilter(appender, outputConfig.getLevel());
-
-        appender.start();
-        return appender;
-    }
-
-    @Override
-    public Appender<ILoggingEvent> createDatabaseAppender(
-            LoggerContext context,
-            LoggerConfig.OutputConfig outputConfig) {
-
-        DatabaseAppender appender = new DatabaseAppender();
-        appender.setContext(context);
-        appender.setName("DATABASE");
-
-        if (outputConfig.getDatabase() != null) {
-            appender.setDatabaseConfig(outputConfig.getDatabase());
-        }
 
         appender.start();
         return appender;

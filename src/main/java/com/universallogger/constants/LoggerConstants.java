@@ -24,31 +24,6 @@ public final class LoggerConstants {
     }
 
     /**
-     * 데이터베이스 타입
-     */
-    public static final class DatabaseType {
-        public static final String MYSQL = "mysql";
-        public static final String ORACLE = "oracle";
-        public static final String MSSQL = "mssql";
-        public static final String POSTGRESQL = "postgresql";
-        public static final String H2 = "h2";
-
-        private DatabaseType() {}
-    }
-
-    /**
-     * 데이터베이스 기본 포트
-     */
-    public static final class DatabasePort {
-        public static final int MYSQL = 3306;
-        public static final int ORACLE = 1521;
-        public static final int MSSQL = 1433;
-        public static final int POSTGRESQL = 5432;
-
-        private DatabasePort() {}
-    }
-
-    /**
      * 설정 파일 경로 (자동 감지 우선순위)
      */
     public static final class ConfigPath {
@@ -127,8 +102,6 @@ public final class LoggerConstants {
     public static final class ErrorMessage {
         public static final String CONFIG_NOT_FOUND = "Config file not found: ";
         public static final String INVALID_CONFIG = "Invalid configuration: ";
-        public static final String UNSUPPORTED_DB_TYPE = "Unsupported database type: ";
-        public static final String DB_CONNECTION_FAILED = "Database connection failed: ";
         public static final String INIT_FAILED = "Failed to initialize Universal Logger: ";
 
         private ErrorMessage() {}

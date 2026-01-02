@@ -202,13 +202,6 @@ public class LoggerInstance {
                 loggerContext, outputs.get("email"));
             rootLogger.addAppender(appender);
         }
-
-        // 데이터베이스 앱펜더
-        if (isOutputEnabled(outputs, "database")) {
-            Appender<ILoggingEvent> appender = appenderFactory.createDatabaseAppender(
-                loggerContext, outputs.get("database"));
-            rootLogger.addAppender(appender);
-        }
     }
 
     /**

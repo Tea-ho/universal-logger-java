@@ -148,13 +148,6 @@ public class LoggerConfigBuilder {
         return new EmailOutputBuilder(this);
     }
 
-    /**
-     * 데이터베이스 출력 설정 빌더
-     */
-    public DatabaseOutputBuilder database() {
-        return new DatabaseOutputBuilder(this);
-    }
-
     // ========== Performance Settings ==========
 
     /**
@@ -508,86 +501,6 @@ public class LoggerConfigBuilder {
             config.setEmail(email);
 
             parent.addOutput("email", config);
-            return parent;
-        }
-    }
-
-    /**
-     * 데이터베이스 출력 설정 빌더
-     */
-    public static class DatabaseOutputBuilder {
-        private final LoggerConfigBuilder parent;
-        private boolean enabled = false;
-        private String level = "INFO";
-        private String type = "mysql";
-        private String host = "localhost";
-        private int port = 3306;
-        private String database;
-        private String table = "logs";
-        private String username;
-        private String password;
-
-        DatabaseOutputBuilder(LoggerConfigBuilder parent) {
-            this.parent = parent;
-        }
-
-        public DatabaseOutputBuilder enabled(boolean enabled) {
-            this.enabled = enabled;
-            return this;
-        }
-
-        public DatabaseOutputBuilder level(String level) {
-            this.level = level;
-            return this;
-        }
-
-        public DatabaseOutputBuilder type(String type) {
-            this.type = type;
-            return this;
-        }
-
-        public DatabaseOutputBuilder host(String host) {
-            this.host = host;
-            return this;
-        }
-
-        public DatabaseOutputBuilder port(int port) {
-            this.port = port;
-            return this;
-        }
-
-        public DatabaseOutputBuilder database(String database) {
-            this.database = database;
-            return this;
-        }
-
-        public DatabaseOutputBuilder table(String table) {
-            this.table = table;
-            return this;
-        }
-
-        public DatabaseOutputBuilder credentials(String username, String password) {
-            this.username = username;
-            this.password = password;
-            return this;
-        }
-
-        public LoggerConfigBuilder and() {
-            LoggerConfig.OutputConfig config = new LoggerConfig.OutputConfig();
-            config.setEnabled(enabled);
-            config.setLevel(level);
-
-            LoggerConfig.DatabaseConfig dbConfig = new LoggerConfig.DatabaseConfig();
-            dbConfig.setType(type);
-            dbConfig.setHost(host);
-            dbConfig.setPort(port);
-            dbConfig.setDatabase(database);
-            dbConfig.setTable(table);
-            dbConfig.setUsername(username);
-            dbConfig.setPassword(password);
-            config.setDatabase(dbConfig);
-
-            parent.addOutput("database", config);
             return parent;
         }
     }
