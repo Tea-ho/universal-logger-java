@@ -11,13 +11,10 @@ import java.util.regex.Matcher;
  * 정규식 패턴을 사용하여 민감한 정보를 마스킹합니다.
  * (비밀번호, 토큰, 신용카드 번호, API 키 등)
  *
- * 사용법:
- * <pre>
- * MessageFilter filter = new SensitiveDataFilter(filtersConfig);
- * String filtered = filter.filter("password=secret123");
- * // 결과: "password=***"
- * </pre>
+ * @deprecated 더 이상 사용되지 않습니다. {@link SensitiveDataLogbackFilter}를 사용하세요.
+ * @see SensitiveDataLogbackFilter
  */
+@Deprecated
 public class SensitiveDataFilter implements MessageFilter {
 
     private final Pattern[] patterns;

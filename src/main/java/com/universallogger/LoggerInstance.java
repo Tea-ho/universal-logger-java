@@ -51,7 +51,6 @@ public class LoggerInstance {
     private final LoggerConfig config;
     private final LoggerContext loggerContext;
     private final Map<String, Logger> loggers;
-    private final com.universallogger.filters.MessageFilter messageFilter;
     private final AppenderFactory appenderFactory;
     private final com.universallogger.loaders.ConfigLoader configLoader;
     private final boolean initialized;
@@ -80,11 +79,6 @@ public class LoggerInstance {
         } else {
             this.config = loadDefaultConfig();
         }
-
-        // MessageFilter 설정 (주입 또는 기본값)
-        this.messageFilter = builder.messageFilter != null
-            ? builder.messageFilter
-            : new SensitiveDataFilter(this.config.getFilters());
 
         this.loggerContext = initLoggerContext();
         this.initialized = setupLogging();
@@ -227,69 +221,6 @@ public class LoggerInstance {
         return getLogger(clazz.getSimpleName());
     }
 
-    /**
-     * 기본 로거 반환
-     */
-    private Logger getDefaultLogger() {
-        return getLogger("universal");
-    }
-
-    /**
-     * 메시지 필터링
-     */
-    private String filterMessage(String message) {
-        if (messageFilter != null) {
-            return messageFilter.filter(message);
-        }
-        return message;
-    }
-
-    // ========== Logging Methods ==========
-
-    public void trace(String message) {
-        getDefaultLogger().trace(filterMessage(message));
-    }
-
-    public void trace(String format, Object... args) {
-        getDefaultLogger().trace(filterMessage(format), args);
-    }
-
-    public void debug(String message) {
-        getDefaultLogger().debug(filterMessage(message));
-    }
-
-    public void debug(String format, Object... args) {
-        getDefaultLogger().debug(filterMessage(format), args);
-    }
-
-    public void info(String message) {
-        getDefaultLogger().info(filterMessage(message));
-    }
-
-    public void info(String format, Object... args) {
-        getDefaultLogger().info(filterMessage(format), args);
-    }
-
-    public void warn(String message) {
-        getDefaultLogger().warn(filterMessage(message));
-    }
-
-    public void warn(String format, Object... args) {
-        getDefaultLogger().warn(filterMessage(format), args);
-    }
-
-    public void error(String message) {
-        getDefaultLogger().error(filterMessage(message));
-    }
-
-    public void error(String format, Object... args) {
-        getDefaultLogger().error(filterMessage(format), args);
-    }
-
-    public void error(String message, Throwable throwable) {
-        getDefaultLogger().error(filterMessage(message), throwable);
-    }
-
     // ========== Getters ==========
 
     /**
@@ -335,7 +266,6 @@ public class LoggerInstance {
      * DI(의존성 주입) 지원:
      * - AppenderFactory 주입 가능 (테스트 시 Mock 주입)
      * - ConfigLoader 주입 가능 (테스트 시 Mock 주입)
-     * - MessageFilter 주입 가능 (테스트 시 Mock 주입)
      * - Config 또는 configPath 지정 가능
      */
     public static class Builder {
@@ -343,7 +273,6 @@ public class LoggerInstance {
         private LoggerConfig config;
         private AppenderFactory appenderFactory;
         private com.universallogger.loaders.ConfigLoader configLoader;
-        private com.universallogger.filters.MessageFilter messageFilter;
 
         private Builder() {}
 
@@ -380,16 +309,6 @@ public class LoggerInstance {
          */
         public Builder configLoader(com.universallogger.loaders.ConfigLoader configLoader) {
             this.configLoader = configLoader;
-            return this;
-        }
-
-        /**
-         * 커스텀 MessageFilter 지정 (DI/테스트용)
-         *
-         * @param messageFilter 사용할 MessageFilter 구현체
-         */
-        public Builder messageFilter(com.universallogger.filters.MessageFilter messageFilter) {
-            this.messageFilter = messageFilter;
             return this;
         }
 

@@ -18,11 +18,11 @@
 
 ### 주요 특징
 - Maven/Gradle 모두 지원 - 빌드 도구 관계없이 사용 가능
-- SLF4J/Logback 호환 - 기존 로깅 코드와 완벽 호환
-- 최소 설정 - XML 또는 YAML 파일만으로 완전 제어
+- SLF4J/Logback 완벽 호환 - 기존 로깅 코드 그대로 사용
+- Logback 프로그래밍 방식 설정 - YAML/XML/JSON으로 Logback 완전 제어
 - 자동 초기화 - 설정 파일 자동 감지 및 로드
 - 에러 알림 기능 - webhook, email을 이용한 error 알림 기능
-- 쿼리 오토 매핑 - 실행 쿼리의 파라미터 자동 매핑 기능
+- SQL 자동 캡처 - 실행 쿼리의 파라미터 자동 로깅
 
 ---
 
@@ -234,18 +234,6 @@ outputs:
         password: "your-password"
       to: ["admin@company.com"]
       subject: "[{appName}] Error Alert"
-
-# 민감 정보 필터
-filters:
-  sensitiveData:
-    enabled: true
-    patterns:
-      - regex: "password=\\w+"
-        replace: "password=***"
-      - regex: "token=\\w+"
-        replace: "token=***"
-      - regex: "\\d{4}-\\d{4}-\\d{4}-\\d{4}"
-        replace: "****-****-****-****"
 
 # 성능 설정
 performance:
@@ -459,22 +447,20 @@ universal.logger.sql.parameter-substitution=true
 ### 3. Spring Bean 설정
 
 ```java
-import com.universallogger.UniversalLogger;
-import org.slf4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 public class UserService {
-    private static final Logger logger = UniversalLogger.getLogger(UserService.class);
-
     public void createUser(String username) {
-        logger.info("사용자 생성 시작: {}", username);
+        log.info("사용자 생성 시작: {}", username);
 
         try {
             // 비즈니스 로직
-            logger.debug("사용자 검증 완료");
+            log.debug("사용자 검증 완료");
         } catch (Exception e) {
-            logger.error("사용자 생성 실패", e);
+            log.error("사용자 생성 실패", e);
         }
     }
 }
@@ -572,25 +558,23 @@ public class MyApplication {
 ### 3. 컨트롤러에서 사용
 
 ```java
-import com.universallogger.UniversalLogger;
-import org.slf4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
-    private static final Logger logger = UniversalLogger.getLogger(UserController.class);
-
     @PostMapping
     public ResponseEntity<User> createUser(@RequestBody UserDto dto) {
-        logger.info("사용자 생성 요청: {}", dto.getUsername());
+        log.info("사용자 생성 요청: {}", dto.getUsername());
 
         try {
             User user = userService.create(dto);
-            logger.info("사용자 생성 완료: id={}", user.getId());
+            log.info("사용자 생성 완료: id={}", user.getId());
             return ResponseEntity.ok(user);
         } catch (Exception e) {
-            logger.error("사용자 생성 실패: {}", e.getMessage(), e);
+            log.error("사용자 생성 실패: {}", e.getMessage(), e);
             return ResponseEntity.status(500).build();
         }
     }
@@ -633,49 +617,55 @@ outputs:
 
 ```java
 import com.universallogger.UniversalLogger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class MyApplication {
     public static void main(String[] args) {
         // 자동으로 universal-logger.yml을 찾아 초기화됨
-        UniversalLogger.info("애플리케이션 시작!");
-        UniversalLogger.debug("디버그 메시지");
-        UniversalLogger.error("에러 발생!");
+        log.info("애플리케이션 시작!");
+        log.debug("디버그 메시지");
+        log.error("에러 발생!");
     }
 }
 ```
 
 ### 방법 2: 수동 초기화
 
+설정 파일 경로를 명시적으로 지정할 때 사용합니다.
+
 ```java
 import com.universallogger.UniversalLogger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class MyApplication {
     public static void main(String[] args) {
         // 설정 파일 경로 지정
         UniversalLogger.init("config/logging.yml");
 
-        UniversalLogger.info("로거 초기화 완료");
+        log.info("로거 초기화 완료");
     }
 }
 ```
 
-### 방법 3: SLF4J 스타일 사용
+### 방법 3: @Slf4j 사용 (권장)
+
+**로깅은 항상 @Slf4j를 사용하세요.**
 
 ```java
-import com.universallogger.UniversalLogger;
-import org.slf4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class UserService {
-    private static final Logger logger = UniversalLogger.getLogger(UserService.class);
-
     public void createUser(String username) {
-        logger.info("사용자 생성 시작: {}", username);
+        log.info("사용자 생성 시작: {}", username);
 
         try {
             // 비즈니스 로직
-            logger.debug("사용자 검증 완료");
+            log.debug("사용자 검증 완료");
         } catch (Exception e) {
-            logger.error("사용자 생성 실패: {}", e.getMessage(), e);
+            log.error("사용자 생성 실패: {}", e.getMessage(), e);
         }
     }
 }
@@ -735,32 +725,6 @@ C:/log/MyApp/
 └── application-2025-12-23.0.log.gz
 ```
 
-### 민감 정보 자동 마스킹
-
-```yaml
-filters:
-  sensitiveData:
-    enabled: true
-    patterns:
-      - regex: "password=\\w+"
-        replace: "password=***"
-      - regex: "token=[A-Za-z0-9]+"
-        replace: "token=***"
-      - regex: "\\d{4}-\\d{4}-\\d{4}-\\d{4}"
-        replace: "****-****-****-****"
-```
-
-```java
-logger.info("로그인: username=john, password=secret123");
-// 출력: 로그인: username=john, password=***
-
-logger.info("API 호출: token=abc123xyz456");
-// 출력: API 호출: token=***
-
-logger.info("카드번호: 1234-5678-9012-3456");
-// 출력: 카드번호: ****-****-****-****
-```
-
 ### SQL 로깅 및 파라미터 치환
 
 ```yaml
@@ -791,8 +755,15 @@ levels:
 **A:** 네, 가능합니다. 설정 파일이 없으면 기본 설정(콘솔 출력, INFO 레벨)으로 자동 초기화됩니다.
 
 ```java
+import lombok.extern.slf4j.Slf4j;
+
 // 설정 파일 없이 사용
-UniversalLogger.info("기본 설정으로 동작");
+@Slf4j
+public class MyApp {
+    public static void main(String[] args) {
+        log.info("기본 설정으로 동작");
+    }
+}
 ```
 
 ### Q2. Maven과 Gradle 중 어떤 것을 사용해야 하나요?
@@ -807,16 +778,21 @@ UniversalLogger.info("기본 설정으로 동작");
 
 ### Q4. 기존 Log4j/Logback 코드와 함께 사용할 수 있나요?
 
-**A:** 네, Universal Logger는 SLF4J를 기반으로 하므로 기존 로깅 코드와 함께 사용 가능합니다.
+**A:** 네, Universal Logger는 Logback을 프로그래밍 방식으로 설정하는 라이브러리이므로 기존 @Slf4j 코드를 그대로 사용할 수 있습니다.
 
 ```java
-// 기존 SLF4J 코드
-@Slf4j
-log.info("기존 로그");
+import lombok.extern.slf4j.Slf4j;
 
-// Universal Logger
-Logger universalLogger = UniversalLogger.getLogger("MyModule");
-universalLogger.info("새 로그");
+// UniversalLogger는 Logback 설정만 담당
+UniversalLogger.init("config/logging.yml");
+
+// 로깅은 @Slf4j 사용
+@Slf4j
+public class MyService {
+    public void process() {
+        log.info("기존 코드 그대로 사용 가능");
+    }
+}
 ```
 
 ### Q5. 설정 파일 위치를 변경하려면?

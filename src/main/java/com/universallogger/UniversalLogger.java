@@ -205,52 +205,6 @@ public final class UniversalLogger {
         return getInstance().getLogger(clazz);
     }
 
-    // ========== 편의 로깅 메서드 (기존 API 호환) ==========
-
-    public static void trace(String message) {
-        getInstance().trace(message);
-    }
-
-    public static void trace(String format, Object... args) {
-        getInstance().trace(format, args);
-    }
-
-    public static void debug(String message) {
-        getInstance().debug(message);
-    }
-
-    public static void debug(String format, Object... args) {
-        getInstance().debug(format, args);
-    }
-
-    public static void info(String message) {
-        getInstance().info(message);
-    }
-
-    public static void info(String format, Object... args) {
-        getInstance().info(format, args);
-    }
-
-    public static void warn(String message) {
-        getInstance().warn(message);
-    }
-
-    public static void warn(String format, Object... args) {
-        getInstance().warn(format, args);
-    }
-
-    public static void error(String message) {
-        getInstance().error(message);
-    }
-
-    public static void error(String format, Object... args) {
-        getInstance().error(format, args);
-    }
-
-    public static void error(String message, Throwable throwable) {
-        getInstance().error(message, throwable);
-    }
-
     // ========== 유틸리티 메서드 ==========
 
     /**

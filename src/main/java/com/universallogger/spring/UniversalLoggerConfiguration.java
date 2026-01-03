@@ -108,7 +108,7 @@ public class UniversalLoggerConfiguration implements BeanPostProcessor, Applicat
             try {
                 loggerInstance = applicationContext.getBean(LoggerInstance.class);
                 if (loggerInstance != null) {
-                    loggerInstance.info("🔍 SQL logging enabled - DataSource '{}' wrapped", beanName);
+                    logger.info("🔍 SQL logging enabled - DataSource '{}' wrapped", beanName);
                 }
             } catch (Exception e) {
                 logger.warn("⚠️ LoggerInstance not found, using fallback");

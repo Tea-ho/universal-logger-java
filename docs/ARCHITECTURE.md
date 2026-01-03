@@ -142,7 +142,7 @@ public class AppConfig {
 **클래스**: `UniversalLogger`
 
 **책임**:
-- 레거시 코드 호환성 유지
+- Logback 프로그래밍 방식 설정 초기화
 - 싱글톤 패턴으로 간단한 API 제공
 - 설정 파일 자동 탐색
 
@@ -151,7 +151,7 @@ public class AppConfig {
 // 자동 초기화 (설정 파일 자동 탐색)
 public static void autoInit()
 
-// 수동 초기화
+// 수동 초기화 (Logback 설정 적용)
 public static void init(String configPath)
 public static void init(LoggerConfig config)
 
@@ -161,25 +161,35 @@ public static LoggerInstance getInstance()
 // 새 인스턴스 생성 (멀티 인스턴스)
 public static LoggerInstance createInstance(String configPath)
 
-// 로거 반환
+// SLF4J 로거 반환 (설정 조회용)
 public static Logger getLogger(String name)
 public static Logger getLogger(Class<?> clazz)
-
-// 편의 메서드
-public static void info(String message)
-public static void error(String message, Throwable t)
 ```
 
 **디자인 패턴**:
-- **Facade 패턴**: 복잡한 하위 시스템을 단순한 인터페이스로 제공
+- **Facade 패턴**: 복잡한 Logback 설정을 단순한 인터페이스로 제공
 - **Singleton 패턴**: Bill Pugh Singleton Holder (Thread-safe)
+
+**사용 예시**:
+```java
+// Logback 설정 초기화
+UniversalLogger.init("logging.yml");
+
+// 로깅은 @Slf4j 사용
+@Slf4j
+public class MyService {
+    public void process() {
+        log.info("Processing...");
+    }
+}
+```
 
 ### 3. Core Layer (핵심 계층)
 
 **클래스**: `LoggerInstance`
 
 **책임**:
-- 실제 로깅 로직 구현
+- Logback 설정 관리 및 초기화
 - 멀티 인스턴스 지원
 - DI 친화적 설계
 
@@ -193,13 +203,12 @@ public static class Builder {
     public Builder config(LoggerConfig config)
     public Builder appenderFactory(AppenderFactory factory)
     public Builder configLoader(ConfigLoader loader)
-    public Builder messageFilter(MessageFilter filter)
     public LoggerInstance build()
 }
 
-// 로깅 메서드
-public void info(String message, Object... args)
-public void error(String message, Throwable t)
+// SLF4J 로거 반환
+public Logger getLogger(String name)
+public Logger getLogger(Class<?> clazz)
 
 // 설정 조회
 public LoggerConfig getConfig()
@@ -209,6 +218,22 @@ public LoggerConfig getConfig()
 - Spring Bean으로 등록 가능
 - 테스트에서 여러 인스턴스 생성 가능
 - 의존성 주입을 통한 커스터마이징
+
+**사용 예시**:
+```java
+// Logback 설정 적용
+LoggerInstance.builder()
+    .configPath("config/logging.yml")
+    .build();
+
+// 로깅은 @Slf4j 사용
+@Slf4j
+public class MyService {
+    public void process() {
+        log.info("Processing...");
+    }
+}
+```
 
 ---
 
@@ -428,9 +453,10 @@ com.universallogger/
 │   ├── ConsoleFormatter.java       # 콘솔 포맷터 (UTF-8)
 │   └── FileFormatter.java          # 파일 포맷터 (UTF-8)
 │
-├── filters/                         # 필터
-│   ├── MessageFilter.java          # 인터페이스
-│   └── SensitiveDataFilter.java    # 민감 정보 마스킹
+├── filters/                         # 필터 (Deprecated)
+│   ├── MessageFilter.java          # 인터페이스 (@Deprecated)
+│   ├── SensitiveDataFilter.java    # 민감 정보 마스킹 (@Deprecated)
+│   └── SensitiveDataLogbackFilter.java  # Logback Filter 구현
 │
 ├── validation/                      # 검증
 │   └── ConfigValidator.java
@@ -532,17 +558,26 @@ public class UniversalLogger {
 
 **적용**: `UniversalLogger` 클래스
 
-**목적**: 복잡한 하위 시스템을 단순한 인터페이스로 제공
+**목적**: 복잡한 Logback 설정을 단순한 인터페이스로 제공
 
 ```java
-// 복잡한 로직을 숨김
-UniversalLogger.info("Simple API");
+// 한 줄로 Logback 설정 초기화
+UniversalLogger.init("logging.yml");
 
 // 내부적으로는 복잡한 처리
 // - 설정 파일 자동 탐색
 // - ConfigLoader 호출
-// - Logback 설정
+// - Logback 프로그래밍 방식 설정
 // - Appender 초기화
+// - Formatter 설정
+
+// 로깅은 표준 @Slf4j 사용
+@Slf4j
+public class MyService {
+    public void process() {
+        log.info("Simple logging with @Slf4j");
+    }
+}
 ```
 
 ### 3. Factory Pattern
@@ -665,13 +700,15 @@ public class LoggerInstance {
 
 **Spring 통합**:
 ```java
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 public class UserService {
-    private final LoggerInstance logger;
-
-    // Spring이 자동으로 주입
-    public UserService(LoggerInstance logger) {
-        this.logger = logger;
+    public void process() {
+        // LoggerInstance는 Spring이 자동으로 생성 및 Logback 설정
+        // 로깅은 @Slf4j 사용
+        log.info("Processing...");
     }
 }
 ```
@@ -837,16 +874,17 @@ public void testEndToEnd() {
 ## 결론
 
 Universal Logger Java는:
-- Zero 설정: Spring Boot Auto Configuration으로 즉시 사용 가능
-- SQL 자동 캡처: Proxy 패턴으로 모든 JDBC 기반 프레임워크 지원
-- 다중 포맷: YAML, XML, JSON 자동 감지 및 파싱
-- 유연한 API: Static API, Instance API, Spring DI 모두 지원
-- 관심사 분리: 각 계층이 독립적으로 동작하고 테스트 가능
-- 객체지향 설계: 7가지 디자인 패턴 적용으로 확장성 확보
-- Zero Hard-code: LoggerConstants + 설정 기반 동작
-- SOLID 원칙: 인터페이스 기반 설계로 유지보수 용이
+- **Logback 프로그래밍 방식 설정**: YAML/XML/JSON으로 Logback 완전 제어
+- **Zero 설정**: Spring Boot Auto Configuration으로 즉시 사용 가능
+- **SQL 자동 캡처**: Proxy 패턴으로 모든 JDBC 기반 프레임워크 지원
+- **다중 포맷**: YAML, XML, JSON 자동 감지 및 파싱
+- **@Slf4j 완벽 호환**: 표준 SLF4J API 그대로 사용
+- **관심사 분리**: 각 계층이 독립적으로 동작하고 테스트 가능
+- **객체지향 설계**: 7가지 디자인 패턴 적용으로 확장성 확보
+- **Zero Hard-code**: LoggerConstants + 설정 기반 동작
+- **SOLID 원칙**: 인터페이스 기반 설계로 유지보수 용이
 
-**견고하고 확장 가능한 엔터프라이즈급 로깅 라이브러리입니다.**
+**Logback 설정을 간편하게 관리하는 엔터프라이즈급 라이브러리입니다.**
 
 ---
 

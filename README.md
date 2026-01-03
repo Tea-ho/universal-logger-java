@@ -8,8 +8,7 @@ Java 애플리케이션을 위한 범용 로깅 라이브러리. 설정 파일 �
 - **SQL 자동 캡처**: MyBatis, JPA, Hibernate SQL을 자동으로 로깅
 - **다양한 출력 지원**: 콘솔, 파일, 웹훅, 이메일
 - **다중 포맷 지원**: YAML, XML, JSON 설정 파일
-- **민감 정보 마스킹**: 비밀번호, 카드번호 등 자동 마스킹
-- **유연한 사용 방식**: Static API, 인스턴스 기반, Spring DI 모두 지원
+- **Logback 프로그래밍 방식 설정**: 코드나 YAML로 Logback 완전 제어
 
 ## 빠른 시작
 
@@ -61,21 +60,26 @@ outputs:
 
 ### 3. 사용하기
 
-**가장 간단한 방법:**
+**로깅은 @Slf4j 사용:**
+```java
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+public class MyService {
+    public void doSomething() {
+        log.info("Hello World!");
+        log.debug("Debug message: {}", value);
+        log.error("Error occurred", exception);
+    }
+}
+```
+
+**UniversalLogger는 설정 초기화만:**
 ```java
 import com.universallogger.UniversalLogger;
 
-// 초기화 없이 바로 사용 (자동으로 설정 파일 탐색)
-UniversalLogger.info("Hello World!");
-UniversalLogger.debug("Debug message: {}", value);
-UniversalLogger.error("Error occurred", exception);
-```
-
-**명시적 초기화:**
-```java
-// 설정 파일 지정
+// 설정 파일 지정 (선택 사항, 자동 탐색됨)
 UniversalLogger.init("config/logging.yml");
-UniversalLogger.info("Application started");
 ```
 
 ---
@@ -99,57 +103,46 @@ universal-logger:
     enabled: true  # 기본값: true (SQL 자동 캡처)
 ```
 
-**사용:**
+**로깅은 @Slf4j 사용:**
 ```java
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 public class UserService {
-    private final LoggerInstance logger;
-
-    // Spring이 자동으로 주입
-    public UserService(LoggerInstance logger) {
-        this.logger = logger;
-    }
-
     public void createUser(User user) {
-        logger.info("Creating user: {}", user.getName());
+        log.info("Creating user: {}", user.getName());
         // SQL 쿼리가 자동으로 로깅됨!
     }
 }
 ```
 
-### 방법 2: Static API (기존 방식)
+### 방법 2: 설정만 초기화 (일반 Java)
 
-가장 간단한 방법. 기존 코드와 100% 호환됩니다.
+설정 파일을 명시적으로 지정할 때 사용합니다.
 
 ```java
 import com.universallogger.UniversalLogger;
-import org.slf4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 // 초기화
 UniversalLogger.init("logging.yml");
 
-// 직접 로깅
-UniversalLogger.info("Application started");
-UniversalLogger.error("Error: {}", errorMsg);
-
-// SLF4J Logger 사용
-Logger logger = UniversalLogger.getLogger("MyService");
-logger.info("Processing request: {}", requestId);
+@Slf4j
+public class MyService {
+    public void process() {
+        log.info("Processing request: {}", requestId);
+    }
+}
 ```
 
-### 방법 3: 인스턴스 기반 (일반 Spring, 테스트)
+### 방법 3: 일반 Spring 프로젝트
 
-Spring Boot가 아닌 일반 Spring 또는 테스트 환경에서 사용합니다.
+Spring Boot가 아닌 일반 Spring 환경에서는 수동으로 설정을 임포트합니다.
 
 ```java
-import com.universallogger.LoggerInstance;
-import com.universallogger.UniversalLogger;
-
-// 새 인스턴스 생성
-LoggerInstance logger = UniversalLogger.createInstance("logging.yml");
-
-// 로깅
-logger.info("Message from instance");
+import com.universallogger.spring.UniversalLoggerConfiguration;
+import lombok.extern.slf4j.Slf4j;
 
 // Spring에서 Bean으로 등록
 @Configuration
@@ -157,16 +150,25 @@ logger.info("Message from instance");
 public class AppConfig {
     // LoggerInstance Bean이 자동 생성됨
 }
+
+@Slf4j
+@Service
+public class MyService {
+    public void process() {
+        log.info("Message from service");
+    }
+}
 ```
 
 ### 방법 4: Builder 패턴 (코드로 설정)
 
-설정 파일 없이 코드에서 직접 설정할 때 사용합니다.
+설정 파일 없이 코드에서 직접 Logback을 설정할 때 사용합니다.
 
 ```java
 import com.universallogger.LoggerInstance;
 import com.universallogger.config.LoggerConfigBuilder;
 import com.universallogger.config.LoggerConfig;
+import lombok.extern.slf4j.Slf4j;
 
 // Builder로 설정 생성
 LoggerConfig config = LoggerConfigBuilder.create()
@@ -185,12 +187,18 @@ LoggerConfig config = LoggerConfigBuilder.create()
         .and()
     .build();
 
-// 인스턴스 생성
-LoggerInstance logger = LoggerInstance.builder()
+// Logback 설정 적용
+LoggerInstance.builder()
     .config(config)
     .build();
 
-logger.info("Application started");
+// 로깅은 @Slf4j 사용
+@Slf4j
+public class MyApp {
+    public static void main(String[] args) {
+        log.info("Application started");
+    }
+}
 ```
 
 ---
@@ -298,15 +306,6 @@ outputs:
       to:
         - "admin@example.com"
       subject: "[{appName}] Error Alert"
-
-filters:
-  sensitiveData:
-    enabled: true
-    patterns:
-      - regex: "password=\\w+"
-        replace: "password=***"
-      - regex: "\\d{4}-\\d{4}-\\d{4}-\\d{4}"
-        replace: "****-****-****-****"
 
 performance:
   async: false
@@ -590,31 +589,7 @@ DataSource loggingDataSource = new SqlCaptureProxy(originalDataSource);
 </loggerConfig>
 ```
 
-### 3. 민감 정보 자동 마스킹
-
-비밀번호, 카드번호 등을 **자동으로 마스킹**합니다.
-
-```yaml
-filters:
-  sensitiveData:
-    enabled: true
-    patterns:
-      - regex: "password=\\w+"
-        replace: "password=***"
-      - regex: "\\d{4}-\\d{4}-\\d{4}-\\d{4}"
-        replace: "****-****-****-****"
-```
-
-**적용 예시:**
-```
-입력: "User login: password=mySecret123"
-출력: "User login: password=***"
-
-입력: "Card: 1234-5678-9012-3456"
-출력: "Card: ****-****-****-****"
-```
-
-### 4. 웹훅 알림 (Slack, Discord 등)
+### 3. 웹훅 알림 (Slack, Discord 등)
 
 에러 발생 시 **Slack, Discord, Teams**로 즉시 알림을 받을 수 있습니다.
 
@@ -679,18 +654,17 @@ universal-logger.sql-capture.enabled=true
 
 ### UniversalLogger (Static API)
 
-싱글톤 패턴을 사용하는 정적 API입니다.
+Logback 설정을 초기화하는 정적 API입니다.
 
 | 메서드 | 설명 |
 |--------|------|
-| `init(String configPath)` | 설정 파일로 초기화 |
-| `init(LoggerConfig config)` | 설정 객체로 초기화 |
+| `init(String configPath)` | 설정 파일로 Logback 초기화 |
+| `init(LoggerConfig config)` | 설정 객체로 Logback 초기화 |
 | `getInstance()` | 싱글톤 LoggerInstance 반환 |
 | `createInstance(String configPath)` | 새 LoggerInstance 생성 (독립 인스턴스) |
 | `createInstance(LoggerConfig config)` | 새 LoggerInstance 생성 |
 | `getLogger(String name)` | SLF4J Logger 반환 |
 | `getLogger(Class<?> clazz)` | SLF4J Logger 반환 |
-| `trace/debug/info/warn/error(...)` | 로깅 메서드 |
 | `isInitialized()` | 초기화 상태 확인 |
 | `reset()` | 싱글톤 리셋 (테스트용) |
 
@@ -703,7 +677,6 @@ universal-logger.sql-capture.enabled=true
 | `builder()` | Builder 패턴으로 생성 |
 | `getLogger(String name)` | SLF4J Logger 반환 |
 | `getLogger(Class<?> clazz)` | SLF4J Logger 반환 |
-| `trace/debug/info/warn/error(...)` | 로깅 메서드 |
 | `getConfig()` | 현재 설정 반환 |
 | `isInitialized()` | 초기화 상태 확인 |
 
@@ -715,7 +688,6 @@ universal-logger.sql-capture.enabled=true
 | `config(LoggerConfig config)` | 설정 객체 직접 지정 |
 | `appenderFactory(AppenderFactory)` | 커스텀 Appender Factory (DI/테스트) |
 | `configLoader(ConfigLoader)` | 커스텀 Config Loader (DI/테스트) |
-| `messageFilter(MessageFilter)` | 커스텀 Message Filter (DI/테스트) |
 | `build()` | LoggerInstance 생성 |
 
 ### SqlCaptureProxy
