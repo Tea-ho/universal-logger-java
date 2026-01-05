@@ -114,7 +114,7 @@ public class UniversalLoggerConfiguration implements BeanPostProcessor, Applicat
                 logger.warn("⚠️ LoggerInstance not found, using fallback");
             }
 
-            return new SqlCaptureProxy((DataSource) bean, loggerInstance);
+            return new SqlCaptureProxy((DataSource) bean, loggerInstance != null ? loggerInstance.getConfig() : null);
         }
         return bean;
     }
