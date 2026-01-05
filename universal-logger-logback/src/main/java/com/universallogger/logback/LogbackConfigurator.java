@@ -2,7 +2,6 @@ package com.universallogger.logback;
 
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.Configurator;
-import ch.qos.logback.classic.spi.Configurator.ExecutionStatus;
 import ch.qos.logback.core.spi.ContextAwareBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +17,7 @@ public class LogbackConfigurator extends ContextAwareBase implements Configurato
     private static final Logger logger = LoggerFactory.getLogger(LogbackConfigurator.class);
 
     @Override
-    public ExecutionStatus configure(LoggerContext loggerContext) {
+    public Configurator.ExecutionStatus configure(LoggerContext loggerContext) {
         addInfo("UniversalLogger Logback Configurator starting...");
 
         try {
@@ -27,12 +26,12 @@ public class LogbackConfigurator extends ContextAwareBase implements Configurato
             LoggerInstance.builder().build();
 
             addInfo("UniversalLogger Logback configuration completed successfully");
-            return ExecutionStatus.DO_NOT_INVOKE_NEXT_IF_ANY;
+            return Configurator.ExecutionStatus.DO_NOT_INVOKE_NEXT_IF_ANY;
 
         } catch (Exception e) {
             addError("Failed to configure UniversalLogger", e);
             logger.error("UniversalLogger configuration failed", e);
-            return ExecutionStatus.INVOKE_NEXT_IF_ANY;
+            return Configurator.ExecutionStatus.INVOKE_NEXT_IF_ANY;
         }
     }
 }
