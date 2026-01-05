@@ -1,4 +1,4 @@
-package com.universallogger.spring;
+package com.universallogger.logback.spring;
 
 import com.universallogger.LoggerInstance;
 import com.universallogger.sql.SqlCaptureProxy;

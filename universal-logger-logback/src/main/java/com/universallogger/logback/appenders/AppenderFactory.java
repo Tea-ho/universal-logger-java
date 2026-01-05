@@ -1,4 +1,4 @@
-package com.universallogger.appenders;
+package com.universallogger.logback.appenders;
 
 import com.universallogger.config.LoggerConfig;
 

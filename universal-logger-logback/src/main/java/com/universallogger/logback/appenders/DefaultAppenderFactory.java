@@ -1,8 +1,8 @@
-package com.universallogger.appenders;
+package com.universallogger.logback.appenders;
 
 import com.universallogger.config.LoggerConfig;
-import com.universallogger.formatters.ConsoleFormatter;
-import com.universallogger.formatters.FileFormatter;
+import com.universallogger.logback.formatters.ConsoleFormatter;
+import com.universallogger.logback.formatters.FileFormatter;
 
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.filter.ThresholdFilter;

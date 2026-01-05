@@ -1,4 +1,4 @@
-package com.universallogger.formatters;
+package com.universallogger.logback.formatters;
 
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 

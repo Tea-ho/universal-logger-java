@@ -1,4 +1,4 @@
-package com.universallogger.appenders;
+package com.universallogger.logback.appenders;
 
 import ch.qos.logback.core.AppenderBase;
 import ch.qos.logback.classic.spi.ILoggingEvent;

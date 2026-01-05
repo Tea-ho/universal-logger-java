@@ -1,4 +1,4 @@
-package com.universallogger.spring;
+package com.universallogger.logback.spring;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
