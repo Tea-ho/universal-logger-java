@@ -26,15 +26,15 @@ import java.time.format.DateTimeFormatter;
  * Log4j2 Custom Appender for Webhook notifications
  */
 @Plugin(name = "UniversalWebhook", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE)
-public class WebhookLog4j2Appender extends AbstractAppender {
+public class WebhookAppender extends AbstractAppender {
 
     private final String webhookUrl;
     private final String messageFormat;
     private final CloseableHttpClient httpClient;
 
-    protected WebhookLog4j2Appender(String name, Filter filter,
-                                     String webhookUrl,
-                                     String messageFormat) {
+    protected WebhookAppender(String name, Filter filter,
+                              String webhookUrl,
+                              String messageFormat) {
         super(name, filter, null, true, Property.EMPTY_ARRAY);
         this.webhookUrl = webhookUrl;
         this.messageFormat = messageFormat;
@@ -126,22 +126,22 @@ public class WebhookLog4j2Appender extends AbstractAppender {
     }
 
     @PluginFactory
-    public static WebhookLog4j2Appender createAppender(
+    public static WebhookAppender createAppender(
             @PluginAttribute("name") String name,
             @PluginElement("Filter") Filter filter,
             @PluginAttribute("webhookUrl") String webhookUrl,
             @PluginAttribute("messageFormat") String messageFormat) {
 
         if (name == null) {
-            LOGGER.error("No name provided for WebhookLog4j2Appender");
+            LOGGER.error("No name provided for WebhookAppender");
             return null;
         }
 
         if (webhookUrl == null) {
-            LOGGER.error("No webhook URL provided for WebhookLog4j2Appender");
+            LOGGER.error("No webhook URL provided for WebhookAppender");
             return null;
         }
 
-        return new WebhookLog4j2Appender(name, filter, webhookUrl, messageFormat);
+        return new WebhookAppender(name, filter, webhookUrl, messageFormat);
     }
 }

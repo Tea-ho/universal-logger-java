@@ -71,3 +71,9 @@ replay_pid*
 # Old backup files
 *.old.md
 README.old.md
+
+# Maven
+target/
+*.class
+*.lst
+*.properties

@@ -50,9 +50,9 @@ import java.util.Set;
  */
 @Configuration
 @Order(Ordered.HIGHEST_PRECEDENCE)
-public class UniversalLoggerLog4j2Configuration implements BeanPostProcessor, ApplicationContextAware {
+public class UniversalLoggerConfiguration implements BeanPostProcessor, ApplicationContextAware {
 
-    private static final Logger logger = LoggerFactory.getLogger(UniversalLoggerLog4j2Configuration.class);
+    private static final Logger logger = LoggerFactory.getLogger(UniversalLoggerConfiguration.class);
 
     @Value("${spring.application.name:application}")
     private String applicationName;

@@ -24,7 +24,7 @@ import java.util.Properties;
  * Log4j2 Custom Appender for Email notifications
  */
 @Plugin(name = "UniversalEmail", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE)
-public class EmailLog4j2Appender extends AbstractAppender {
+public class EmailAppender extends AbstractAppender {
 
     private final String smtpHost;
     private final int smtpPort;
@@ -35,11 +35,11 @@ public class EmailLog4j2Appender extends AbstractAppender {
     private final String subjectTemplate;
     private final String bodyTemplate;
 
-    protected EmailLog4j2Appender(String name, Filter filter,
-                                   String smtpHost, int smtpPort,
-                                   String username, String password,
-                                   String from, String to,
-                                   String subjectTemplate, String bodyTemplate) {
+    protected EmailAppender(String name, Filter filter,
+                            String smtpHost, int smtpPort,
+                            String username, String password,
+                            String from, String to,
+                            String subjectTemplate, String bodyTemplate) {
         super(name, filter, null, true, Property.EMPTY_ARRAY);
         this.smtpHost = smtpHost;
         this.smtpPort = smtpPort;
@@ -154,7 +154,7 @@ public class EmailLog4j2Appender extends AbstractAppender {
     }
 
     @PluginFactory
-    public static EmailLog4j2Appender createAppender(
+    public static EmailAppender createAppender(
             @PluginAttribute("name") String name,
             @PluginElement("Filter") Filter filter,
             @PluginAttribute("smtpHost") String smtpHost,
@@ -167,11 +167,11 @@ public class EmailLog4j2Appender extends AbstractAppender {
             @PluginAttribute("bodyTemplate") String bodyTemplate) {
 
         if (name == null) {
-            LOGGER.error("No name provided for EmailLog4j2Appender");
+            LOGGER.error("No name provided for EmailAppender");
             return null;
         }
 
-        return new EmailLog4j2Appender(name, filter,
+        return new EmailAppender(name, filter,
             smtpHost != null ? smtpHost : "smtp.gmail.com",
             smtpPort > 0 ? smtpPort : 587,
             username, password, from, to, subject, bodyTemplate);

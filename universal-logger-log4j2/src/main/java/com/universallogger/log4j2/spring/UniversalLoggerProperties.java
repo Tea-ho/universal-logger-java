@@ -15,7 +15,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * </pre>
  */
 @ConfigurationProperties(prefix = "universal-logger-log4j2")
-public class UniversalLoggerLog4j2Properties {
+public class UniversalLoggerProperties {
 
     /**
      * UniversalLogger 활성화 여부

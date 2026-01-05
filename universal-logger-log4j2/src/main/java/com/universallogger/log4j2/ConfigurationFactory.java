@@ -6,7 +6,6 @@ import com.universallogger.loaders.UniversalConfigLoader;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
-import org.apache.logging.log4j.core.config.ConfigurationFactory;
 import org.apache.logging.log4j.core.config.ConfigurationSource;
 import org.apache.logging.log4j.core.config.Order;
 import org.apache.logging.log4j.core.config.builder.api.AppenderComponentBuilder;
@@ -23,9 +22,9 @@ import java.util.Map;
  * ServiceLoader를 통해 자동 발견:
  * META-INF/services/org.apache.logging.log4j.core.config.ConfigurationFactory
  */
-@Plugin(name = "UniversalLoggerConfigurationFactory", category = ConfigurationFactory.CATEGORY)
+@Plugin(name = "UniversalLoggerConfigurationFactory", category = org.apache.logging.log4j.core.config.ConfigurationFactory.CATEGORY)
 @Order(50)
-public class Log4j2ConfigurationFactory extends ConfigurationFactory {
+public class ConfigurationFactory extends org.apache.logging.log4j.core.config.ConfigurationFactory {
 
     private static final com.universallogger.loaders.ConfigLoader configLoader = new UniversalConfigLoader();
 

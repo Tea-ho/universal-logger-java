@@ -43,21 +43,21 @@ import java.util.Set;
 @AutoConfiguration
 @ConditionalOnClass({DataSource.class})
 @ConditionalOnProperty(prefix = "universal-logger-log4j2", name = "enabled", havingValue = "true", matchIfMissing = true)
-@EnableConfigurationProperties(UniversalLoggerLog4j2Properties.class)
+@EnableConfigurationProperties(UniversalLoggerProperties.class)
 @Order(Ordered.HIGHEST_PRECEDENCE)
-public class UniversalLoggerLog4j2AutoConfiguration implements BeanPostProcessor, ApplicationContextAware {
+public class UniversalLoggerAutoConfiguration implements BeanPostProcessor, ApplicationContextAware {
 
-    private static final Logger logger = LoggerFactory.getLogger(UniversalLoggerLog4j2AutoConfiguration.class);
+    private static final Logger logger = LoggerFactory.getLogger(UniversalLoggerAutoConfiguration.class);
 
     @Value("${spring.application.name:application}")
     private String applicationName;
 
-    private final UniversalLoggerLog4j2Properties properties;
+    private final UniversalLoggerProperties properties;
     private final Set<String> wrappedDataSources = new HashSet<>();
     private ApplicationContext applicationContext;
     private LoggerConfig loggerConfig;
 
-    public UniversalLoggerLog4j2AutoConfiguration(UniversalLoggerLog4j2Properties properties) {
+    public UniversalLoggerAutoConfiguration(UniversalLoggerProperties properties) {
         this.properties = properties;
     }
 
