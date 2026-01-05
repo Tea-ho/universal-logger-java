@@ -68,8 +68,7 @@ public class Log4j2ConfigurationFactory extends ConfigurationFactory {
                     builder.add(builder.newLogger(entry.getKey(), level)
                         .add(builder.newAppenderRef("Console"))
                         .add(builder.newAppenderRef("File"))
-                        .add(builder.newAppenderRef("ErrorFile"))
-                        .setAdditivity(false));
+                        .add(builder.newAppenderRef("ErrorFile")));
                 }
             }
 
@@ -105,7 +104,7 @@ public class Log4j2ConfigurationFactory extends ConfigurationFactory {
         // 콘솔 Appender
         if (isOutputEnabled(outputs, "console")) {
             LoggerConfig.OutputConfig consoleConfig = outputs.get("console");
-            String pattern = consoleConfig.getPattern().replace("${appName}", appName);
+            String pattern = consoleConfig.getFormat().replace("${appName}", appName);
 
             AppenderComponentBuilder consoleAppender = builder.newAppender("Console", "CONSOLE")
                 .addAttribute("target", "SYSTEM_OUT");
@@ -117,8 +116,8 @@ public class Log4j2ConfigurationFactory extends ConfigurationFactory {
         // 파일 Appender
         if (isOutputEnabled(outputs, "file")) {
             LoggerConfig.OutputConfig fileConfig = outputs.get("file");
-            String filePath = fileConfig.getFilePath().replace("${appName}", appName);
-            String pattern = fileConfig.getPattern().replace("${appName}", appName);
+            String filePath = fileConfig.getPath().replace("${appName}", appName);
+            String pattern = fileConfig.getFormat().replace("${appName}", appName);
 
             AppenderComponentBuilder fileAppender = builder.newAppender("File", "RollingFile")
                 .addAttribute("fileName", filePath)
@@ -135,8 +134,8 @@ public class Log4j2ConfigurationFactory extends ConfigurationFactory {
         // 에러 파일 Appender
         if (isOutputEnabled(outputs, "errorFile")) {
             LoggerConfig.OutputConfig errorConfig = outputs.get("errorFile");
-            String filePath = errorConfig.getFilePath().replace("${appName}", appName);
-            String pattern = errorConfig.getPattern().replace("${appName}", appName);
+            String filePath = errorConfig.getPath().replace("${appName}", appName);
+            String pattern = errorConfig.getFormat().replace("${appName}", appName);
 
             AppenderComponentBuilder errorAppender = builder.newAppender("ErrorFile", "RollingFile")
                 .addAttribute("fileName", filePath)

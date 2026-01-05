@@ -17,7 +17,7 @@ public class LogbackConfigurator extends ContextAwareBase implements Configurato
     private static final Logger logger = LoggerFactory.getLogger(LogbackConfigurator.class);
 
     @Override
-    public Configurator.ExecutionStatus configure(LoggerContext loggerContext) {
+    public void configure(LoggerContext loggerContext) {
         addInfo("UniversalLogger Logback Configurator starting...");
 
         try {
@@ -26,12 +26,10 @@ public class LogbackConfigurator extends ContextAwareBase implements Configurato
             LoggerInstance.builder().build();
 
             addInfo("UniversalLogger Logback configuration completed successfully");
-            return Configurator.ExecutionStatus.DO_NOT_INVOKE_NEXT_IF_ANY;
 
         } catch (Exception e) {
             addError("Failed to configure UniversalLogger", e);
             logger.error("UniversalLogger configuration failed", e);
-            return Configurator.ExecutionStatus.INVOKE_NEXT_IF_ANY;
         }
     }
 }
