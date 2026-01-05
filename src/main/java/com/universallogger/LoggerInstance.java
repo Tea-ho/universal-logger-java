@@ -18,31 +18,6 @@ import java.io.File;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * LoggerInstance - 인스턴스 기반 로거 구현
- *
- * 사용법:
- * <pre>
- * // Builder를 통한 생성
- * LoggerInstance logger = LoggerInstance.builder()
- *     .configPath("logging.yml")
- *     .build();
- *
- * // 또는 직접 설정 객체로 생성
- * LoggerInstance logger = LoggerInstance.builder()
- *     .config(loggerConfig)
- *     .build();
- *
- * // 커스텀 AppenderFactory 주입 (테스트/확장용)
- * LoggerInstance logger = LoggerInstance.builder()
- *     .configPath("logging.yml")
- *     .appenderFactory(customFactory)
- *     .build();
- *
- * // 로깅
- * logger.info("Hello World!");
- * </pre>
- */
 public class LoggerInstance {
 
     private static final Logger logger = LoggerFactory.getLogger(LoggerInstance.class);

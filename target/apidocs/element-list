@@ -1,8 +1,11 @@
 com.universallogger
 com.universallogger.appenders
-com.universallogger.appenders.database
 com.universallogger.config
 com.universallogger.constants
+com.universallogger.filters
 com.universallogger.formatters
-com.universallogger.utils
+com.universallogger.loaders
+com.universallogger.parsers
+com.universallogger.spring
+com.universallogger.sql
 com.universallogger.validation

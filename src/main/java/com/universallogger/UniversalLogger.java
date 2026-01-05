@@ -12,24 +12,25 @@ import java.io.File;
  * Universal Logger - Java용 범용 로깅 라이브러리
  *
  * Bill Pugh 싱글톤 패턴을 적용하여 thread-safe한 lazy initialization 제공.
- * 기존 static API 호환성 유지 + 인스턴스 기반 사용 지원.
+ * 설정 파일을 자동으로 탐색하여 초기화합니다.
  *
- * 사용법 1 - 기존 방식 (static API):
- * <pre>
- * UniversalLogger.init("logging.yml");
- * UniversalLogger.info("Hello World!");
- * </pre>
+ * 자동 탐색 경로:
+ * - universal-logger.yml, config/universal-logger.yml
+ * - universal-logger.xml, config/universal-logger.xml
+ * - logback.xml, config/logback.xml
+ * - classpath:universal-logger.yml, classpath:logback.xml
  *
- * 사용법 2 - 인스턴스 방식 (DI 지원):
+ * 사용법 1 - Logger 직접 사용 (권장):
  * <pre>
- * LoggerInstance logger = UniversalLogger.createInstance("logging.yml");
+ * Logger logger = UniversalLogger.getLogger(MyClass.class);
  * logger.info("Hello World!");
  * </pre>
  *
- * 사용법 3 - 싱글톤 인스턴스 직접 접근:
+ * 사용법 2 - LoggerInstance를 통한 사용 (DI 등):
  * <pre>
  * LoggerInstance instance = UniversalLogger.getInstance();
- * instance.info("Hello World!");
+ * Logger logger = instance.getLogger(MyClass.class);
+ * logger.info("Hello World!");
  * </pre>
  */
 public final class UniversalLogger {
@@ -41,27 +42,12 @@ public final class UniversalLogger {
      */
     private static class InstanceHolder {
         private static volatile LoggerInstance INSTANCE;
-        private static volatile boolean explicitlyInitialized = false;
 
         private static synchronized LoggerInstance getOrCreate() {
             if (INSTANCE == null) {
                 INSTANCE = createDefaultInstance();
             }
             return INSTANCE;
-        }
-
-        private static synchronized void initialize(LoggerConfig config) {
-            INSTANCE = LoggerInstance.builder()
-                .config(config)
-                .build();
-            explicitlyInitialized = true;
-        }
-
-        private static synchronized void initialize(String configPath) {
-            INSTANCE = LoggerInstance.builder()
-                .configPath(configPath)
-                .build();
-            explicitlyInitialized = true;
         }
 
         private static LoggerInstance createDefaultInstance() {
@@ -118,71 +104,6 @@ public final class UniversalLogger {
         return InstanceHolder.getOrCreate();
     }
 
-    // ========== 초기화 메서드 ==========
-
-    /**
-     * 설정 파일로 로거 초기화
-     *
-     * @param configPath 설정 파일 경로 (YAML, XML, JSON 지원)
-     */
-    public static synchronized void init(String configPath) {
-        if (InstanceHolder.explicitlyInitialized) {
-            logger.info("Re-initializing with config: {}", configPath);
-        }
-
-        try {
-            InstanceHolder.initialize(configPath);
-            logger.info("Initialized with config: {}", configPath);
-        } catch (Exception e) {
-            logger.error("Failed to initialize with config: {}", configPath, e);
-        }
-    }
-
-    /**
-     * 설정 객체로 직접 초기화
-     *
-     * @param config LoggerConfig 설정 객체
-     */
-    public static synchronized void init(LoggerConfig config) {
-        InstanceHolder.initialize(config);
-        logger.info("Initialized with config object.");
-    }
-
-    // ========== 인스턴스 생성 (DI용) ==========
-
-    /**
-     * 새로운 독립적인 LoggerInstance 생성 (DI, 테스트용)
-     *
-     * @param configPath 설정 파일 경로
-     * @return 새로운 LoggerInstance
-     */
-    public static LoggerInstance createInstance(String configPath) {
-        return LoggerInstance.builder()
-            .configPath(configPath)
-            .build();
-    }
-
-    /**
-     * 새로운 독립적인 LoggerInstance 생성 (DI, 테스트용)
-     *
-     * @param config LoggerConfig 설정 객체
-     * @return 새로운 LoggerInstance
-     */
-    public static LoggerInstance createInstance(LoggerConfig config) {
-        return LoggerInstance.builder()
-            .config(config)
-            .build();
-    }
-
-    /**
-     * 기본 설정으로 새 LoggerInstance 생성
-     *
-     * @return 기본 설정의 LoggerInstance
-     */
-    public static LoggerInstance createInstance() {
-        return LoggerInstance.builder().build();
-    }
-
     // ========== 로거 인스턴스 접근 ==========
 
     /**
@@ -226,21 +147,10 @@ public final class UniversalLogger {
     }
 
     /**
-     * 명시적으로 초기화되었는지 확인
-     * (자동 초기화가 아닌 init() 호출로 초기화된 경우)
-     *
-     * @return 명시적 초기화 여부
-     */
-    public static boolean isExplicitlyInitialized() {
-        return InstanceHolder.explicitlyInitialized;
-    }
-
-    /**
      * 싱글톤 인스턴스 리셋 (테스트용)
      * 프로덕션 코드에서는 사용하지 않는 것을 권장
      */
     public static synchronized void reset() {
         InstanceHolder.INSTANCE = null;
-        InstanceHolder.explicitlyInitialized = false;
     }
 }

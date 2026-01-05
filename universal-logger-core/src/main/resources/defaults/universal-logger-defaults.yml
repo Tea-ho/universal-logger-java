@@ -1,0 +1,100 @@
+# Universal Logger - Default Configuration
+# This file is bundled inside the JAR and provides default settings
+# Projects only need to override specific values in their own universal-logger.yml
+
+version: "1.0"
+
+global:
+  appName: "UniversalLogger"
+  timezone: "Asia/Seoul"
+  encoding: "UTF-8"
+
+levels:
+  root: "INFO"
+  com.universallogger: "DEBUG"
+
+sql:
+  parameterSubstitution: true
+
+outputs:
+  # Console output - enabled by default
+  console:
+    enabled: true
+    level: "INFO"
+    format: "[%d{yyyy-MM-dd HH:mm:ss}] %highlight([%-5level]) %cyan([%thread]) %boldMagenta([%logger{50}:%line]) %msg%n"
+    colors:
+      DEBUG: "cyan"
+      INFO: "green"
+      WARN: "yellow"
+      ERROR: "red"
+
+  # File output - enabled by default
+  file:
+    enabled: true
+    level: "DEBUG"
+    path: "C:/log/{appName}/application.log"
+    format: "[%d{yyyy-MM-dd HH:mm:ss}] [%-5level] [%thread] [%logger{50}:%line] %msg%n"
+    rotation:
+      maxSize: "50MB"
+      maxFiles: 30
+      compress: true
+
+  # Error file - enabled by default
+  errorFile:
+    enabled: true
+    level: "ERROR"
+    path: "C:/log/{appName}/error.log"
+    format: "[%d{yyyy-MM-dd HH:mm:ss}] [%-5level] [%thread] [%logger{50}:%line] %msg%n%ex"
+    rotation:
+      maxSize: "50MB"
+      maxFiles: 30
+      compress: true
+
+  # Webhook - disabled by default
+  # 방화벽/네트워크 문제로 운영 시 동작이 안될 수 있음.
+  # 필요 시, 대상 도메인: hooks.slack.com, 포트: 443 (HTTPS), 방향: Outbound로 연결 허용 요청 또는 프록시 서버 설정 수정
+  # 사용이 어려운 경우, email 기능 사용
+  webhook:
+    enabled: false
+    level: "ERROR"
+    webhook:
+      url: ""
+      format: "🚨 *{level}* in {appName}\\n*Logger:* {logger}\\n*Message:* {message}"
+
+  # Email - disabled by default
+  # Interface IIT 기본 폼
+  # host: "smtps.hiworks.com"
+  # port: 465
+  # username: 아이디@interfaceit.co.kr
+  # passowrd: 비밀번호
+  # to: 받는사람
+  email:
+    enabled: false
+    level: "ERROR"
+    email:
+      smtp:
+        host: "smtp.gmail.com"
+        port: 587
+        username: ""
+        password: ""
+      to: []
+      subject: "[{appName}] Error Alert"
+
+# Sensitive data filters
+filters:
+  sensitiveData:
+    enabled: true
+    patterns:
+      - regex: "password=\\w+"
+        replace: "password=***"
+      - regex: "token=\\w+"
+        replace: "token=***"
+      - regex: "\\d{4}-\\d{4}-\\d{4}-\\d{4}"
+        replace: "****-****-****-****"
+
+# Performance settings
+performance:
+  async: true
+  bufferSize: 1000
+  flushInterval: 5
+  maxQueueSize: 10000
