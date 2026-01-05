@@ -1,7 +1,8 @@
 package com.universallogger.sql;
 
-import com.universallogger.LoggerInstance;
-import com.universallogger.UniversalLogger;
+import com.universallogger.config.LoggerConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
@@ -11,21 +12,22 @@ import java.util.Map;
  */
 public class SqlLogger {
 
-    private final LoggerInstance loggerInstance;
+    private static final Logger logger = LoggerFactory.getLogger("SQL");
+    private final LoggerConfig config;
     private final SqlFormatter sqlFormatter;
     private final ParameterSubstitutor parameterSubstitutor;
 
     /**
-     * Constructor with instance-based LoggerInstance
+     * Constructor with LoggerConfig
      */
-    public SqlLogger(LoggerInstance loggerInstance) {
-        this.loggerInstance = loggerInstance;
+    public SqlLogger(LoggerConfig config) {
+        this.config = config;
         this.sqlFormatter = new SqlFormatter();
         this.parameterSubstitutor = new ParameterSubstitutor();
     }
 
     /**
-     * Constructor for static API (backward compatibility)
+     * Constructor with default config
      */
     public SqlLogger() {
         this(null);
@@ -35,29 +37,17 @@ public class SqlLogger {
      * 단순 SQL 로깅 (Statement용)
      */
     public void logSql(String sql, String callerInfo) {
-        if (loggerInstance != null) {
-            loggerInstance.getLogger(callerInfo).info("[SQL] " + sql);
-        } else {
-            UniversalLogger.getLogger(callerInfo).info("[SQL] " + sql);
-        }
+        logger.info("[SQL] " + sql);
     }
 
     /**
      * 실행 시간 로깅
      */
     public void logExecutionTime(String sql, long timeMs, String callerInfo) {
-        if (loggerInstance != null) {
-            if (timeMs > 1000) {
-                loggerInstance.getLogger(callerInfo).warn("[SQL-SLOW] Execution time: " + timeMs + "ms - " + sql);
-            } else {
-                loggerInstance.getLogger(callerInfo).info("[SQL-TIME] " + timeMs + "ms");
-            }
+        if (timeMs > 1000) {
+            logger.warn("[SQL-SLOW] Execution time: " + timeMs + "ms - " + sql);
         } else {
-            if (timeMs > 1000) {
-                UniversalLogger.getLogger(callerInfo).warn("[SQL-SLOW] Execution time: " + timeMs + "ms - " + sql);
-            } else {
-                UniversalLogger.getLogger(callerInfo).info("[SQL-TIME] " + timeMs + "ms");
-            }
+            logger.info("[SQL-TIME] " + timeMs + "ms");
         }
     }
 
@@ -65,22 +55,14 @@ public class SqlLogger {
      * Row count 로깅
      */
     public void logRowCount(int rowCount, String callerInfo) {
-        if (loggerInstance != null) {
-            loggerInstance.getLogger(callerInfo).info("[SQL-ROWS] Total: " + rowCount);
-        } else {
-            UniversalLogger.getLogger(callerInfo).info("[SQL-ROWS] Total: " + rowCount);
-        }
+        logger.info("[SQL-ROWS] Total: " + rowCount);
     }
 
     /**
      * Update count 로깅
      */
     public void logUpdateCount(int updateCount, String callerInfo) {
-        if (loggerInstance != null) {
-            loggerInstance.getLogger(callerInfo).info("[SQL-ROWS] Updates: " + updateCount);
-        } else {
-            UniversalLogger.getLogger(callerInfo).info("[SQL-ROWS] Updates: " + updateCount);
-        }
+        logger.info("[SQL-ROWS] Updates: " + updateCount);
     }
 
     /**
@@ -123,11 +105,7 @@ public class SqlLogger {
             sb.append("[SQL-TIME] ").append(executionTime).append("ms");
         }
 
-        if (loggerInstance != null) {
-            loggerInstance.getLogger(callerInfo).info(sb.toString());
-        } else {
-            UniversalLogger.getLogger(callerInfo).info(sb.toString());
-        }
+        logger.info(sb.toString());
     }
 
     /**

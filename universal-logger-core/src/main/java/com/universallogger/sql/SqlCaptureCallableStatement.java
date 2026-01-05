@@ -1,7 +1,5 @@
 package com.universallogger.sql;
 
-import com.universallogger.LoggerInstance;
-
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -16,8 +14,8 @@ import java.util.Map;
 class SqlCaptureCallableStatement extends SqlCapturePreparedStatement implements CallableStatement {
     private final CallableStatement targetCallableStatement;
 
-    public SqlCaptureCallableStatement(CallableStatement targetCallableStatement, String sql, LoggerInstance loggerInstance) {
-        super(targetCallableStatement, sql, loggerInstance);
+    public SqlCaptureCallableStatement(CallableStatement targetCallableStatement, String sql, com.universallogger.config.LoggerConfig config) {
+        super(targetCallableStatement, sql, config);
         this.targetCallableStatement = targetCallableStatement;
     }
 

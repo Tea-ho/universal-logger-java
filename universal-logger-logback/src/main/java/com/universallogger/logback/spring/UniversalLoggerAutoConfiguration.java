@@ -1,6 +1,6 @@
 package com.universallogger.logback.spring;
 
-import com.universallogger.LoggerInstance;
+import com.universallogger.logback.LoggerInstance;
 import com.universallogger.sql.SqlCaptureProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

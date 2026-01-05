@@ -1,7 +1,6 @@
 package com.universallogger.sql;
 
-import com.universallogger.LoggerInstance;
-import com.universallogger.UniversalLogger;
+import com.universallogger.config.LoggerConfig;
 
 import java.io.InputStream;
 import java.io.Reader;
@@ -24,23 +23,16 @@ class SqlCapturePreparedStatement extends SqlCaptureStatement implements Prepare
     // MyBatis가 execute() 후 getUpdateCount()를 호출할 때를 대비한 캐시
     private int cachedUpdateCount = -1;
 
-    public SqlCapturePreparedStatement(PreparedStatement targetPreparedStatement, String sql, LoggerInstance loggerInstance) {
+    public SqlCapturePreparedStatement(PreparedStatement targetPreparedStatement, String sql, LoggerConfig config) {
         // 생성자에서 한 번만 설정 읽기 (성능 최적화)
-        super(targetPreparedStatement, loggerInstance, getSqlLoggingEnabled(loggerInstance));
+        super(targetPreparedStatement, config, getSqlLoggingEnabled(config));
         this.targetPreparedStatement = targetPreparedStatement;
         this.sql = sql;
         this.useParameterSubstitution = sqlLoggingEnabled; // 부모의 sqlLoggingEnabled 사용
     }
 
-    private static boolean getSqlLoggingEnabled(LoggerInstance loggerInstance) {
+    private static boolean getSqlLoggingEnabled(LoggerConfig config) {
         try {
-            com.universallogger.config.LoggerConfig config;
-            if (loggerInstance != null) {
-                config = loggerInstance.getConfig();
-            } else {
-                // Static API 사용 시 fallback
-                config = UniversalLogger.getConfig();
-            }
             if (config != null && config.getSql() != null) {
                 return config.getSql().isParameterSubstitution();
             }

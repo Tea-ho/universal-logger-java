@@ -1,7 +1,8 @@
 package com.universallogger.sql;
 
-import com.universallogger.LoggerInstance;
-import com.universallogger.UniversalLogger;
+import com.universallogger.config.LoggerConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.io.Reader;
@@ -16,17 +17,18 @@ import java.util.Map;
  * Counts rows as they are consumed and logs the total when finished
  */
 class RowCountingResultSet implements ResultSet {
+    private static final Logger logger = LoggerFactory.getLogger("SQL");
     private final ResultSet targetResultSet;
     private final String callerInfo;
-    private final LoggerInstance loggerInstance;
+    private final LoggerConfig config;
     private int rows = 0;
     private int currentRow = 0;
     private boolean countLogged = false;
 
-    public RowCountingResultSet(ResultSet targetResultSet, String callerInfo, LoggerInstance loggerInstance) {
+    public RowCountingResultSet(ResultSet targetResultSet, String callerInfo, LoggerConfig config) {
         this.targetResultSet = targetResultSet;
         this.callerInfo = callerInfo;
-        this.loggerInstance = loggerInstance;
+        this.config = config;
     }
 
     @Override
@@ -75,12 +77,7 @@ class RowCountingResultSet implements ResultSet {
     private void logRowCount() {
         if (!countLogged && rows > 0) {
             countLogged = true;
-            // Log in Universal Logger style
-            if (loggerInstance != null) {
-                loggerInstance.getLogger(callerInfo).info("[SQL-ROWS] Total: " + rows);
-            } else {
-                UniversalLogger.getLogger(callerInfo).info("[SQL-ROWS] Total: " + rows);
-            }
+            logger.info("[SQL-ROWS] Total: " + rows);
         }
     }
 

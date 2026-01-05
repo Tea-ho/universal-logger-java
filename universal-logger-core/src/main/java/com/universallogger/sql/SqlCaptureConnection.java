@@ -1,6 +1,6 @@
 package com.universallogger.sql;
 
-import com.universallogger.LoggerInstance;
+import com.universallogger.config.LoggerConfig;
 
 import java.sql.*;
 import java.util.Map;
@@ -12,24 +12,17 @@ import java.util.concurrent.Executor;
  */
 class SqlCaptureConnection implements Connection {
     private final Connection targetConnection;
-    private final LoggerInstance loggerInstance;
+    private final LoggerConfig config;
     private final boolean sqlLoggingEnabled;
 
-    public SqlCaptureConnection(Connection targetConnection, LoggerInstance loggerInstance) {
+    public SqlCaptureConnection(Connection targetConnection, LoggerConfig config) {
         this.targetConnection = targetConnection;
-        this.loggerInstance = loggerInstance;
-        this.sqlLoggingEnabled = getSqlLoggingEnabled(loggerInstance);
+        this.config = config;
+        this.sqlLoggingEnabled = getSqlLoggingEnabled(config);
     }
 
-    private static boolean getSqlLoggingEnabled(LoggerInstance loggerInstance) {
+    private static boolean getSqlLoggingEnabled(LoggerConfig config) {
         try {
-            com.universallogger.config.LoggerConfig config;
-            if (loggerInstance != null) {
-                config = loggerInstance.getConfig();
-            } else {
-                // Static API 사용 시 fallback
-                config = com.universallogger.UniversalLogger.getConfig();
-            }
             if (config != null && config.getSql() != null) {
                 return config.getSql().isParameterSubstitution();
             }
@@ -41,7 +34,7 @@ class SqlCaptureConnection implements Connection {
 
     @Override
     public Statement createStatement() throws SQLException {
-        return new SqlCaptureStatement(targetConnection.createStatement(), loggerInstance, sqlLoggingEnabled);
+        return new SqlCaptureStatement(targetConnection.createStatement(), config, sqlLoggingEnabled);
     }
 
     @Override
@@ -51,17 +44,17 @@ class SqlCaptureConnection implements Connection {
             return new SqlCapturePreparedStatement(
                 targetConnection.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY),
                 sql,
-                loggerInstance
+                config
             );
         } catch (SQLException e) {
             // Fallback to default if scrollable not supported
-            return new SqlCapturePreparedStatement(targetConnection.prepareStatement(sql), sql, loggerInstance);
+            return new SqlCapturePreparedStatement(targetConnection.prepareStatement(sql), sql, config);
         }
     }
 
     @Override
     public CallableStatement prepareCall(String sql) throws SQLException {
-        return new SqlCaptureCallableStatement(targetConnection.prepareCall(sql), sql, loggerInstance);
+        return new SqlCaptureCallableStatement(targetConnection.prepareCall(sql), sql, config);
     }
 
     // Delegate all other methods
@@ -80,16 +73,16 @@ class SqlCaptureConnection implements Connection {
     @Override public int getTransactionIsolation() throws SQLException { return targetConnection.getTransactionIsolation(); }
     @Override public SQLWarning getWarnings() throws SQLException { return targetConnection.getWarnings(); }
     @Override public void clearWarnings() throws SQLException { targetConnection.clearWarnings(); }
-    @Override public Statement createStatement(int resultSetType, int resultSetConcurrency) throws SQLException { return new SqlCaptureStatement(targetConnection.createStatement(resultSetType, resultSetConcurrency), loggerInstance, sqlLoggingEnabled); }
+    @Override public Statement createStatement(int resultSetType, int resultSetConcurrency) throws SQLException { return new SqlCaptureStatement(targetConnection.createStatement(resultSetType, resultSetConcurrency), config, sqlLoggingEnabled); }
     @Override public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
         // Force SCROLLABLE result set for row counting
         return new SqlCapturePreparedStatement(
             targetConnection.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY),
             sql,
-            loggerInstance
+            config
         );
     }
-    @Override public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency) throws SQLException { return new SqlCaptureCallableStatement(targetConnection.prepareCall(sql, resultSetType, resultSetConcurrency), sql, loggerInstance); }
+    @Override public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency) throws SQLException { return new SqlCaptureCallableStatement(targetConnection.prepareCall(sql, resultSetType, resultSetConcurrency), sql, config); }
     @Override public Map<String, Class<?>> getTypeMap() throws SQLException { return targetConnection.getTypeMap(); }
     @Override public void setTypeMap(Map<String, Class<?>> map) throws SQLException { targetConnection.setTypeMap(map); }
     @Override public void setHoldability(int holdability) throws SQLException { targetConnection.setHoldability(holdability); }
@@ -98,12 +91,12 @@ class SqlCaptureConnection implements Connection {
     @Override public Savepoint setSavepoint(String name) throws SQLException { return targetConnection.setSavepoint(name); }
     @Override public void rollback(Savepoint savepoint) throws SQLException { targetConnection.rollback(savepoint); }
     @Override public void releaseSavepoint(Savepoint savepoint) throws SQLException { targetConnection.releaseSavepoint(savepoint); }
-    @Override public Statement createStatement(int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException { return new SqlCaptureStatement(targetConnection.createStatement(resultSetType, resultSetConcurrency, resultSetHoldability), loggerInstance, sqlLoggingEnabled); }
-    @Override public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException { return new SqlCapturePreparedStatement(targetConnection.prepareStatement(sql, resultSetType, resultSetConcurrency, resultSetHoldability), sql, loggerInstance); }
-    @Override public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException { return new SqlCaptureCallableStatement(targetConnection.prepareCall(sql, resultSetType, resultSetConcurrency, resultSetHoldability), sql, loggerInstance); }
-    @Override public PreparedStatement prepareStatement(String sql, int autoGeneratedKeys) throws SQLException { return new SqlCapturePreparedStatement(targetConnection.prepareStatement(sql, autoGeneratedKeys), sql, loggerInstance); }
-    @Override public PreparedStatement prepareStatement(String sql, int[] columnIndexes) throws SQLException { return new SqlCapturePreparedStatement(targetConnection.prepareStatement(sql, columnIndexes), sql, loggerInstance); }
-    @Override public PreparedStatement prepareStatement(String sql, String[] columnNames) throws SQLException { return new SqlCapturePreparedStatement(targetConnection.prepareStatement(sql, columnNames), sql, loggerInstance); }
+    @Override public Statement createStatement(int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException { return new SqlCaptureStatement(targetConnection.createStatement(resultSetType, resultSetConcurrency, resultSetHoldability), config, sqlLoggingEnabled); }
+    @Override public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException { return new SqlCapturePreparedStatement(targetConnection.prepareStatement(sql, resultSetType, resultSetConcurrency, resultSetHoldability), sql, config); }
+    @Override public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException { return new SqlCaptureCallableStatement(targetConnection.prepareCall(sql, resultSetType, resultSetConcurrency, resultSetHoldability), sql, config); }
+    @Override public PreparedStatement prepareStatement(String sql, int autoGeneratedKeys) throws SQLException { return new SqlCapturePreparedStatement(targetConnection.prepareStatement(sql, autoGeneratedKeys), sql, config); }
+    @Override public PreparedStatement prepareStatement(String sql, int[] columnIndexes) throws SQLException { return new SqlCapturePreparedStatement(targetConnection.prepareStatement(sql, columnIndexes), sql, config); }
+    @Override public PreparedStatement prepareStatement(String sql, String[] columnNames) throws SQLException { return new SqlCapturePreparedStatement(targetConnection.prepareStatement(sql, columnNames), sql, config); }
     @Override public Clob createClob() throws SQLException { return targetConnection.createClob(); }
     @Override public Blob createBlob() throws SQLException { return targetConnection.createBlob(); }
     @Override public NClob createNClob() throws SQLException { return targetConnection.createNClob(); }

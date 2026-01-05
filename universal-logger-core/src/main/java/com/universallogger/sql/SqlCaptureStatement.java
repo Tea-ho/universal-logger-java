@@ -1,6 +1,6 @@
 package com.universallogger.sql;
 
-import com.universallogger.LoggerInstance;
+import com.universallogger.config.LoggerConfig;
 
 import java.sql.*;
 
@@ -9,14 +9,14 @@ import java.sql.*;
  */
 class SqlCaptureStatement implements Statement {
     protected final Statement targetStatement;
-    protected final LoggerInstance loggerInstance;
+    protected final LoggerConfig config;
     protected final SqlLogger sqlLogger;
     protected final boolean sqlLoggingEnabled;
 
-    public SqlCaptureStatement(Statement targetStatement, LoggerInstance loggerInstance, boolean sqlLoggingEnabled) {
+    public SqlCaptureStatement(Statement targetStatement, LoggerConfig config, boolean sqlLoggingEnabled) {
         this.targetStatement = targetStatement;
-        this.loggerInstance = loggerInstance;
-        this.sqlLogger = new SqlLogger(loggerInstance);
+        this.config = config;
+        this.sqlLogger = new SqlLogger(config);
         this.sqlLoggingEnabled = sqlLoggingEnabled;
     }
 
@@ -64,7 +64,7 @@ class SqlCaptureStatement implements Statement {
             }
 
             // Wrap ResultSet to count rows for forward-only ResultSets
-            return new RowCountingResultSet(rs, callerInfo, loggerInstance);
+            return new RowCountingResultSet(rs, callerInfo, config);
         } finally {
             sqlLogger.logExecutionTime(sql, System.currentTimeMillis() - start, callerInfo);
         }

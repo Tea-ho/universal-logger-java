@@ -1,6 +1,6 @@
 package com.universallogger.sql;
 
-import com.universallogger.LoggerInstance;
+import com.universallogger.config.LoggerConfig;
 
 import javax.sql.DataSource;
 import java.io.PrintWriter;
@@ -12,9 +12,9 @@ import java.util.logging.Logger;
  * SQL 자동 캡처를 위한 DataSource 프록시
  * 모든 데이터베이스 지원 (MySQL, Oracle, MSSQL, MongoDB JDBC 등)
  *
- * Static API와 인스턴스 기반 방식 모두 지원:
- * - Static API: new SqlCaptureProxy(dataSource) - UniversalLogger 싱글톤 사용
- * - Instance-based: new SqlCaptureProxy(dataSource, loggerInstance) - 주입된 인스턴스 사용
+ * 사용법:
+ * - new SqlCaptureProxy(dataSource) - 기본 설정 사용
+ * - new SqlCaptureProxy(dataSource, config) - 커스텀 설정 사용
  *
  * 관심사 분리를 위해 리팩토링됨:
  * - SqlFormatter: SQL 포맷팅 로직
@@ -26,51 +26,51 @@ public class SqlCaptureProxy implements DataSource {
 
     private final DataSource targetDataSource;
     private final boolean enabled;
-    private final LoggerInstance loggerInstance;
+    private final LoggerConfig config;
 
     /**
-     * Static API 생성자 (하위 호환성)
+     * 기본 생성자 - 기본 설정 사용
      */
     public SqlCaptureProxy(DataSource targetDataSource) {
         this(targetDataSource, true, null);
     }
 
     /**
-     * Static API + 활성화 플래그 생성자 (하위 호환성)
+     * 활성화 플래그 생성자
      */
     public SqlCaptureProxy(DataSource targetDataSource, boolean enabled) {
         this(targetDataSource, enabled, null);
     }
 
     /**
-     * 인스턴스 기반 LoggerInstance 생성자 (권장)
+     * LoggerConfig 생성자 (권장)
      *
      * @param targetDataSource 래핑할 실제 DataSource
-     * @param loggerInstance 로깅에 사용할 LoggerInstance
+     * @param config 로깅 설정
      */
-    public SqlCaptureProxy(DataSource targetDataSource, LoggerInstance loggerInstance) {
-        this(targetDataSource, true, loggerInstance);
+    public SqlCaptureProxy(DataSource targetDataSource, LoggerConfig config) {
+        this(targetDataSource, true, config);
     }
 
     /**
      * 전체 생성자 (내부 사용)
      */
-    private SqlCaptureProxy(DataSource targetDataSource, boolean enabled, LoggerInstance loggerInstance) {
+    private SqlCaptureProxy(DataSource targetDataSource, boolean enabled, LoggerConfig config) {
         this.targetDataSource = targetDataSource;
         this.enabled = enabled;
-        this.loggerInstance = loggerInstance;
+        this.config = config;
     }
 
     @Override
     public Connection getConnection() throws SQLException {
         Connection connection = targetDataSource.getConnection();
-        return enabled ? new SqlCaptureConnection(connection, loggerInstance) : connection;
+        return enabled ? new SqlCaptureConnection(connection, config) : connection;
     }
 
     @Override
     public Connection getConnection(String username, String password) throws SQLException {
         Connection connection = targetDataSource.getConnection(username, password);
-        return enabled ? new SqlCaptureConnection(connection, loggerInstance) : connection;
+        return enabled ? new SqlCaptureConnection(connection, config) : connection;
     }
 
     // 위임 메서드들
