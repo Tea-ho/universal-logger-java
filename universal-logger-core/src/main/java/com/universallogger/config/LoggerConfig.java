@@ -515,6 +515,7 @@ public class LoggerConfig {
      */
     public static class EmailConfig {
         private SmtpConfig smtp = new SmtpConfig();
+        private String from;
         private String[] to;
         private String subject;
 
@@ -524,6 +525,14 @@ public class LoggerConfig {
 
         public void setSmtp(SmtpConfig smtp) {
             this.smtp = smtp;
+        }
+
+        public String getFrom() {
+            return from;
+        }
+
+        public void setFrom(String from) {
+            this.from = from;
         }
 
         public String[] getTo() {

@@ -56,19 +56,39 @@ public class Log4j2ConfigurationFactory extends ConfigurationFactory {
             setupAppenders(builder, config);
 
             // 루트 로거 설정
-            builder.add(builder.newRootLogger(rootLevel)
+            org.apache.logging.log4j.core.config.builder.api.RootLoggerComponentBuilder rootLogger = builder.newRootLogger(rootLevel)
                 .add(builder.newAppenderRef("Console"))
                 .add(builder.newAppenderRef("File"))
-                .add(builder.newAppenderRef("ErrorFile")));
+                .add(builder.newAppenderRef("ErrorFile"));
+
+            // Add Webhook and Email appenders if enabled
+            if (isOutputEnabled(config.getOutputs(), "webhook")) {
+                rootLogger.add(builder.newAppenderRef("Webhook"));
+            }
+            if (isOutputEnabled(config.getOutputs(), "email")) {
+                rootLogger.add(builder.newAppenderRef("Email"));
+            }
+
+            builder.add(rootLogger);
 
             // 모듈별 로거 레벨 설정
             for (Map.Entry<String, String> entry : config.getLevels().entrySet()) {
                 if (!"root".equals(entry.getKey())) {
                     Level level = Level.valueOf(entry.getValue());
-                    builder.add(builder.newLogger(entry.getKey(), level)
+                    org.apache.logging.log4j.core.config.builder.api.LoggerComponentBuilder logger = builder.newLogger(entry.getKey(), level)
                         .add(builder.newAppenderRef("Console"))
                         .add(builder.newAppenderRef("File"))
-                        .add(builder.newAppenderRef("ErrorFile")));
+                        .add(builder.newAppenderRef("ErrorFile"));
+
+                    // Add Webhook and Email appenders if enabled
+                    if (isOutputEnabled(config.getOutputs(), "webhook")) {
+                        logger.add(builder.newAppenderRef("Webhook"));
+                    }
+                    if (isOutputEnabled(config.getOutputs(), "email")) {
+                        logger.add(builder.newAppenderRef("Email"));
+                    }
+
+                    builder.add(logger);
                 }
             }
 
@@ -149,6 +169,60 @@ public class Log4j2ConfigurationFactory extends ConfigurationFactory {
             errorAppender.addComponent(builder.newFilter("ThresholdFilter", "ACCEPT", "DENY")
                 .addAttribute("level", "ERROR"));
             builder.add(errorAppender);
+        }
+
+        // Webhook Appender
+        if (isOutputEnabled(outputs, "webhook")) {
+            LoggerConfig.OutputConfig webhookOutput = outputs.get("webhook");
+            LoggerConfig.WebhookConfig webhookConfig = webhookOutput.getWebhook();
+
+            if (webhookConfig != null && webhookConfig.getUrl() != null) {
+                String messageFormat = webhookConfig.getFormat();
+                if (messageFormat != null) {
+                    messageFormat = messageFormat.replace("${appName}", appName);
+                }
+
+                AppenderComponentBuilder webhookAppender = builder.newAppender("Webhook", "UniversalWebhook")
+                    .addAttribute("webhookUrl", webhookConfig.getUrl())
+                    .addAttribute("messageFormat", messageFormat);
+
+                // Add level filter if specified
+                String level = webhookOutput.getLevel();
+                if (level != null && !level.isEmpty()) {
+                    webhookAppender.add(builder.newFilter("ThresholdFilter", "ACCEPT", "DENY")
+                        .addAttribute("level", level));
+                }
+
+                builder.add(webhookAppender);
+            }
+        }
+
+        // Email Appender
+        if (isOutputEnabled(outputs, "email")) {
+            LoggerConfig.OutputConfig emailOutput = outputs.get("email");
+            LoggerConfig.EmailConfig emailConfig = emailOutput.getEmail();
+
+            if (emailConfig != null && emailConfig.getSmtp() != null) {
+                LoggerConfig.EmailConfig.SmtpConfig smtp = emailConfig.getSmtp();
+
+                AppenderComponentBuilder emailAppender = builder.newAppender("Email", "UniversalEmail")
+                    .addAttribute("smtpHost", smtp.getHost())
+                    .addAttribute("smtpPort", smtp.getPort())
+                    .addAttribute("username", smtp.getUsername())
+                    .addAttribute("password", smtp.getPassword())
+                    .addAttribute("from", emailConfig.getFrom())
+                    .addAttribute("to", emailConfig.getTo() != null ? String.join(",", emailConfig.getTo()) : "")
+                    .addAttribute("subject", emailConfig.getSubject());
+
+                // Add level filter if specified
+                String level = emailOutput.getLevel();
+                if (level != null && !level.isEmpty()) {
+                    emailAppender.add(builder.newFilter("ThresholdFilter", "ACCEPT", "DENY")
+                        .addAttribute("level", level));
+                }
+
+                builder.add(emailAppender);
+            }
         }
     }
 
