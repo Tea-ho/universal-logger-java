@@ -164,7 +164,7 @@ spring:
   application:
     name: MyApp
 
-universal-logger-log4j2:
+universal-logger:
   enabled: true                                    # 기본값: true
   config-path: "config/universal-logger.yml"      # 기본값
   sql-capture:
@@ -207,8 +207,8 @@ universal-logger.config-path=config/universal-logger.yml
 universal-logger.sql-capture.enabled=true
 
 # 또는 Log4j2
-universal-logger-log4j2.config-path=config/universal-logger.yml
-universal-logger-log4j2.sql-capture.enabled=true
+universal-logger.config-path=config/universal-logger.yml
+universal-logger.sql-capture.enabled=true
 ```
 
 ### 순수 Java (비 Spring 환경)
@@ -397,7 +397,7 @@ universal-logger:
     enabled: true  # 기본값
 
 # Log4j2
-universal-logger-log4j2:
+universal-logger:
   sql-capture:
     enabled: true  # 기본값
 ```
@@ -647,7 +647,7 @@ universal-logger:
   config-path: "config/universal-logger.yml"
 
 # Log4j2
-universal-logger-log4j2:
+universal-logger:
   enabled: true
   config-path: "config/universal-logger.yml"
 ```

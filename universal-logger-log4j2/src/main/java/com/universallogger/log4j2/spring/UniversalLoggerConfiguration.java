@@ -44,8 +44,8 @@ import java.util.Set;
  * application.properties:
  * <pre>
  * spring.application.name=MyApp
- * universal-logger-log4j2.config-path=config/universal-logger.yml
- * universal-logger-log4j2.sql-capture.enabled=true
+ * universal-logger.config-path=config/universal-logger.yml
+ * universal-logger.sql-capture.enabled=true
  * </pre>
  */
 @Configuration
@@ -57,10 +57,10 @@ public class UniversalLoggerConfiguration implements BeanPostProcessor, Applicat
     @Value("${spring.application.name:application}")
     private String applicationName;
 
-    @Value("${universal-logger-log4j2.config-path:config/universal-logger.yml}")
+    @Value("${universal-logger.config-path:config/universal-logger.yml}")
     private String configPath;
 
-    @Value("${universal-logger-log4j2.sql-capture.enabled:true}")
+    @Value("${universal-logger.sql-capture.enabled:true}")
     private boolean sqlCaptureEnabled;
 
     private final Set<String> wrappedDataSources = new HashSet<>();

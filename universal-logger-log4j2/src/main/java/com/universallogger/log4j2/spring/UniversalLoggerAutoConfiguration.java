@@ -33,7 +33,7 @@ import java.util.Set;
  *
  * 사용 예 (application.yml):
  * <pre>
- * universal-logger-log4j2:
+ * universal-logger:
  *   enabled: true
  *   config-path: "config/universal-logger.yml"
  *   sql-capture:
@@ -42,7 +42,7 @@ import java.util.Set;
  */
 @AutoConfiguration
 @ConditionalOnClass({DataSource.class})
-@ConditionalOnProperty(prefix = "universal-logger-log4j2", name = "enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "universal-logger", name = "enabled", havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(UniversalLoggerProperties.class)
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class UniversalLoggerAutoConfiguration implements BeanPostProcessor, ApplicationContextAware {

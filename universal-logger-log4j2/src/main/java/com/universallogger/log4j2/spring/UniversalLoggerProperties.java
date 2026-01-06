@@ -7,14 +7,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *
  * application.yml 예시:
  * <pre>
- * universal-logger-log4j2:
+ * universal-logger:
  *   enabled: true
  *   config-path: "config/universal-logger.yml"
  *   sql-capture:
  *     enabled: true
  * </pre>
  */
-@ConfigurationProperties(prefix = "universal-logger-log4j2")
+@ConfigurationProperties(prefix = "universal-logger")
 public class UniversalLoggerProperties {
 
     /**

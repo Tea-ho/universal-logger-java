@@ -287,7 +287,7 @@ spring:
   application:
     name: MyApp
 
-universal-logger-log4j2:
+universal-logger:
   enabled: true
   config-path: "config/universal-logger.yml"
   sql-capture:
@@ -755,9 +755,9 @@ DataSource wrapped = new SqlCaptureProxy(originalDataSource, config);
 
 | 속성 | 기본값 | 설명 |
 |------|--------|------|
-| `universal-logger-log4j2.enabled` | `true` | 활성화 여부 |
-| `universal-logger-log4j2.config-path` | `config/universal-logger.yml` | 설정 파일 경로 |
-| `universal-logger-log4j2.sql-capture.enabled` | `true` | SQL 캡처 활성화 |
+| `universal-logger.enabled` | `true` | 활성화 여부 |
+| `universal-logger.config-path` | `config/universal-logger.yml` | 설정 파일 경로 |
+| `universal-logger.sql-capture.enabled` | `true` | SQL 캡처 활성화 |
 
 </aside>
 
