@@ -71,15 +71,15 @@ public class UniversalLoggerAutoConfiguration implements BeanPostProcessor, Appl
      */
     @Bean
     public LoggerConfig loggerConfig() {
-        logger.info("🚀 Initializing UniversalLogger (Log4j2) for application: {}", applicationName);
+        logger.info("Initializing UniversalLogger (Log4j2) for application: {}", applicationName);
 
         try {
             UniversalConfigLoader configLoader = new UniversalConfigLoader();
             this.loggerConfig = configLoader.load(properties.getConfigPath());
-            logger.info("✅ UniversalLogger (Log4j2) initialized successfully");
+            logger.info("UniversalLogger (Log4j2) initialized successfully");
             return this.loggerConfig;
         } catch (Exception e) {
-            logger.error("❌ Failed to initialize UniversalLogger (Log4j2)", e);
+            logger.error("Failed to initialize UniversalLogger (Log4j2)", e);
             throw new IllegalStateException("Failed to load UniversalLogger configuration", e);
         }
     }
@@ -109,12 +109,12 @@ public class UniversalLoggerAutoConfiguration implements BeanPostProcessor, Appl
                 try {
                     config = applicationContext.getBean(LoggerConfig.class);
                 } catch (Exception e) {
-                    logger.warn("⚠️ LoggerConfig not found, using fallback");
+                    logger.warn("LoggerConfig not found, using fallback");
                 }
             }
 
             if (config != null) {
-                logger.info("🔍 SQL logging enabled - DataSource '{}' wrapped", beanName);
+                logger.info("SQL logging enabled - DataSource '{}' wrapped", beanName);
             }
 
             return new SqlCaptureProxy((DataSource) bean, config);

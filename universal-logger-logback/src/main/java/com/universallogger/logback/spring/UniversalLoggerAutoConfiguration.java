@@ -69,13 +69,13 @@ public class UniversalLoggerAutoConfiguration implements BeanPostProcessor, Appl
      */
     @Bean
     public LoggerInstance loggerInstance() {
-        logger.info("🚀 Initializing UniversalLogger for application: {}", applicationName);
+        logger.info("Initializing UniversalLogger (Logback) for application: {}", applicationName);
 
         LoggerInstance instance = LoggerInstance.builder()
                 .configPath(properties.getConfigPath())
                 .build();
 
-        logger.info("✅ UniversalLogger initialized successfully");
+        logger.info("UniversalLogger (Logback) initialized successfully");
         return instance;
     }
 
@@ -103,10 +103,10 @@ public class UniversalLoggerAutoConfiguration implements BeanPostProcessor, Appl
             try {
                 loggerInstance = applicationContext.getBean(LoggerInstance.class);
                 if (loggerInstance != null) {
-                    logger.info("🔍 SQL logging enabled - DataSource '{}' wrapped", beanName);
+                    logger.info("SQL logging enabled - DataSource '{}' wrapped", beanName);
                 }
             } catch (Exception e) {
-                logger.warn("⚠️ LoggerInstance not found, using fallback");
+                logger.warn("LoggerInstance not found, using fallback");
             }
 
             return new SqlCaptureProxy((DataSource) bean, loggerInstance != null ? loggerInstance.getConfig() : null);

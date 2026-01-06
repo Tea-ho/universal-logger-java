@@ -79,10 +79,10 @@ public class SqlLogger {
         if (useParameterSubstitution && parameters != null && !parameters.isEmpty()) {
             // ON: 파라미터 치환된 SQL 출력
             String substitutedSql = parameterSubstitutor.substitute(formattedSql, parameters);
-            sb.append("[SQL] ").append(substitutedSql).append("\n");
+            sb.append("[UniversalLogger] ").append(substitutedSql).append("\n");
         } else {
             // OFF: 기존 형식 (? + Parameters)
-            sb.append("[SQL] ").append(formattedSql);
+            sb.append("[UniversalLogger] ").append(formattedSql);
             if (parameters != null && !parameters.isEmpty()) {
                 sb.append(" | Parameters: ").append(parameters);
             }
