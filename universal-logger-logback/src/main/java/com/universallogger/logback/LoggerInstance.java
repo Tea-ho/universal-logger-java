@@ -6,6 +6,7 @@ import com.universallogger.config.LoggerConfig;
 import com.universallogger.constants.LoggerConstants;
 import com.universallogger.filters.SensitiveDataFilter;
 import com.universallogger.loaders.UniversalConfigLoader;
+import com.universallogger.utils.ProfileResolver;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,11 +61,23 @@ public class LoggerInstance {
     }
 
     /**
-     * 설정 파일 로드
+     * 설정 파일 로드 (프로파일 지원)
+     *
+     * Spring/Spring Boot 프로젝트의 경우 spring.profiles.active를 자동 감지하여
+     * 프로파일별 설정 파일을 로드합니다.
+     *
+     * 로딩 순서:
+     * 1. defaults/universal-logger-defaults.yml (기본값)
+     * 2. {configPath} (사용자 기본 설정)
+     * 3. {configPath with profile} (사용자 프로파일 설정, 있는 경우)
      */
     private LoggerConfig loadConfig(String configPath) {
         try {
-            return configLoader.load(configPath);
+            // Resolve active profile (Spring integration)
+            String activeProfile = ProfileResolver.resolveProfile();
+
+            // Load configuration with profile support
+            return configLoader.loadWithProfile(configPath, activeProfile, true);
         } catch (Exception e) {
             logger.error("Failed to load config: {}, falling back to defaults.yml", configPath, e);
             return loadDefaultConfig();

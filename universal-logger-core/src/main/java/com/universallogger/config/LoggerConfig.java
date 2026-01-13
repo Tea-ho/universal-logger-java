@@ -192,7 +192,9 @@ public class LoggerConfig {
             if (overrideRotation.getMaxFiles() > 0) {
                 base.getRotation().setMaxFiles(overrideRotation.getMaxFiles());
             }
-            base.getRotation().setCompress(overrideRotation.isCompress());
+            if (overrideRotation.getCompress() != null) {
+                base.getRotation().setCompress(overrideRotation.getCompress());
+            }
         }
 
         // Merge webhook config
@@ -303,7 +305,7 @@ public class LoggerConfig {
             RotationConfig rotCopy = new RotationConfig();
             rotCopy.setMaxSize(original.getRotation().getMaxSize());
             rotCopy.setMaxFiles(original.getRotation().getMaxFiles());
-            rotCopy.setCompress(original.getRotation().isCompress());
+            rotCopy.setCompress(original.getRotation().getCompress());
             copy.setRotation(rotCopy);
         }
 
@@ -457,7 +459,7 @@ public class LoggerConfig {
     public static class RotationConfig {
         private String maxSize;
         private int maxFiles;
-        private boolean compress;
+        private Boolean compress;
 
         public String getMaxSize() {
             return maxSize;
@@ -476,10 +478,14 @@ public class LoggerConfig {
         }
 
         public boolean isCompress() {
+            return compress != null ? compress : false;
+        }
+
+        public Boolean getCompress() {
             return compress;
         }
 
-        public void setCompress(boolean compress) {
+        public void setCompress(Boolean compress) {
             this.compress = compress;
         }
     }

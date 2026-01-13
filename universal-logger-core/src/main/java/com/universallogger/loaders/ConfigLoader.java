@@ -3,35 +3,60 @@ package com.universallogger.loaders;
 import com.universallogger.config.LoggerConfig;
 
 /**
- * 설정 로더 인터페이스
+ * Configuration loader interface
+ *
+ * Supports profile-based configuration loading for Spring/Spring Boot integration.
  */
 public interface ConfigLoader {
 
     /**
-     * 설정 파일 로드
+     * Load configuration file
      *
-     * @param configPath 설정 파일 경로
-     * @return 로드된 설정 객체
-     * @throws Exception 로드 실패 시
+     * @param configPath Configuration file path
+     * @return Loaded configuration object
+     * @throws Exception If loading fails
      */
     LoggerConfig load(String configPath) throws Exception;
 
     /**
-     * 설정 파일 로드 (병합 옵션)
+     * Load configuration file with merge option
      *
-     * @param configPath 설정 파일 경로
-     * @param mergeDefaults 기본 설정과 병합 여부
-     * @return 로드된 설정 객체
-     * @throws Exception 로드 실패 시
+     * @param configPath Configuration file path
+     * @param mergeDefaults Whether to merge with default configuration
+     * @return Loaded configuration object
+     * @throws Exception If loading fails
      */
     LoggerConfig load(String configPath, boolean mergeDefaults) throws Exception;
 
     /**
-     * 기본 설정 로드
-     * JAR 내장 defaults 파일 로드
+     * Load configuration with profile support
      *
-     * @return 기본 설정 객체
-     * @throws Exception 로드 실패 시
+     * Loads base config and merges with profile-specific config if profile is detected.
+     *
+     * Loading order:
+     * 1. defaults/universal-logger-defaults.yml (base defaults)
+     * 2. {configPath} (user base config)
+     * 3. {configPath with profile suffix} (user profile config, if profile exists)
+     *
+     * Example:
+     * - Profile: "prod"
+     * - Base: config/universal-logger.yml
+     * - Profile: config/universal-logger-prod.yml
+     *
+     * @param configPath Base configuration file path
+     * @param profile Profile name (e.g., "dev", "prod", "test"), null for no profile
+     * @param mergeDefaults Whether to merge with default configuration
+     * @return Loaded and merged configuration object
+     * @throws Exception If loading fails
+     */
+    LoggerConfig loadWithProfile(String configPath, String profile, boolean mergeDefaults) throws Exception;
+
+    /**
+     * Load default configuration
+     * Loads embedded defaults file from JAR
+     *
+     * @return Default configuration object
+     * @throws Exception If loading fails
      */
     LoggerConfig loadDefaultConfig() throws Exception;
 }

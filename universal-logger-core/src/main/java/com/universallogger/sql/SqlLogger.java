@@ -12,7 +12,7 @@ import java.util.Map;
  */
 public class SqlLogger {
 
-    private static final Logger logger = LoggerFactory.getLogger("SQL");
+    private static final Logger logger = LoggerFactory.getLogger("UniversalSqlLogger");
     private final LoggerConfig config;
     private final SqlFormatter sqlFormatter;
     private final ParameterSubstitutor parameterSubstitutor;
@@ -79,10 +79,10 @@ public class SqlLogger {
         if (useParameterSubstitution && parameters != null && !parameters.isEmpty()) {
             // ON: 파라미터 치환된 SQL 출력
             String substitutedSql = parameterSubstitutor.substitute(formattedSql, parameters);
-            sb.append("[UniversalLogger] ").append(substitutedSql).append("\n");
+            sb.append("[SQL] ").append(substitutedSql).append("\n");
         } else {
             // OFF: 기존 형식 (? + Parameters)
-            sb.append("[UniversalLogger] ").append(formattedSql);
+            sb.append("[SQL] ").append(formattedSql);
             if (parameters != null && !parameters.isEmpty()) {
                 sb.append(" | Parameters: ").append(parameters);
             }

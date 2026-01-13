@@ -383,6 +383,134 @@ JAR 내장 기본값 (defaults/universal-logger-defaults.yml)
 
 프로젝트에서 일부 값만 설정하면, 나머지는 기본값이 사용됩니다.
 
+## Profile-Based Configuration (Spring Integration)
+
+Universal Logger supports environment-specific configurations through Spring profile integration.
+
+### How It Works
+
+**Priority Order:**
+1. `logger.profile` system property (highest)
+2. `spring.profiles.active` system property (Spring Boot)
+3. `SPRING_PROFILES_ACTIVE` environment variable
+4. No profile (base configuration only)
+
+**Loading Sequence:**
+```
+defaults/universal-logger-defaults.yml (JAR embedded)
+        ↓ merge
+config/universal-logger.yml (base config)
+        ↓ merge
+config/universal-logger-{profile}.yml (profile-specific, optional)
+```
+
+### Configuration Example
+
+**Spring Boot application.yml:**
+```yaml
+spring:
+  profiles:
+    active: prod  # Automatically detected by Universal Logger
+```
+
+**File Structure:**
+```
+src/main/resources/
+├── config/
+│   ├── universal-logger.yml           # Base configuration
+│   ├── universal-logger-dev.yml       # Development overrides
+│   ├── universal-logger-test.yml      # Test overrides
+│   └── universal-logger-prod.yml      # Production overrides
+```
+
+**Base Configuration (universal-logger.yml):**
+```yaml
+version: "1.0"
+
+global:
+  appName: "MyApp"
+  timezone: "Asia/Seoul"
+
+levels:
+  root: "INFO"
+
+outputs:
+  console:
+    enabled: true
+    level: "INFO"
+
+  file:
+    enabled: true
+    path: "C:/log/{appName}/application.log"
+    rotation:
+      maxSize: "50MB"
+      maxFiles: 30
+      compress: true
+```
+
+**Production Override (universal-logger-prod.yml):**
+```yaml
+# Only specify what needs to be different in production
+levels:
+  root: "WARN"  # Less verbose in production
+
+outputs:
+  console:
+    enabled: false  # Disable console in production
+
+  file:
+    rotation:
+      maxFiles: 90  # Keep more logs in production
+      compress: false  # Disable compression
+
+  errorFile:
+    enabled: true
+    level: "ERROR"
+    path: "C:/log/{appName}/error/error.log"
+```
+
+**Development Override (universal-logger-dev.yml):**
+```yaml
+# Developer-friendly settings
+levels:
+  root: "DEBUG"
+  com.myapp: "TRACE"
+
+sql:
+  parameterSubstitution: true  # Show actual SQL values
+
+outputs:
+  file:
+    rotation:
+      compress: false  # Faster development without compression
+```
+
+### Manual Profile Override
+
+Override Spring profile for logger-specific configuration:
+
+```bash
+# JVM property
+java -Dlogger.profile=prod -jar app.jar
+
+# Environment variable (Docker/Kubernetes)
+export LOGGER_PROFILE=prod
+java -jar app.jar
+```
+
+### Non-Spring Projects
+
+For standalone Java applications without Spring:
+
+```java
+// Set profile before logger initialization
+System.setProperty("logger.profile", "prod");
+
+LoggerInstance logger = LoggerInstance.builder()
+    .configPath("config/universal-logger.yml")
+    .build();
+```
+
 ## 주요 기능
 
 ### 1. SQL 자동 캡처

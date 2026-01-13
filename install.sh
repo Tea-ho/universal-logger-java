@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Universal Logger Java 설치 스크립트
+# Universal Logger Java Installation Script
 
 set -e
 
@@ -21,43 +21,77 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Java 버전 확인
+# Check Java version
 check_java() {
-    log_info "Java 버전 확인 중..."
+    log_info "Checking Java version..."
 
     if command -v java &> /dev/null; then
         JAVA_VERSION=$(java -version 2>&1 | head -n 1 | cut -d'"' -f2 | cut -d'.' -f1-2)
-        log_info "Java 버전: $JAVA_VERSION"
+        log_info "Java version: $JAVA_VERSION"
 
-        # Java 8 이상 확인
+        # Check Java 8 or higher
         if java -version 2>&1 | grep -q "1\.[8-9]\|1[0-9]\|[2-9][0-9]"; then
-            log_info "✅ Java 버전 요구사항 충족"
+            log_info "Java version requirement met"
         else
-            log_error "❌ Java 8 이상이 필요합니다"
+            log_error "Java 8 or higher is required"
             exit 1
         fi
     else
-        log_error "❌ Java가 설치되어 있지 않습니다"
+        log_error "Java is not installed"
         exit 1
     fi
 }
 
-# Maven 확인
+# Check Maven
 check_maven() {
-    log_info "Maven 확인 중..."
+    log_info "Checking Maven..."
 
+    # Try system Maven first
     if command -v mvn &> /dev/null; then
         MVN_VERSION=$(mvn -version | head -n 1 | cut -d' ' -f3)
-        log_info "Maven 버전: $MVN_VERSION"
-        log_info "✅ Maven 설치 확인"
-    else
-        log_warn "❌ Maven이 설치되어 있지 않습니다"
-        log_info "Maven 자동 설치를 시도합니다..."
-        install_maven
+        log_info "Maven version: $MVN_VERSION"
+        log_info "Maven installation confirmed (System PATH)"
+        MAVEN_CMD="mvn"
+        return
     fi
+
+    # Try IntelliJ bundled Maven
+    log_info "System Maven not found. Searching for IntelliJ bundled Maven..."
+    MAVEN_CMD=""
+
+    # macOS: Search in /Applications
+    if [ -z "$MAVEN_CMD" ] && [ "$(uname)" = "Darwin" ]; then
+        MAVEN_CMD=$(find /Applications -name "mvn" -path "*/maven3/bin/mvn" 2>/dev/null | sort -r | head -n 1)
+    fi
+
+    # Linux: Search in common installation directories
+    if [ -z "$MAVEN_CMD" ] && [ "$(uname)" = "Linux" ]; then
+        for dir in /opt "$HOME/opt" "$HOME/.local" /usr/local; do
+            if [ -d "$dir" ]; then
+                found=$(find "$dir" -name "mvn" -path "*/maven3/bin/mvn" 2>/dev/null | sort -r | head -n 1)
+                if [ -n "$found" ]; then
+                    MAVEN_CMD="$found"
+                    break
+                fi
+            fi
+        done
+    fi
+
+    if [ -n "$MAVEN_CMD" ]; then
+        log_info "IntelliJ bundled Maven found: $MAVEN_CMD"
+        return
+    fi
+
+    # Maven not found - attempt auto-install
+    log_warn "Maven not found"
+    log_info "Attempting to auto-install Maven..."
+    install_maven
+
+    # Set MAVEN_CMD after installation
+    MAVEN_CMD="mvn"
 }
 
-# Maven 설치
+# Install Maven
 install_maven() {
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
         if command -v apt-get &> /dev/null; then
@@ -66,109 +100,109 @@ install_maven() {
         elif command -v yum &> /dev/null; then
             sudo yum install -y maven
         else
-            log_error "지원되지 않는 Linux 배포판입니다"
+            log_error "Unsupported Linux distribution"
             exit 1
         fi
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         if command -v brew &> /dev/null; then
             brew install maven
         else
-            log_error "Homebrew가 설치되어 있지 않습니다"
+            log_error "Homebrew is not installed"
             exit 1
         fi
     else
-        log_error "지원되지 않는 운영체제입니다"
+        log_error "Unsupported operating system"
         exit 1
     fi
 }
 
-# 프로젝트 빌드
+# Build project
 build_project() {
-    log_info "프로젝트 빌드 중..."
+    log_info "Building project..."
 
-    mvn clean compile
+    $MAVEN_CMD clean compile
 
-    log_info "✅ 프로젝트 빌드 완료"
+    log_info "Project build complete"
 }
 
-# 의존성 설치
+# Install dependencies
 install_dependencies() {
-    log_info "의존성 다운로드 중..."
+    log_info "Downloading dependencies..."
 
-    mvn dependency:resolve
+    $MAVEN_CMD dependency:resolve
 
-    log_info "✅ 의존성 설치 완료"
+    log_info "Dependencies installation complete"
 }
 
-# JAR 파일 생성
+# Create JAR file
 package_jar() {
-    log_info "JAR 파일 생성 중..."
+    log_info "Creating JAR file..."
 
-    mvn package -DskipTests
+    $MAVEN_CMD package -DskipTests
 
     if [ -f "target/universal-logger-1.0.0.jar" ]; then
-        log_info "✅ JAR 파일 생성 완료: target/universal-logger-1.0.0.jar"
+        log_info "JAR file created: target/universal-logger-1.0.0.jar"
     else
-        log_error "❌ JAR 파일 생성 실패"
+        log_error "JAR file creation failed"
         exit 1
     fi
 }
 
-# 설정 파일 복사
+# Setup config files
 setup_configs() {
-    log_info "설정 파일 설정 중..."
+    log_info "Setting up configuration files..."
 
-    # 홈 디렉토리에 설정 디렉토리 생성
+    # Create config directory in home
     mkdir -p "$HOME/.universal-logger-java"
 
-    # 설정 파일들 복사
+    # Copy config files
     cp config/*.yml "$HOME/.universal-logger-java/" 2>/dev/null || true
 
-    log_info "✅ 설정 파일이 $HOME/.universal-logger-java/ 에 복사되었습니다"
+    log_info "Configuration files copied to $HOME/.universal-logger-java/"
 }
 
-# 예시 실행
+# Run examples
 run_examples() {
-    log_info "예시 실행 중..."
+    log_info "Running examples..."
 
-    log_info "빠른 시작 예시 실행:"
-    mvn exec:java -Dexec.mainClass="com.universallogger.examples.QuickStart" -Dexec.classpathScope=compile
+    log_info "Running quick start example:"
+    $MAVEN_CMD exec:java -Dexec.mainClass="com.universallogger.examples.QuickStart" -Dexec.classpathScope=compile
 
     echo ""
-    log_info "기본 사용 예시 실행:"
-    mvn exec:java -Dexec.mainClass="com.universallogger.examples.BasicUsage" -Dexec.classpathScope=compile
+    log_info "Running basic usage example:"
+    $MAVEN_CMD exec:java -Dexec.mainClass="com.universallogger.examples.BasicUsage" -Dexec.classpathScope=compile
 
-    log_info "✅ 예시 실행 완료"
+    log_info "Examples execution complete"
 }
 
-# 설치 완료 메시지
+# Show completion message
 show_completion() {
     echo ""
-    log_info "🎉 Universal Logger Java 설치 완료!"
+    log_info "Universal Logger Java installation complete!"
     echo ""
-    echo "사용 방법:"
-    echo "1. Maven 의존성 추가:"
+    echo "Usage:"
+    echo "1. Add Maven dependency:"
     echo "   <dependency>"
     echo "       <groupId>com.universallogger</groupId>"
     echo "       <artifactId>universal-logger</artifactId>"
     echo "       <version>1.0.0</version>"
     echo "   </dependency>"
     echo ""
-    echo "2. Java 코드에서 사용:"
+    echo "2. Use in Java code:"
     echo "   import com.universallogger.UniversalLogger;"
     echo "   UniversalLogger.init(\"logging.yml\");"
     echo "   UniversalLogger.info(\"Hello World!\");"
     echo ""
-    echo "3. 설정 파일 위치: $HOME/.universal-logger-java/"
-    echo "4. 예시 코드: $(pwd)/examples/"
-    echo "5. JAR 파일: $(pwd)/target/universal-logger-1.0.0.jar"
+    echo "3. Config file location: $HOME/.universal-logger-java/"
+    echo "4. Example code: $(pwd)/examples/"
+    echo "5. JAR file: $(pwd)/target/universal-logger-1.0.0.jar"
     echo ""
-    log_info "문서: https://github.com/yourusername/universal-logger-java"
+    log_info "Documentation: https://github.com/yourusername/universal-logger-java"
 }
 
-# 메인 설치 프로세스
+# Main installation process
 main() {
-    echo "=== Universal Logger Java 설치 프로그램 ==="
+    echo "=== Universal Logger Java Installation ==="
     echo ""
 
     check_java
@@ -181,25 +215,25 @@ main() {
     show_completion
 }
 
-# 도움말
+# Help
 if [[ "${1:-}" == "--help" ]] || [[ "${1:-}" == "-h" ]]; then
-    echo "Universal Logger Java 설치 스크립트"
+    echo "Universal Logger Java Installation Script"
     echo ""
-    echo "사용법: $0"
+    echo "Usage: $0"
     echo ""
-    echo "이 스크립트는 다음을 수행합니다:"
-    echo "  ✅ Java 버전 확인 (8+)"
-    echo "  ✅ Maven 설치 확인 및 자동 설치"
-    echo "  ✅ 의존성 다운로드"
-    echo "  ✅ 프로젝트 빌드"
-    echo "  ✅ JAR 파일 생성"
-    echo "  ✅ 설정 파일 복사"
-    echo "  ✅ 예시 실행"
+    echo "This script performs the following:"
+    echo "  - Check Java version (8+)"
+    echo "  - Check Maven installation and auto-install"
+    echo "  - Download dependencies"
+    echo "  - Build project"
+    echo "  - Create JAR file"
+    echo "  - Copy configuration files"
+    echo "  - Run examples"
     echo ""
-    echo "요구사항:"
-    echo "  - Java 8 이상"
-    echo "  - Maven (자동 설치 가능)"
-    echo "  - 인터넷 연결"
+    echo "Requirements:"
+    echo "  - Java 8 or higher"
+    echo "  - Maven (auto-install available)"
+    echo "  - Internet connection"
     echo ""
     exit 0
 fi

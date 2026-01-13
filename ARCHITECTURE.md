@@ -200,6 +200,8 @@ universal-logger-log4j2/
 ```java
 public interface ConfigLoader {
     LoggerConfig load(String configPath);
+    LoggerConfig load(String configPath, boolean mergeDefaults);
+    LoggerConfig loadWithProfile(String configPath, String profile, boolean mergeDefaults);
     LoggerConfig loadDefaultConfig();
 }
 ```
@@ -209,7 +211,39 @@ public interface ConfigLoader {
 **구현**:
 - `UniversalConfigLoader`: 멀티 포맷 지원 (YAML/XML/JSON)
 - 파일 탐색 전략 (우선순위 기반)
-- 설정 병합 로직 (프로젝트 설정 + 기본값)
+- 설정 병합 로직 (defaults → base → profile)
+- 프로파일 기반 설정 로드 지원
+
+#### ProfileResolver
+```java
+public class ProfileResolver {
+    public static String resolveProfile();
+    public static String buildProfileConfigPath(String baseConfigPath, String profile);
+    public static boolean isProfileActive(String profile);
+}
+```
+
+**역할**: Spring 프로파일 자동 감지 및 설정 파일 경로 생성
+
+**프로파일 탐지 우선순위**:
+1. `logger.profile` 시스템 속성 (명시적 오버라이드)
+2. `spring.profiles.active` 시스템 속성 (Spring Boot)
+3. `SPRING_PROFILES_ACTIVE` 환경 변수 (Container 환경)
+4. null (프로파일 없음, 기본 설정만 사용)
+
+**로딩 순서**:
+```
+defaults/universal-logger-defaults.yml  (JAR 내장)
+    ↓ merge
+config/universal-logger.yml             (base config)
+    ↓ merge
+config/universal-logger-{profile}.yml   (profile-specific, optional)
+```
+
+**예시**:
+- Profile: "prod"
+- Base: `config/universal-logger.yml`
+- Profile: `config/universal-logger-prod.yml` (자동 생성된 경로)
 
 #### LoggerConfig
 ```java
@@ -449,11 +483,19 @@ public class CustomFilter extends Filter<ILoggingEvent> {
          ↓
 [UniversalConfigLoader로 설정 로드]
          ↓
-[설정 파일 탐색 (우선순위 기반)]
+[ProfileResolver가 활성 프로파일 탐지]
+    • logger.profile 시스템 속성
+    • spring.profiles.active 속성
+    • SPRING_PROFILES_ACTIVE 환경변수
+         ↓
+[설정 파일 탐색 및 로드]
+    1. defaults/universal-logger-defaults.yml (JAR)
+    2. config/universal-logger.yml (base)
+    3. config/universal-logger-{profile}.yml (optional)
          ↓
 [YAML/XML/JSON 파싱]
          ↓
-[기본값과 병합]
+[설정 병합 (defaults → base → profile)]
          ↓
 [LoggerContext API로 Logback 구성]
     • Appender 생성 및 등록
@@ -476,9 +518,12 @@ public class CustomFilter extends Filter<ILoggingEvent> {
          ↓
 [UniversalConfigLoader로 설정 로드]
          ↓
-[설정 파일 탐색 및 파싱]
+[ProfileResolver가 활성 프로파일 탐지]
          ↓
-[기본값과 병합]
+[설정 파일 로드 및 병합]
+    1. defaults (JAR)
+    2. base config
+    3. profile config (if exists)
          ↓
 [ConfigurationBuilder로 Log4j2 구성]
     • Appender 추가

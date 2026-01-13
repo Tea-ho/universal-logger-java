@@ -1,7 +1,7 @@
-# 🪵 Universal Logger - User Guide
+#  Universal Logger - User Guide
 
 <aside>
-⚠️ 주의사항
+WARNING:주의사항
 
 - Java 8 이상 환경에서 사용 가능합니다.
 - Spring Boot 환경에서는 의존성 추가만으로 자동 활성화됩니다.
@@ -10,7 +10,7 @@
 
 </aside>
 
-## ✅ 로깅 프레임워크 선택
+## 로깅 프레임워크 선택
 
 Universal Logger는 **Logback**과 **Log4j2** 중 하나를 선택할 수 있습니다.
 
@@ -26,7 +26,7 @@ Universal Logger는 **Logback**과 **Log4j2** 중 하나를 선택할 수 있습
 - 대량 로그 처리에 유리
 - 고성능이 필요한 경우 선택
 
-## ✅ 라이브러리 설치
+## 라이브러리 설치
 
 <aside>
 
@@ -209,7 +209,7 @@ dependencies {
 
 </aside>
 
-## ✅ 기본 설정
+## 기본 설정
 
 <aside>
 
@@ -266,7 +266,7 @@ outputs:
 
 ---
 
-**application.yml (Logback):**
+**application.yml (Logback / Log4j2):**
 
 ```yaml
 spring:
@@ -277,26 +277,20 @@ universal-logger:
   enabled: true
   config-path: "config/universal-logger.yml"
   sql-capture:
-    enabled: true
+    enabled: false # true가 기본옵션으로, 자동 캡쳐 사용 필요 없을 경우 false 처리
 ```
 
-**application.yml (Log4j2):**
+**project.properties (Logback / Log4j2):**
 
-```yaml
-spring:
-  application:
-    name: MyApp
-
-universal-logger:
-  enabled: true
-  config-path: "config/universal-logger.yml"
-  sql-capture:
-    enabled: true
+```properties
+spring.application.name=MyApp
+universal-logger.config-path=config/universal-logger.yml
+universal-logger.sql-capture.enabled=false
 ```
 
 </aside>
 
-## ✅ 사용법
+## 사용법
 
 <aside>
 
@@ -340,7 +334,7 @@ public class UserService {
 
 </aside>
 
-## ✅ SQL 로깅
+## SQL 로깅
 
 <aside>
 
@@ -400,7 +394,7 @@ SQL 캡처는 다음 프레임워크에서 자동으로 작동합니다:
 
 </aside>
 
-## ✅ 알림 설정
+## 알림 설정
 
 <aside>
 
@@ -482,7 +476,7 @@ outputs:
 
 </aside>
 
-## ✅ 고급 설정
+## 고급 설정
 
 <aside>
 
@@ -541,41 +535,33 @@ performance:
 
 </aside>
 
-## ✅ 멀티 환경 설정
+## Profile-Based Configuration
 
-<aside>
+Universal Logger automatically detects Spring profiles and loads environment-specific configurations.
 
-### 환경별 설정 파일
+### How It Works
 
----
+**Automatic Profile Detection:**
+- Detects `spring.profiles.active` from Spring/Spring Boot applications
+- Can be overridden with `logger.profile` system property
+- Supports `SPRING_PROFILES_ACTIVE` environment variable
 
-**개발 환경** (`config/universal-logger-dev.yml`):
-
-```yaml
-version: "1.0"
-
-global:
-  appName: "MyApp-DEV"
-
-levels:
-  root: "DEBUG"
-
-outputs:
-  console:
-    enabled: true
-  file:
-    enabled: false
-  webhook:
-    enabled: false
+**File Loading Order:**
+```
+1. defaults/universal-logger-defaults.yml (JAR embedded defaults)
+2. config/universal-logger.yml (base configuration)
+3. config/universal-logger-{profile}.yml (profile-specific overrides)
 ```
 
-**운영 환경** (`config/universal-logger-prod.yml`):
+### Configuration Structure
 
+**Base Configuration** (`config/universal-logger.yml`):
 ```yaml
 version: "1.0"
 
 global:
-  appName: "MyApp-PROD"
+  appName: "MyApp"
+  timezone: "Asia/Seoul"
 
 levels:
   root: "INFO"
@@ -583,29 +569,109 @@ levels:
 outputs:
   console:
     enabled: true
-    level: "WARN"
+    level: "INFO"
+
   file:
     enabled: true
     path: "C:/log/{appName}/application.log"
+    rotation:
+      maxSize: "50MB"
+      maxFiles: 30
+      compress: true
+```
+
+**Development Profile** (`config/universal-logger-dev.yml`):
+```yaml
+# Only override what needs to be different
+levels:
+  root: "DEBUG"
+  com.myapp: "TRACE"
+
+sql:
+  parameterSubstitution: true  # Show SQL parameter values
+
+outputs:
+  file:
+    rotation:
+      compress: false  # Faster without compression in dev
+```
+
+**Production Profile** (`config/universal-logger-prod.yml`):
+```yaml
+# Production-specific settings
+levels:
+  root: "WARN"
+
+outputs:
+  console:
+    enabled: false  # Disable console in production
+
+  file:
+    rotation:
+      maxFiles: 90  # Keep more logs in production
+      compress: false  # Disable compression
+
+  errorFile:
+    enabled: true
+    level: "ERROR"
+    path: "C:/log/{appName}/error/error.log"
+
   webhook:
     enabled: true
     level: "ERROR"
+    webhook:
+      url: "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
 ```
 
-**application.yml:**
+### Spring Boot Integration
 
+**application.yml:**
 ```yaml
 spring:
   profiles:
-    active: ${APP_ENV:dev}
+    active: prod  # Automatically detected by Universal Logger
 
-universal-logger:
-  config-path: "config/universal-logger-${spring.profiles.active}.yml"
+# No need to specify config-path, auto-detects profiles
 ```
 
-</aside>
+**Alternative - Manual Profile Selection:**
+```yaml
+spring:
+  profiles:
+    active: prod
 
-## ✅ 문제 해결
+# Override logger profile independently from Spring profile
+universal-logger:
+  config-path: "config/universal-logger.yml"  # Base config, profiles auto-loaded
+```
+
+### Docker/Kubernetes Deployment
+
+**Using Environment Variables:**
+```yaml
+# docker-compose.yml
+services:
+  app:
+    image: myapp:latest
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod  # Automatically detected
+```
+
+**Using JVM Properties:**
+```bash
+# Kubernetes deployment
+java -Dlogger.profile=prod -jar app.jar
+```
+
+### Profile Priority
+
+When multiple profile sources exist, the priority is:
+1. `logger.profile` system property (highest)
+2. `spring.profiles.active` system property
+3. `SPRING_PROFILES_ACTIVE` environment variable
+4. No profile (base config only)
+
+## 문제 해결
 
 <aside>
 

@@ -5,6 +5,7 @@ import com.universallogger.parsers.ConfigParser;
 import com.universallogger.parsers.YamlParser;
 import com.universallogger.parsers.JsonParser;
 import com.universallogger.parsers.XmlParser;
+import com.universallogger.utils.ProfileResolver;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -144,6 +145,95 @@ public class UniversalConfigLoader implements ConfigLoader {
 
         logger.info("Loading default configuration from JAR");
         return defaultParser.parse(defaultStream);
+    }
+
+    @Override
+    public LoggerConfig loadWithProfile(String configPath, String profile, boolean mergeDefaults) throws Exception {
+        // 1. Load base config
+        logger.info("Loading base configuration: {}", configPath);
+        LoggerConfig baseConfig = load(configPath, mergeDefaults);
+
+        // 2. If no profile, return base config
+        if (profile == null || profile.trim().isEmpty()) {
+            logger.info("No profile specified, using base configuration only");
+            return baseConfig;
+        }
+
+        // 3. Build profile-specific config path
+        String profileConfigPath = ProfileResolver.buildProfileConfigPath(configPath, profile);
+        logger.info("Attempting to load profile-specific configuration: {}", profileConfigPath);
+
+        // 4. Try to load profile-specific config
+        try {
+            LoggerConfig profileConfig = loadProfileConfig(profileConfigPath);
+
+            if (profileConfig != null) {
+                logger.info("Successfully loaded profile configuration: {}", profileConfigPath);
+                // Merge profile config into base config
+                baseConfig.merge(profileConfig);
+                logger.info("Profile configuration merged successfully");
+            }
+        } catch (Exception e) {
+            // Profile config not found is acceptable - just log a warning
+            logger.warn("Profile-specific configuration not found: {} (this is optional)", profileConfigPath);
+            logger.debug("Profile config load error details:", e);
+        }
+
+        return baseConfig;
+    }
+
+    /**
+     * Load profile-specific configuration
+     *
+     * Returns null if file doesn't exist (acceptable case)
+     */
+    private LoggerConfig loadProfileConfig(String profileConfigPath) throws Exception {
+        // Try classpath first
+        if (profileConfigPath.startsWith("classpath:")) {
+            String resourcePath = profileConfigPath.substring("classpath:".length());
+            InputStream inputStream = getClass().getClassLoader().getResourceAsStream(resourcePath);
+
+            if (inputStream == null) {
+                return null; // Not found, but acceptable
+            }
+
+            String extension = getFileExtension(resourcePath).toLowerCase();
+            return parseFromStream(inputStream, extension);
+        }
+        // Try file system
+        else if (profileConfigPath.startsWith("file:")) {
+            String filePath = profileConfigPath.substring("file:".length());
+            File configFile = new File(filePath);
+
+            if (!configFile.exists()) {
+                return null; // Not found, but acceptable
+            }
+
+            String extension = getFileExtension(filePath).toLowerCase();
+            return parseFromFile(configFile, extension);
+        }
+        // Smart search: classpath first, then file system
+        else {
+            // 1. Try classpath
+            InputStream inputStream = getClass().getClassLoader().getResourceAsStream(profileConfigPath);
+
+            if (inputStream != null) {
+                logger.debug("Found profile config in classpath: {}", profileConfigPath);
+                String extension = getFileExtension(profileConfigPath).toLowerCase();
+                return parseFromStream(inputStream, extension);
+            }
+
+            // 2. Try file system
+            File configFile = new File(profileConfigPath);
+            if (configFile.exists()) {
+                logger.debug("Found profile config in file system: {}", profileConfigPath);
+                String extension = getFileExtension(profileConfigPath).toLowerCase();
+                return parseFromFile(configFile, extension);
+            }
+
+            // Not found
+            return null;
+        }
     }
 
     /**
