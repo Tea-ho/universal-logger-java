@@ -76,7 +76,9 @@ public class DefaultAppenderFactory implements AppenderFactory {
             new SizeAndTimeBasedRollingPolicy<>();
         rollingPolicy.setContext(context);
         rollingPolicy.setParent(appender);
-        rollingPolicy.setFileNamePattern(filePath + ".%d{yyyy-MM-dd}.%i.gz");
+        // compress 설정에 따라 파일 패턴 결정
+        String filePattern = buildFileNamePattern(filePath, outputConfig.getRotation().isCompress());
+        rollingPolicy.setFileNamePattern(filePattern);
         rollingPolicy.setMaxFileSize(FileSize.valueOf(outputConfig.getRotation().getMaxSize()));
         rollingPolicy.setMaxHistory(outputConfig.getRotation().getMaxFiles());
         rollingPolicy.start();
@@ -117,7 +119,9 @@ public class DefaultAppenderFactory implements AppenderFactory {
             new SizeAndTimeBasedRollingPolicy<>();
         rollingPolicy.setContext(context);
         rollingPolicy.setParent(appender);
-        rollingPolicy.setFileNamePattern(filePath + ".%d{yyyy-MM-dd}.%i.gz");
+        // compress 설정에 따라 파일 패턴 결정
+        String filePattern = buildFileNamePattern(filePath, outputConfig.getRotation().isCompress());
+        rollingPolicy.setFileNamePattern(filePattern);
         rollingPolicy.setMaxFileSize(FileSize.valueOf(outputConfig.getRotation().getMaxSize()));
         rollingPolicy.setMaxHistory(outputConfig.getRotation().getMaxFiles());
         rollingPolicy.start();
@@ -205,5 +209,23 @@ public class DefaultAppenderFactory implements AppenderFactory {
             return path.replace("{appName}", appName);
         }
         return path;
+    }
+
+    /**
+     * 파일명 패턴 생성
+     *
+     * compress가 true이면 .gz 확장자 추가
+     * compress가 false이면 압축 없이 일반 파일로 저장
+     *
+     * @param filePath 기본 파일 경로
+     * @param compress 압축 여부
+     * @return 롤링 파일 패턴
+     */
+    private String buildFileNamePattern(String filePath, boolean compress) {
+        if (compress) {
+            return filePath + ".%d{yyyy-MM-dd}.%i.gz";
+        } else {
+            return filePath + ".%d{yyyy-MM-dd}.%i";
+        }
     }
 }
