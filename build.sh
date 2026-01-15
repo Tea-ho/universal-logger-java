@@ -67,18 +67,9 @@ if [ "$BUILD_TOOL" = "maven" ]; then
 
     if [ $? -eq 0 ]; then
         echo ""
-        echo "BUILD SUCCESS"
-        echo "Generated files:"
-        echo "  - target/universal-logger-1.0.0.jar"
-        echo "  - target/universal-logger-1.0.0-sources.jar"
-        echo "  - target/universal-logger-1.0.0-javadoc.jar"
-
-        # JAR file info
-        if [ -f "target/universal-logger-1.0.0.jar" ]; then
-            SIZE=$(du -h target/universal-logger-1.0.0.jar | cut -f1)
-            echo ""
-            echo "JAR file size: $SIZE"
-        fi
+        echo "======================================"
+        echo "Build Complete"
+        echo "======================================"
     else
         echo ""
         echo "BUILD FAILED"
@@ -99,26 +90,12 @@ if [ "$BUILD_TOOL" = "gradle" ]; then
 
     if [ $? -eq 0 ]; then
         echo ""
-        echo "BUILD SUCCESS"
-        echo "Generated files:"
-        echo "  - build/libs/universal-logger-1.0.0.jar"
-        echo "  - build/libs/universal-logger-1.0.0-sources.jar"
-        echo "  - build/libs/universal-logger-1.0.0-javadoc.jar"
-
-        # JAR file info
-        if [ -f "build/libs/universal-logger-1.0.0.jar" ]; then
-            SIZE=$(du -h build/libs/universal-logger-1.0.0.jar | cut -f1)
-            echo ""
-            echo "JAR file size: $SIZE"
-        fi
+        echo "======================================"
+        echo "Build Complete"
+        echo "======================================"
     else
         echo ""
         echo "BUILD FAILED"
         exit 1
     fi
 fi
-
-echo ""
-echo "======================================"
-echo "Build Complete"
-echo "======================================"

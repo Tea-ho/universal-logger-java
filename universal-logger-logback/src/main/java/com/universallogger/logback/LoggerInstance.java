@@ -1,19 +1,16 @@
 package com.universallogger.logback;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.Appender;
+import com.universallogger.config.LoggerConfig;
+import com.universallogger.loaders.UniversalConfigLoader;
 import com.universallogger.logback.appenders.AppenderFactory;
 import com.universallogger.logback.appenders.DefaultAppenderFactory;
-import com.universallogger.config.LoggerConfig;
-import com.universallogger.constants.LoggerConstants;
-import com.universallogger.filters.SensitiveDataFilter;
-import com.universallogger.loaders.UniversalConfigLoader;
 import com.universallogger.utils.ProfileResolver;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.core.Appender;
-import ch.qos.logback.classic.spi.ILoggingEvent;
 
 import java.io.File;
 import java.util.Map;
@@ -51,7 +48,7 @@ public class LoggerInstance {
         if (builder.config != null) {
             this.config = builder.config.copy();
         } else if (builder.configPath != null) {
-            this.config = loadConfig(builder.configPath);
+            this.config = loadConfig(builder.configPath, builder.profile);
         } else {
             this.config = loadDefaultConfig();
         }
@@ -70,11 +67,18 @@ public class LoggerInstance {
      * 1. defaults/universal-logger-defaults.yml (기본값)
      * 2. {configPath} (사용자 기본 설정)
      * 3. {configPath with profile} (사용자 프로파일 설정, 있는 경우)
+     *
+     * @param configPath 설정 파일 경로
+     * @param profile 활성 프로파일 (null이면 자동 감지)
      */
-    private LoggerConfig loadConfig(String configPath) {
+    private LoggerConfig loadConfig(String configPath, String profile) {
         try {
-            // Resolve active profile (Spring integration)
-            String activeProfile = ProfileResolver.resolveProfile();
+            // Use explicitly provided profile, or auto-detect if not provided
+            String activeProfile = profile != null ? profile : ProfileResolver.resolveProfile();
+
+            if (activeProfile != null) {
+                logger.info("Loading configuration with profile: {}", activeProfile);
+            }
 
             // Load configuration with profile support
             return configLoader.loadWithProfile(configPath, activeProfile, true);
@@ -255,9 +259,11 @@ public class LoggerInstance {
      * - AppenderFactory 주입 가능 (테스트 시 Mock 주입)
      * - ConfigLoader 주입 가능 (테스트 시 Mock 주입)
      * - Config 또는 configPath 지정 가능
+     * - Profile 명시적 지정 가능 (Spring 통합 시 권장)
      */
     public static class Builder {
         private String configPath;
+        private String profile;
         private LoggerConfig config;
         private AppenderFactory appenderFactory;
         private com.universallogger.loaders.ConfigLoader configLoader;
@@ -269,6 +275,21 @@ public class LoggerInstance {
          */
         public Builder configPath(String configPath) {
             this.configPath = configPath;
+            return this;
+        }
+
+        /**
+         * 활성 프로파일 지정 (명시적)
+         *
+         * Spring Framework/Spring Boot 통합 시 Environment에서 읽은 프로파일을
+         * 명시적으로 전달하는 것을 권장합니다.
+         *
+         * 지정하지 않으면 ProfileResolver가 자동으로 감지합니다.
+         *
+         * @param profile 활성 프로파일 (예: "dev", "prd")
+         */
+        public Builder profile(String profile) {
+            this.profile = profile;
             return this;
         }
 

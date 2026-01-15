@@ -1,1 +1,1 @@
-com.universallogger.logback.spring.UniversalLoggerAutoConfiguration
+com.universallogger.logback.spring.SpringBootAutoConfiguration

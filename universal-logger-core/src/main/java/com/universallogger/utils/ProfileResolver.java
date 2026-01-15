@@ -3,6 +3,9 @@ package com.universallogger.utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.universallogger.constants.UniversalLoggerConstants.EnvironmentKeys;
+import static com.universallogger.constants.UniversalLoggerConstants.PropertyKeys;
+
 /**
  * Profile resolution utility for Spring/Spring Boot integration
  *
@@ -16,10 +19,6 @@ public class ProfileResolver {
 
     private static final Logger logger = LoggerFactory.getLogger(ProfileResolver.class);
 
-    private static final String LOGGER_PROFILE_PROPERTY = "logger.profile";
-    private static final String SPRING_PROFILES_ACTIVE_PROPERTY = "spring.profiles.active";
-    private static final String SPRING_PROFILES_ACTIVE_ENV = "SPRING_PROFILES_ACTIVE";
-
     /**
      * Resolve active profile
      *
@@ -27,14 +26,14 @@ public class ProfileResolver {
      */
     public static String resolveProfile() {
         // 1. Check logger.profile system property (highest priority)
-        String loggerProfile = System.getProperty(LOGGER_PROFILE_PROPERTY);
+        String loggerProfile = System.getProperty(PropertyKeys.LOGGER_PROFILE);
         if (loggerProfile != null && !loggerProfile.trim().isEmpty()) {
             logger.info("Using profile from logger.profile: {}", loggerProfile.trim());
             return extractFirstProfile(loggerProfile.trim());
         }
 
         // 2. Check spring.profiles.active system property
-        String springProfilesProperty = System.getProperty(SPRING_PROFILES_ACTIVE_PROPERTY);
+        String springProfilesProperty = System.getProperty(PropertyKeys.SPRING_PROFILES_ACTIVE);
         if (springProfilesProperty != null && !springProfilesProperty.trim().isEmpty()) {
             String profile = extractFirstProfile(springProfilesProperty.trim());
             logger.info("Using profile from spring.profiles.active: {}", profile);
@@ -42,7 +41,7 @@ public class ProfileResolver {
         }
 
         // 3. Check SPRING_PROFILES_ACTIVE environment variable
-        String springProfilesEnv = System.getenv(SPRING_PROFILES_ACTIVE_ENV);
+        String springProfilesEnv = System.getenv(EnvironmentKeys.SPRING_PROFILES_ACTIVE);
         if (springProfilesEnv != null && !springProfilesEnv.trim().isEmpty()) {
             String profile = extractFirstProfile(springProfilesEnv.trim());
             logger.info("Using profile from SPRING_PROFILES_ACTIVE: {}", profile);
@@ -56,11 +55,6 @@ public class ProfileResolver {
 
     /**
      * Extract first profile from comma-separated list
-     *
-     * Examples:
-     * - "prod" -> "prod"
-     * - "dev,local" -> "dev"
-     * - "prod, test" -> "prod"
      *
      * @param profiles Comma-separated profile list
      * @return First profile name
@@ -97,10 +91,6 @@ public class ProfileResolver {
 
     /**
      * Build profile-specific config file name
-     *
-     * Examples:
-     * - "universal-logger.yml", "prod" -> "universal-logger-prod.yml"
-     * - "config/logging.yml", "dev" -> "config/logging-dev.yml"
      *
      * @param baseConfigPath Base config file path
      * @param profile Profile name

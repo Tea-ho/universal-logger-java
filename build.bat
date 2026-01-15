@@ -60,18 +60,9 @@ if defined MAVEN_CMD (
 
 if %ERRORLEVEL% EQU 0 (
     echo.
-    echo BUILD SUCCESS
-    echo Generated files:
-    echo   - target\universal-logger-1.0.0.jar
-    echo   - target\universal-logger-1.0.0-sources.jar
-    echo   - target\universal-logger-1.0.0-javadoc.jar
-
-    if exist target\universal-logger-1.0.0.jar (
-        for %%A in (target\universal-logger-1.0.0.jar) do (
-            echo.
-            echo JAR file size: %%~zA bytes
-        )
-    )
+    echo ======================================
+    echo Build Complete
+    echo ======================================
 ) else (
     echo.
     echo BUILD FAILED
@@ -91,18 +82,9 @@ if exist gradlew.bat (
 
 if %ERRORLEVEL% EQU 0 (
     echo.
-    echo BUILD SUCCESS
-    echo Generated files:
-    echo   - build\libs\universal-logger-1.0.0.jar
-    echo   - build\libs\universal-logger-1.0.0-sources.jar
-    echo   - build\libs\universal-logger-1.0.0-javadoc.jar
-
-    if exist build\libs\universal-logger-1.0.0.jar (
-        for %%A in (build\libs\universal-logger-1.0.0.jar) do (
-            echo.
-            echo JAR file size: %%~zA bytes
-        )
-    )
+    echo ======================================
+    echo Build Complete
+    echo ======================================
 ) else (
     echo.
     echo BUILD FAILED
@@ -110,8 +92,4 @@ if %ERRORLEVEL% EQU 0 (
 )
 
 :end
-echo.
-echo ======================================
-echo Build Complete
-echo ======================================
 pause

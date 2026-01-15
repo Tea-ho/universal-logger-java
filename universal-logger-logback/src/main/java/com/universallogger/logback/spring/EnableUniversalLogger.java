@@ -1,5 +1,6 @@
 package com.universallogger.logback.spring;
 
+import com.universallogger.constants.UniversalLoggerConstants;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.*;
@@ -33,14 +34,14 @@ import java.lang.annotation.*;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Import(UniversalLoggerConfiguration.class)
+@Import(SpringConfiguration.class)
 public @interface EnableUniversalLogger {
 
     /**
      * Custom config file path
      * Default: config/universal-logger.yml
      */
-    String configPath() default "config/universal-logger.yml";
+    String configPath() default UniversalLoggerConstants.ConfigPath.DEFAULT;
 
     /**
      * Enable SQL capture for DataSource beans
