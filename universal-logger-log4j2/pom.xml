@@ -89,6 +89,108 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
             </plugin>
+
+            <!-- Maven Shade Plugin - Create Fat JAR with relocated dependencies -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <shadedArtifactAttached>false</shadedArtifactAttached>
+
+                            <!-- Relocate dependencies to avoid conflicts -->
+                            <relocations>
+                                <!-- Jackson -->
+                                <relocation>
+                                    <pattern>com.fasterxml.jackson</pattern>
+                                    <shadedPattern>com.universallogger.shaded.jackson</shadedPattern>
+                                </relocation>
+                                <!-- SnakeYAML -->
+                                <relocation>
+                                    <pattern>org.yaml.snakeyaml</pattern>
+                                    <shadedPattern>com.universallogger.shaded.snakeyaml</shadedPattern>
+                                </relocation>
+                                <!-- HttpClient -->
+                                <relocation>
+                                    <pattern>org.apache.http</pattern>
+                                    <shadedPattern>com.universallogger.shaded.http</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.apache.commons.codec</pattern>
+                                    <shadedPattern>com.universallogger.shaded.commons.codec</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.apache.commons.logging</pattern>
+                                    <shadedPattern>com.universallogger.shaded.commons.logging</shadedPattern>
+                                </relocation>
+                                <!-- JavaMail -->
+                                <relocation>
+                                    <pattern>javax.mail</pattern>
+                                    <shadedPattern>com.universallogger.shaded.mail</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.sun.mail</pattern>
+                                    <shadedPattern>com.universallogger.shaded.sun.mail</shadedPattern>
+                                </relocation>
+                            </relocations>
+
+                            <!-- Exclude optional dependencies - user must provide these -->
+                            <artifactSet>
+                                <excludes>
+                                    <!-- Spring - optional, user provides -->
+                                    <exclude>org.springframework:*</exclude>
+                                    <exclude>org.springframework.boot:*</exclude>
+                                    <!-- SLF4J API - user provides -->
+                                    <exclude>org.slf4j:slf4j-api</exclude>
+                                </excludes>
+                            </artifactSet>
+
+                            <!-- Merge service files and preserve META-INF -->
+                            <transformers>
+                                <!-- Merge META-INF/services files -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <!-- Preserve Spring Boot Auto-Configuration -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                    <resource>META-INF/spring.factories</resource>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                    <resource>META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports</resource>
+                                </transformer>
+                                <!-- Add manifest entries -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <manifestEntries>
+                                        <Implementation-Title>${project.name}</Implementation-Title>
+                                        <Implementation-Version>${project.version}</Implementation-Version>
+                                        <Built-By>universal-logger</Built-By>
+                                    </manifestEntries>
+                                </transformer>
+                            </transformers>
+
+                            <!-- Keep specific files -->
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>META-INF/LICENSE*</exclude>
+                                        <exclude>META-INF/NOTICE*</exclude>
+                                        <exclude>META-INF/DEPENDENCIES</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>

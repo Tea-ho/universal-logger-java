@@ -35,23 +35,61 @@ universal-logger-java/
 
 Logback 또는 Log4j2 중 하나를 선택하여 의존성을 추가합니다.
 
-#### 옵션 A: Logback 사용 (권장)
+#### Fat JAR 방식 (권장)
 
-**Maven:**
+**모든 의존성이 포함된 단일 JAR 파일**을 사용합니다. 의존성 충돌 걱정 없이 간편하게 사용할 수 있습니다.
+
+**Logback 사용 - Maven:**
 ```xml
-<dependency>
-    <groupId>com.universallogger</groupId>
-    <artifactId>universal-logger-logback</artifactId>
-    <version>1.0.0</version>
-</dependency>
+<dependencies>
+    <!-- Universal Logger Logback Fat JAR (모든 의존성 포함) -->
+    <dependency>
+        <groupId>com.universallogger</groupId>
+        <artifactId>universal-logger-logback</artifactId>
+        <version>1.0.0</version>
+    </dependency>
+
+    <!-- SLF4J API (사용자 코드에서 로깅 호출용) -->
+    <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>1.7.36</version>
+    </dependency>
+
+    <!-- Spring Boot (Spring 프로젝트인 경우, 이미 있으면 생략) -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter</artifactId>
+    </dependency>
+</dependencies>
 ```
 
-**Gradle:**
-```gradle
-implementation 'com.universallogger:universal-logger-logback:1.0.0'
+**Log4j2 사용 - Maven:**
+```xml
+<dependencies>
+    <!-- Universal Logger Log4j2 Fat JAR (모든 의존성 포함) -->
+    <dependency>
+        <groupId>com.universallogger</groupId>
+        <artifactId>universal-logger-log4j2</artifactId>
+        <version>1.0.0</version>
+    </dependency>
+
+    <!-- SLF4J API -->
+    <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>1.7.36</version>
+    </dependency>
+
+    <!-- Spring Boot (Spring 프로젝트인 경우) -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter</artifactId>
+    </dependency>
+</dependencies>
 ```
 
-**로컬 JAR 사용:**
+**로컬 Fat JAR 사용:**
 ```xml
 <dependency>
     <groupId>com.universallogger</groupId>
@@ -60,31 +98,26 @@ implementation 'com.universallogger:universal-logger-logback:1.0.0'
     <scope>system</scope>
     <systemPath>${project.basedir}/libs/universal-logger-logback-1.0.0.jar</systemPath>
 </dependency>
-<!-- Core 모듈도 필요 -->
+<!-- SLF4J API는 별도 추가 필요 -->
 <dependency>
-    <groupId>com.universallogger</groupId>
-    <artifactId>universal-logger-core</artifactId>
-    <version>1.0.0</version>
-    <scope>system</scope>
-    <systemPath>${project.basedir}/libs/universal-logger-core-1.0.0.jar</systemPath>
+    <groupId>org.slf4j</groupId>
+    <artifactId>slf4j-api</artifactId>
+    <version>1.7.36</version>
 </dependency>
 ```
 
-#### 옵션 B: Log4j2 사용
+**Fat JAR에 포함된 것:**
+- universal-logger-core (핵심 기능)
+- Logback 또는 Log4j2 구현체
+- Jackson (YAML 파싱)
+- SnakeYAML (YAML 파싱)
+- HttpClient (Webhook용)
+- JavaMail (Email용)
 
-**Maven:**
-```xml
-<dependency>
-    <groupId>com.universallogger</groupId>
-    <artifactId>universal-logger-log4j2</artifactId>
-    <version>1.0.0</version>
-</dependency>
-```
-
-**Gradle:**
-```gradle
-implementation 'com.universallogger:universal-logger-log4j2:1.0.0'
-```
+**사용자가 추가해야 하는 것:**
+- SLF4J API (로깅 인터페이스)
+- Spring Boot / Spring Framework (자동 설정 사용 시)
+- DataSource (SQL 로깅 사용 시)
 
 ### 2. 설정 파일 (선택 사항)
 
