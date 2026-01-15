@@ -204,21 +204,52 @@ universal-logger:
     enabled: true                                  # SQL 자동 캡처 (기본값: true)
 ```
 
-### 일반 Spring (수동 설정)
+### Spring Framework (일반 Spring)
 
-Spring Boot가 아닌 일반 Spring 환경에서는 Configuration 클래스를 임포트합니다.
+Spring Boot가 아닌 일반 Spring 환경에서는 `@EnableUniversalLogger` 어노테이션을 사용합니다.
 
 **Logback 사용:**
 ```java
-import com.universallogger.logback.spring.UniversalLoggerConfiguration;
+import com.universallogger.logback.spring.EnableUniversalLogger;
+import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@Import(UniversalLoggerConfiguration.class)
+@EnableUniversalLogger
 public class AppConfig {
-    // LoggerConfig Bean이 자동 생성됨
+    // LoggerInstance Bean이 자동 생성됨
     // DataSource가 자동으로 SQL 캡처 프록시로 래핑됨
+    // 프로파일 기반 설정 자동 지원 (spring.profiles.active)
 }
 ```
+
+**커스텀 설정:**
+```java
+@Configuration
+@EnableUniversalLogger(
+    configPath = "custom/logger.yml",  // 커스텀 설정 파일 경로
+    enableSqlCapture = false           // SQL 캡처 비활성화
+)
+public class AppConfig {
+}
+```
+
+**프로파일 설정:**
+
+시스템 프로퍼티로 활성 프로파일 지정:
+```bash
+-Dspring.profiles.active=dev
+```
+
+또는 환경 변수:
+```bash
+export SPRING_PROFILES_ACTIVE=dev  # Linux/Mac
+set SPRING_PROFILES_ACTIVE=dev     # Windows
+```
+
+설정 파일 로딩 순서:
+1. `defaults/universal-logger-defaults.yml` (JAR 내부, 기본값)
+2. `config/universal-logger.yml` (base 설정)
+3. `config/universal-logger-dev.yml` (프로파일별 설정, 있는 경우)
 
 **Log4j2 사용:**
 ```java

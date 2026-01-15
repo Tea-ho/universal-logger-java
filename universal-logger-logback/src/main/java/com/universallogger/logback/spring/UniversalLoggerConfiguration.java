@@ -11,111 +11,158 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ImportAware;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.type.AnnotationMetadata;
 
 import javax.sql.DataSource;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
- * Universal Logger Configuration for Spring (non-Boot) projects
+ * Universal Logger Configuration for Spring Framework projects
  *
- * Spring Boot가 아닌 일반 Spring 프로젝트용 설정
- * 사용자가 별도로 Configuration 클래스를 만들 필요 없음!
+ * This configuration is imported by @EnableUniversalLogger annotation.
+ * It provides the same functionality as UniversalLoggerAutoConfiguration but for Spring Framework (non-Boot).
  *
- * 사용법:
+ * Features:
+ * - Automatically creates LoggerInstance bean
+ * - Supports profile-based configuration (spring.profiles.active)
+ * - Automatically wraps DataSource beans for SQL logging
+ *
+ * Usage:
  * <pre>
- * // JavaConfig 방식
  * {@code
  * @Configuration
- * @Import(UniversalLoggerConfiguration.class)
+ * @EnableUniversalLogger
  * public class AppConfig {
+ *     // your configuration
  * }
- * }
- *
- * // XML 방식
- * {@code
- * <context:component-scan base-package="com.universallogger.spring"/>
  * }
  * </pre>
  *
- * application.properties:
+ * Or with custom config path:
  * <pre>
- * spring.application.name=MyApp
- * universal-logger.config-path=config/universal-logger.yml
- * universal-logger.sql-capture.enabled=true
+ * {@code
+ * @Configuration
+ * @EnableUniversalLogger(configPath = "custom/logger.yml", enableSqlCapture = false)
+ * public class AppConfig {
+ * }
+ * }
  * </pre>
  */
 @Configuration
 @Order(Ordered.HIGHEST_PRECEDENCE)
-public class UniversalLoggerConfiguration implements BeanPostProcessor, ApplicationContextAware {
+public class UniversalLoggerConfiguration implements BeanPostProcessor, ApplicationContextAware, ImportAware {
 
     private static final Logger logger = LoggerFactory.getLogger(UniversalLoggerConfiguration.class);
 
     @Value("${spring.application.name:application}")
     private String applicationName;
 
-    @Value("${universal-logger.config-path:config/universal-logger.yml}")
-    private String configPath;
-
-    @Value("${universal-logger.sql-capture.enabled:true}")
-    private boolean sqlCaptureEnabled;
-
-    private final Set<String> wrappedDataSources = new HashSet<>();
     private ApplicationContext applicationContext;
+    private String configPath = "config/universal-logger.yml";
+    private boolean enableSqlCapture = true;
+    private final Set<String> wrappedDataSources = new HashSet<String>();
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         this.applicationContext = applicationContext;
     }
 
+    @Override
+    public void setImportMetadata(AnnotationMetadata importMetadata) {
+        // Read @EnableUniversalLogger annotation attributes
+        Map<String, Object> attributes = importMetadata.getAnnotationAttributes(
+            EnableUniversalLogger.class.getName());
+
+        if (attributes != null) {
+            String annotationConfigPath = (String) attributes.get("configPath");
+            if (annotationConfigPath != null && !annotationConfigPath.trim().isEmpty()) {
+                this.configPath = annotationConfigPath;
+            }
+
+            Boolean annotationEnableSql = (Boolean) attributes.get("enableSqlCapture");
+            if (annotationEnableSql != null) {
+                this.enableSqlCapture = annotationEnableSql;
+            }
+        }
+
+        // Allow system property override
+        String systemConfigPath = System.getProperty("universal-logger.config-path");
+        if (systemConfigPath != null && !systemConfigPath.trim().isEmpty()) {
+            this.configPath = systemConfigPath;
+            logger.info("Config path overridden by system property: {}", systemConfigPath);
+        }
+
+        String systemEnableSql = System.getProperty("universal-logger.sql-capture.enabled");
+        if (systemEnableSql != null) {
+            this.enableSqlCapture = Boolean.parseBoolean(systemEnableSql);
+            logger.info("SQL capture overridden by system property: {}", this.enableSqlCapture);
+        }
+    }
+
     /**
-     * LoggerInstance Bean 생성
+     * Create LoggerInstance bean
+     *
+     * Automatically resolves active profile from:
+     * 1. System property: -Dlogger.profile=dev
+     * 2. System property: -Dspring.profiles.active=dev
+     * 3. Environment variable: SPRING_PROFILES_ACTIVE=dev
      */
     @Bean
     public LoggerInstance loggerInstance() {
-        logger.info("🚀 Initializing UniversalLogger for application: {}", applicationName);
+        logger.info("Initializing UniversalLogger (Logback) for application: {}", applicationName);
+        logger.info("Config path: {}", configPath);
 
         LoggerInstance instance = LoggerInstance.builder()
                 .configPath(configPath)
                 .build();
 
-        logger.info("✅ UniversalLogger initialized successfully");
+        logger.info("UniversalLogger (Logback) initialized successfully");
         return instance;
     }
 
     /**
-     * DataSource를 SqlCaptureProxy로 자동 래핑
+     * Automatically wrap DataSource beans with SqlCaptureProxy
      */
     @Override
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
-        if (sqlCaptureEnabled && bean instanceof DataSource) {
-            // 이미 SqlCaptureProxy로 래핑된 경우 스킵
-            if (bean instanceof SqlCaptureProxy) {
-                return bean;
-            }
-
-            // 중복 래핑 방지
-            if (wrappedDataSources.contains(beanName)) {
-                return bean;
-            }
-
-            wrappedDataSources.add(beanName);
-
-            // LoggerInstance 가져오기
-            LoggerInstance loggerInstance = null;
-            try {
-                loggerInstance = applicationContext.getBean(LoggerInstance.class);
-                if (loggerInstance != null) {
-                    logger.info("🔍 SQL logging enabled - DataSource '{}' wrapped", beanName);
-                }
-            } catch (Exception e) {
-                logger.warn("⚠️ LoggerInstance not found, using fallback");
-            }
-
-            return new SqlCaptureProxy((DataSource) bean, loggerInstance != null ? loggerInstance.getConfig() : null);
+        // Skip if SQL capture is disabled
+        if (!enableSqlCapture) {
+            return bean;
         }
-        return bean;
+
+        // Only process DataSource beans
+        if (!(bean instanceof DataSource)) {
+            return bean;
+        }
+
+        // Skip if already wrapped
+        if (bean instanceof SqlCaptureProxy) {
+            return bean;
+        }
+
+        // Prevent duplicate wrapping
+        if (wrappedDataSources.contains(beanName)) {
+            return bean;
+        }
+
+        wrappedDataSources.add(beanName);
+
+        // Get LoggerInstance
+        LoggerInstance loggerInstance = null;
+        try {
+            loggerInstance = applicationContext.getBean(LoggerInstance.class);
+            if (loggerInstance != null) {
+                logger.info("SQL logging enabled - DataSource '{}' wrapped", beanName);
+            }
+        } catch (Exception e) {
+            logger.warn("LoggerInstance not found, using fallback for DataSource '{}'", beanName);
+        }
+
+        return new SqlCaptureProxy((DataSource) bean, loggerInstance != null ? loggerInstance.getConfig() : null);
     }
 }
