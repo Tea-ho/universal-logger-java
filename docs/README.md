@@ -178,11 +178,16 @@ public class UserService {
 
 Spring Boot 프로젝트에서는 **의존성만 추가하면 자동으로 활성화**됩니다.
 
-**application.yml (Logback 사용 시):**
+**IMPORTANT:** Spring Boot에서는 `@EnableUniversalLogger` 어노테이션을 **사용하지 마세요**.
+Auto-Configuration이 자동으로 처리합니다.
+
+**application.yml:**
 ```yaml
 spring:
   application:
     name: MyApp
+  profiles:
+    active: dev  # 프로파일 설정
 
 universal-logger:
   enabled: true                                    # 기본값: true
@@ -191,22 +196,22 @@ universal-logger:
     enabled: true                                  # SQL 자동 캡처 (기본값: true)
 ```
 
-**application.yml (Log4j2 사용 시):**
-```yaml
-spring:
-  application:
-    name: MyApp
+**동작:**
+- UniversalLoggerAutoConfiguration 자동 활성화
+- LoggerInstance Bean 자동 생성
+- DataSource 자동 래핑 (SQL 로깅)
+- 프로파일 기반 설정 자동 지원 (spring.profiles.active)
 
-universal-logger:
-  enabled: true                                    # 기본값: true
-  config-path: "config/universal-logger.yml"      # 기본값
-  sql-capture:
-    enabled: true                                  # SQL 자동 캡처 (기본값: true)
-```
+**로딩 순서:**
+1. defaults/universal-logger-defaults.yml
+2. config/universal-logger.yml
+3. config/universal-logger-dev.yml (프로파일 활성화 시)
 
 ### Spring Framework (일반 Spring)
 
-Spring Boot가 아닌 일반 Spring 환경에서는 `@EnableUniversalLogger` 어노테이션을 사용합니다.
+Spring Boot가 아닌 일반 Spring Framework 환경(레거시 Spring)에서만 `@EnableUniversalLogger` 어노테이션을 사용합니다.
+
+**IMPORTANT:** Spring Boot 프로젝트에서는 이 어노테이션을 사용하지 마세요. Bean 충돌이 발생할 수 있습니다.
 
 **Logback 사용:**
 ```java
@@ -568,7 +573,7 @@ For standalone Java applications without Spring:
 
 ```java
 // Set profile before logger initialization
-System.setProperty("logger.profile", "prod");
+System.("logger.profile", "prod");
 
 LoggerInstance logger = LoggerInstance.builder()
     .configPath("config/universal-logger.yml")

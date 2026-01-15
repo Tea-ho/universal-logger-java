@@ -5,8 +5,10 @@ import com.universallogger.sql.SqlCaptureProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
@@ -14,6 +16,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportAware;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.env.Environment;
 import org.springframework.core.type.AnnotationMetadata;
 
 import javax.sql.DataSource;
@@ -62,6 +65,9 @@ public class UniversalLoggerConfiguration implements BeanPostProcessor, Applicat
     @Value("${spring.application.name:application}")
     private String applicationName;
 
+    @Autowired
+    private Environment environment;
+
     private ApplicationContext applicationContext;
     private String configPath = "config/universal-logger.yml";
     private boolean enableSqlCapture = true;
@@ -107,15 +113,24 @@ public class UniversalLoggerConfiguration implements BeanPostProcessor, Applicat
     /**
      * Create LoggerInstance bean
      *
-     * Automatically resolves active profile from:
-     * 1. System property: -Dlogger.profile=dev
+     * Automatically resolves active profile from Spring Environment:
+     * 1. web.xml context-param: <param-name>spring.profiles.active</param-name>
      * 2. System property: -Dspring.profiles.active=dev
      * 3. Environment variable: SPRING_PROFILES_ACTIVE=dev
+     * 4. System property: -Dlogger.profile=dev (explicit override)
+     *
+     * Note: @ConditionalOnMissingBean ensures compatibility with Spring Boot
+     * UniversalLoggerAutoConfiguration. Only one LoggerInstance bean will be created.
      */
     @Bean
+    @ConditionalOnMissingBean(LoggerInstance.class)
     public LoggerInstance loggerInstance() {
         logger.info("Initializing UniversalLogger (Logback) for application: {}", applicationName);
         logger.info("Config path: {}", configPath);
+
+        // Set active profile as system property so ProfileResolver can detect it
+        // This allows web.xml context-param to work properly
+        setActiveProfileFromSpringEnvironment();
 
         LoggerInstance instance = LoggerInstance.builder()
                 .configPath(configPath)
@@ -123,6 +138,39 @@ public class UniversalLoggerConfiguration implements BeanPostProcessor, Applicat
 
         logger.info("UniversalLogger (Logback) initialized successfully");
         return instance;
+    }
+
+    /**
+     * Read active profile from Spring Environment and set as system property
+     *
+     * Spring Environment reads from multiple sources in priority order:
+     * 1. ServletContext init parameters (web.xml context-param)
+     * 2. System properties (-Dspring.profiles.active)
+     * 3. Environment variables (SPRING_PROFILES_ACTIVE)
+     *
+     * This method bridges Spring's profile detection with ProfileResolver.
+     */
+    private void setActiveProfileFromSpringEnvironment() {
+        // Skip if logger.profile is already explicitly set
+        String explicitProfile = System.getProperty("logger.profile");
+        if (explicitProfile != null && !explicitProfile.trim().isEmpty()) {
+            logger.info("Profile explicitly set via logger.profile: {}", explicitProfile);
+            return;
+        }
+
+        // Read active profiles from Spring Environment
+        String[] activeProfiles = environment.getActiveProfiles();
+
+        if (activeProfiles != null && activeProfiles.length > 0) {
+            String firstProfile = activeProfiles[0];
+            logger.info("Detected active profile from Spring Environment: {}", firstProfile);
+
+            // Set as system property for ProfileResolver
+            System.setProperty("logger.profile", firstProfile);
+            logger.info("Set logger.profile system property to: {}", firstProfile);
+        } else {
+            logger.info("No active profile detected from Spring Environment");
+        }
     }
 
     /**

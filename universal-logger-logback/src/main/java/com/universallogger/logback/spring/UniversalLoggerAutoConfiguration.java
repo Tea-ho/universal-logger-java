@@ -68,6 +68,7 @@ public class UniversalLoggerAutoConfiguration implements BeanPostProcessor, Appl
      * LoggerInstance Bean 생성
      */
     @Bean
+    @ConditionalOnMissingBean(LoggerInstance.class)
     public LoggerInstance loggerInstance() {
         logger.info("Initializing UniversalLogger (Logback) for application: {}", applicationName);
 
