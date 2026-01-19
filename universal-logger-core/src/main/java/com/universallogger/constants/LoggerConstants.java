@@ -27,6 +27,8 @@ public final class LoggerConstants {
      * 설정 파일 경로 (자동 감지 우선순위)
      */
     public static final class ConfigPath {
+        public static final String DEFAULT = "config/universal-logger.yml";
+        public static final String DEFAULTS_RESOURCE = "defaults/universal-logger-defaults.yml";
         public static final String[] SEARCH_PATHS = {
             "universal-logger.yml",
             "config/universal-logger.yml",
@@ -53,6 +55,7 @@ public final class LoggerConstants {
         public static final String ENCODING = "UTF-8";
         public static final String LOG_DIR = "logs";
         public static final String TABLE_NAME = "app_logs";
+        public static final boolean SQL_CAPTURE_ENABLED = true;
 
         // 로테이션 기본값
         public static final String MAX_FILE_SIZE = "10MB";
@@ -105,5 +108,50 @@ public final class LoggerConstants {
         public static final String INIT_FAILED = "Failed to initialize Universal Logger: ";
 
         private ErrorMessage() {}
+    }
+
+    /**
+     * 시스템 프로퍼티 키
+     */
+    public static final class PropertyKeys {
+        // Logger profile (highest priority)
+        public static final String LOGGER_PROFILE = "logger.profile";
+
+        // Spring profile (standard Spring property)
+        public static final String SPRING_PROFILES_ACTIVE = "spring.profiles.active";
+
+        // Universal Logger configuration
+        public static final String CONFIG_PATH = "universal-logger.config-path";
+        public static final String SQL_CAPTURE_ENABLED = "universal-logger.sql-capture.enabled";
+
+        private PropertyKeys() {}
+    }
+
+    /**
+     * 환경 변수 키
+     */
+    public static final class EnvironmentKeys {
+        public static final String SPRING_PROFILES_ACTIVE = "SPRING_PROFILES_ACTIVE";
+
+        private EnvironmentKeys() {}
+    }
+
+    /**
+     * Spring 프로퍼티 접두사 (for @ConfigurationProperties)
+     */
+    public static final class SpringPropertyPrefix {
+        public static final String UNIVERSAL_LOGGER = "universal-logger";
+
+        private SpringPropertyPrefix() {}
+    }
+
+    /**
+     * Bean 이름
+     */
+    public static final class BeanNames {
+        public static final String LOGGER_INSTANCE = "loggerInstance";
+        public static final String LOGGER_CONFIG = "loggerConfig";
+
+        private BeanNames() {}
     }
 }

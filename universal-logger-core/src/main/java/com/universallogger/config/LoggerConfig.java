@@ -4,27 +4,23 @@ import java.util.Map;
 import java.util.HashMap;
 
 /**
- * 로거 설정 클래스
+ * Universal Logger 설정 클래스
  *
- * YAML/JSON 역직렬화 호환성을 위해 setter를 유지하지만,
- * copy() 메서드를 통한 방어적 복사와 LoggerConfigBuilder를 통한
- * 불변 스타일 설정 생성을 권장합니다.
+ * YAML 설정 파일(universal-logger.yml)을 Java 객체로 매핑하는 메인 설정 클래스입니다.
+ * 로깅 시스템의 모든 설정을 담당하며, 다음과 같은 설정을 관리합니다:
  *
- * 사용법:
- * <pre>
- * // YAML 파일에서 로드
- * LoggerConfig config = ConfigLoader.load("logging.yml");
+ * <ul>
+ *   <li>{@link GlobalConfig} - 애플리케이션 이름, 타임존, 인코딩 등 전역 설정</li>
+ *   <li>{@link OutputConfig} - 콘솔, 파일, 웹훅, 이메일 등 출력 대상별 설정</li>
+ *   <li>{@link FiltersConfig} - 민감 데이터 마스킹 등 필터 설정</li>
+ *   <li>{@link PerformanceConfig} - 비동기 처리, 버퍼 크기 등 성능 관련 설정</li>
+ *   <li>{@link SqlConfig} - SQL 로깅 관련 설정</li>
+ * </ul>
  *
- * // 프로그래매틱 설정 (권장)
- * LoggerConfig config = LoggerConfigBuilder.create()
- *     .appName("my-app")
- *     .rootLevel("DEBUG")
- *     .console().enabled(true).and()
- *     .build();
+ * 프로파일 기반 설정을 지원하며, {@link #merge(LoggerConfig)} 메서드를 통해
+ * 기본 설정과 프로파일별 설정을 병합할 수 있습니다.
  *
- * // 방어적 복사
- * LoggerConfig safeCopy = config.copy();
- * </pre>
+ * @see com.universallogger.loaders.UniversalConfigLoader
  */
 public class LoggerConfig {
     private String version;
@@ -35,7 +31,7 @@ public class LoggerConfig {
     private PerformanceConfig performance = new PerformanceConfig();
     private SqlConfig sql = new SqlConfig();
 
-    // Getters and Setters
+    // Getter 및 Setter
     public String getVersion() {
         return version;
     }
@@ -93,17 +89,17 @@ public class LoggerConfig {
     }
 
     /**
-     * Merge another configuration into this one
-     * The override configuration takes precedence
+     * 다른 설정을 현재 설정에 병합
+     * override 설정이 우선 적용됨
      *
-     * @param override Configuration to merge (takes precedence)
+     * @param override 병합할 설정 (우선 적용됨)
      */
     public void merge(LoggerConfig override) {
         if (override == null) {
             return;
         }
 
-        // Merge global config
+        // 글로벌 설정 병합
         if (override.getGlobal() != null) {
             if (override.getGlobal().getAppName() != null && !override.getGlobal().getAppName().isEmpty()) {
                 this.global.setAppName(override.getGlobal().getAppName());
@@ -116,29 +112,29 @@ public class LoggerConfig {
             }
         }
 
-        // Merge levels
+        // 로그 레벨 병합
         if (override.getLevels() != null && !override.getLevels().isEmpty()) {
             this.levels.putAll(override.getLevels());
         }
 
-        // Merge outputs
+        // 출력 설정 병합
         if (override.getOutputs() != null && !override.getOutputs().isEmpty()) {
             for (Map.Entry<String, OutputConfig> entry : override.getOutputs().entrySet()) {
                 String key = entry.getKey();
                 OutputConfig overrideOutput = entry.getValue();
 
                 if (this.outputs.containsKey(key)) {
-                    // Merge existing output config
+                    // 기존 출력 설정 병합
                     OutputConfig baseOutput = this.outputs.get(key);
                     mergeOutputConfig(baseOutput, overrideOutput);
                 } else {
-                    // Add new output config
+                    // 새 출력 설정 추가
                     this.outputs.put(key, overrideOutput);
                 }
             }
         }
 
-        // Merge filters
+        // 필터 설정 병합
         if (override.getFilters() != null && override.getFilters().getSensitiveData() != null) {
             FiltersConfig.SensitiveDataConfig overrideSensitive = override.getFilters().getSensitiveData();
             if (overrideSensitive.getPatterns() != null && overrideSensitive.getPatterns().length > 0) {
@@ -147,9 +143,9 @@ public class LoggerConfig {
             }
         }
 
-        // Merge performance
+        // 성능 설정 병합
         if (override.getPerformance() != null) {
-            // Only override if values are explicitly set (not defaults)
+            // 명시적으로 설정된 값만 덮어씀 (기본값 제외)
             PerformanceConfig overridePerf = override.getPerformance();
             this.performance.setAsync(overridePerf.isAsync());
             this.performance.setBufferSize(overridePerf.getBufferSize());
@@ -157,17 +153,17 @@ public class LoggerConfig {
             this.performance.setMaxQueueSize(overridePerf.getMaxQueueSize());
         }
 
-        // Merge SQL config
+        // SQL 설정 병합
         if (override.getSql() != null && override.getSql().getParameterSubstitution() != null) {
             this.sql.setParameterSubstitution(override.getSql().getParameterSubstitution());
         }
     }
 
     /**
-     * Merge output configurations
+     * 출력 설정 병합
      */
     private void mergeOutputConfig(OutputConfig base, OutputConfig override) {
-        // Always override enabled flag
+        // enabled 플래그는 항상 덮어씀
         base.setEnabled(override.isEnabled());
 
         if (override.getLevel() != null && !override.getLevel().isEmpty()) {
@@ -183,7 +179,7 @@ public class LoggerConfig {
             base.getColors().putAll(override.getColors());
         }
 
-        // Merge rotation
+        // 로테이션 설정 병합
         if (override.getRotation() != null) {
             RotationConfig overrideRotation = override.getRotation();
             if (overrideRotation.getMaxSize() != null && !overrideRotation.getMaxSize().isEmpty()) {
@@ -197,12 +193,12 @@ public class LoggerConfig {
             }
         }
 
-        // Merge webhook config
+        // 웹훅 설정 병합
         if (override.getWebhook() != null && override.getWebhook().getUrl() != null) {
             base.setWebhook(override.getWebhook());
         }
 
-        // Merge email config
+        // 이메일 설정 병합
         if (override.getEmail() != null && override.getEmail().getSmtp() != null) {
             base.setEmail(override.getEmail());
         }
@@ -221,7 +217,7 @@ public class LoggerConfig {
 
         copy.version = this.version;
 
-        // Global config copy
+        // 글로벌 설정 복사
         if (this.global != null) {
             GlobalConfig globalCopy = new GlobalConfig();
             globalCopy.setAppName(this.global.getAppName());
@@ -230,16 +226,16 @@ public class LoggerConfig {
             copy.global = globalCopy;
         }
 
-        // Levels copy
+        // 로그 레벨 복사
         copy.levels = new HashMap<>(this.levels);
 
-        // Outputs deep copy
+        // 출력 설정 깊은 복사
         copy.outputs = new HashMap<>();
         for (Map.Entry<String, OutputConfig> entry : this.outputs.entrySet()) {
             copy.outputs.put(entry.getKey(), copyOutputConfig(entry.getValue()));
         }
 
-        // Filters copy
+        // 필터 설정 복사
         if (this.filters != null) {
             FiltersConfig filtersCopy = new FiltersConfig();
             if (this.filters.getSensitiveData() != null) {
@@ -263,7 +259,7 @@ public class LoggerConfig {
             copy.filters = filtersCopy;
         }
 
-        // Performance copy
+        // 성능 설정 복사
         if (this.performance != null) {
             PerformanceConfig perfCopy = new PerformanceConfig();
             perfCopy.setAsync(this.performance.isAsync());
@@ -273,7 +269,7 @@ public class LoggerConfig {
             copy.performance = perfCopy;
         }
 
-        // SQL config copy
+        // SQL 설정 복사
         if (this.sql != null) {
             SqlConfig sqlCopy = new SqlConfig();
             sqlCopy.setParameterSubstitution(this.sql.isParameterSubstitution());
@@ -295,12 +291,12 @@ public class LoggerConfig {
         copy.setFormat(original.getFormat());
         copy.setPath(original.getPath());
 
-        // Colors copy
+        // 색상 설정 복사
         if (original.getColors() != null) {
             copy.setColors(new HashMap<>(original.getColors()));
         }
 
-        // Rotation copy
+        // 로테이션 설정 복사
         if (original.getRotation() != null) {
             RotationConfig rotCopy = new RotationConfig();
             rotCopy.setMaxSize(original.getRotation().getMaxSize());
@@ -309,7 +305,7 @@ public class LoggerConfig {
             copy.setRotation(rotCopy);
         }
 
-        // Webhook copy
+        // 웹훅 설정 복사
         if (original.getWebhook() != null) {
             WebhookConfig whCopy = new WebhookConfig();
             whCopy.setUrl(original.getWebhook().getUrl());
@@ -317,7 +313,7 @@ public class LoggerConfig {
             copy.setWebhook(whCopy);
         }
 
-        // Email copy
+        // 이메일 설정 복사
         if (original.getEmail() != null) {
             EmailConfig emailCopy = new EmailConfig();
             if (original.getEmail().getSmtp() != null) {
@@ -386,7 +382,7 @@ public class LoggerConfig {
         private WebhookConfig webhook = new WebhookConfig();
         private EmailConfig email = new EmailConfig();
 
-        // Getters and Setters
+        // Getter 및 Setter
         public boolean isEnabled() {
             return enabled;
         }

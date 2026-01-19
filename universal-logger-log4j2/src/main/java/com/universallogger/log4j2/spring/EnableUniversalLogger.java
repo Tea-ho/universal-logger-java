@@ -1,35 +1,39 @@
 package com.universallogger.log4j2.spring;
 
-import com.universallogger.constants.UniversalLoggerConstants;
+import com.universallogger.constants.LoggerConstants;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.*;
 
 /**
- * Enable Universal Logger for Spring Framework projects (Log4j2)
+ * Spring Framework 프로젝트용 Universal Logger 활성화 어노테이션 (Log4j2)
  *
- * Add this annotation to your Spring @Configuration class to enable Universal Logger with Log4j2.
+ * Spring @Configuration 클래스에 이 어노테이션을 추가하여 Log4j2 기반의 Universal Logger를 활성화합니다.
  *
- * Usage example:
- * <pre>
- * {@code
+ * <p>사용 예시:</p>
+ * <pre>{@code
  * @Configuration
  * @EnableUniversalLogger
  * public class AppConfig {
- *     // your beans
+ *     // 사용자 빈 정의
  * }
- * }
- * </pre>
+ * }</pre>
  *
- * This will:
- * - Automatically create LoggerConfig bean
- * - Enable profile-based configuration (spring.profiles.active)
- * - Automatically wrap DataSource beans for SQL logging (if enabled)
+ * <p>이 어노테이션이 수행하는 작업:</p>
+ * <ul>
+ *   <li>LoggerConfig 빈 자동 생성</li>
+ *   <li>프로파일 기반 설정 활성화 (spring.profiles.active)</li>
+ *   <li>SQL 로깅을 위한 DataSource 빈 자동 래핑 (활성화된 경우)</li>
+ * </ul>
  *
- * Configuration:
- * - Default config path: config/universal-logger.yml
- * - Override with system property: -Duniversal-logger.config-path=custom/path.yml
- * - Profile support: -Dspring.profiles.active=dev (loads universal-logger-dev.yml)
+ * <p>설정 방법:</p>
+ * <ul>
+ *   <li>기본 설정 경로: config/universal-logger.yml</li>
+ *   <li>시스템 프로퍼티로 오버라이드: -Duniversal-logger.config-path=custom/path.yml</li>
+ *   <li>프로파일 지원: -Dspring.profiles.active=dev (universal-logger-dev.yml 로드)</li>
+ * </ul>
+ *
+ * @see SpringConfiguration
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
@@ -38,14 +42,18 @@ import java.lang.annotation.*;
 public @interface EnableUniversalLogger {
 
     /**
-     * Custom config file path
-     * Default: config/universal-logger.yml
+     * 사용자 정의 설정 파일 경로
+     * 기본값: config/universal-logger.yml
+     *
+     * @return 설정 파일 경로
      */
-    String configPath() default UniversalLoggerConstants.ConfigPath.DEFAULT;
+    String configPath() default LoggerConstants.ConfigPath.DEFAULT;
 
     /**
-     * Enable SQL capture for DataSource beans
-     * Default: true
+     * DataSource 빈에 대한 SQL 캡처 활성화 여부
+     * 기본값: true
+     *
+     * @return SQL 캡처 활성화 여부
      */
     boolean enableSqlCapture() default true;
 }

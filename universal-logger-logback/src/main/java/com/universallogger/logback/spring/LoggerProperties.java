@@ -1,55 +1,66 @@
 package com.universallogger.logback.spring;
 
 /**
- * Logger Properties Interface
+ * 로거 프로퍼티 인터페이스
  *
- * Abstraction for logger configuration properties across Spring Framework and Spring Boot.
- * Implementations provide environment-specific property management.
+ * Spring Framework와 Spring Boot 간 로거 설정 프로퍼티를 위한 추상화 인터페이스입니다.
+ * 구현체들은 환경별 프로퍼티 관리를 제공합니다.
+ *
+ * <p>구현체:</p>
+ * <ul>
+ *   <li>{@link SpringProperties} - Spring Framework용 (순수 POJO)</li>
+ *   <li>{@link SpringBootProperties} - Spring Boot용 (@ConfigurationProperties 사용)</li>
+ * </ul>
+ *
+ * @see SpringProperties
+ * @see SpringBootProperties
  */
 public interface LoggerProperties {
 
     /**
-     * Check if Universal Logger is enabled
+     * Universal Logger 활성화 여부 확인
      *
-     * @return true if enabled
+     * @return 활성화되어 있으면 true
      */
     boolean isEnabled();
 
     /**
-     * Get configuration file path
+     * 설정 파일 경로 조회
      *
-     * @return config file path
+     * @return 설정 파일 경로
      */
     String getConfigPath();
 
     /**
-     * Set configuration file path
+     * 설정 파일 경로 설정
      *
-     * @param configPath config file path
+     * @param configPath 설정 파일 경로
      */
     void setConfigPath(String configPath);
 
     /**
-     * Get SQL capture configuration
+     * SQL 캡처 설정 조회
      *
-     * @return SQL capture config
+     * @return SQL 캡처 설정
      */
     SqlCaptureConfig getSqlCapture();
 
     /**
-     * Resolve active profile
+     * 활성 프로파일 해석
      *
-     * Priority:
-     * 1. logger.profile system property (explicit override, highest priority)
-     * 2. Spring Environment active profiles
-     * 3. null (no profile)
+     * <p>우선순위:</p>
+     * <ol>
+     *   <li>logger.profile 시스템 프로퍼티 (명시적 오버라이드, 최우선)</li>
+     *   <li>Spring Environment 활성 프로파일</li>
+     *   <li>null (프로파일 없음)</li>
+     * </ol>
      *
-     * @return Active profile name, or null if no profile is active
+     * @return 활성 프로파일 이름, 활성 프로파일이 없으면 null
      */
     String getActiveProfile();
 
     /**
-     * SQL Capture Configuration
+     * SQL 캡처 설정 클래스
      */
     class SqlCaptureConfig {
         private boolean enabled = true;

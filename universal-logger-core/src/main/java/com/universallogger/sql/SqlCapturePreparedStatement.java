@@ -12,7 +12,22 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- * PreparedStatement wrapper for SQL capture with parameters
+ * 파라미터 바인딩을 포함한 SQL 캡처를 위한 PreparedStatement 래퍼 클래스
+ *
+ * PreparedStatement를 래핑하여 SQL 실행 정보와 바인딩된 파라미터를 캡처하고 로깅합니다.
+ * 설정에 따라 파라미터 값을 SQL에 치환하여 완전한 쿼리 형태로 로깅할 수 있습니다.
+ *
+ * <p>주요 기능:</p>
+ * <ul>
+ *   <li>바인딩 파라미터 추적 (setString, setInt 등 호출 시 파라미터 저장)</li>
+ *   <li>SQL 실행 시간 측정</li>
+ *   <li>SELECT 쿼리의 결과 행 수 추적</li>
+ *   <li>UPDATE/INSERT/DELETE 쿼리의 영향받은 행 수 추적</li>
+ *   <li>파라미터 치환 옵션 (parameterSubstitution) 지원</li>
+ * </ul>
+ *
+ * @see SqlCaptureStatement
+ * @see SqlCaptureProxy
  */
 class SqlCapturePreparedStatement extends SqlCaptureStatement implements PreparedStatement {
     private final PreparedStatement targetPreparedStatement;
@@ -57,7 +72,7 @@ class SqlCapturePreparedStatement extends SqlCaptureStatement implements Prepare
         try {
             rs = targetPreparedStatement.executeQuery();
 
-            // Try to count rows using last() and getRow() if ResultSet is scrollable
+            // ResultSet이 스크롤 가능한 경우 last()와 getRow()로 행 수 계산 시도
             try {
                 if (rs.getType() != ResultSet.TYPE_FORWARD_ONLY) {
                     rs.last();
@@ -65,7 +80,7 @@ class SqlCapturePreparedStatement extends SqlCaptureStatement implements Prepare
                     rs.beforeFirst();
                 }
             } catch (SQLException e) {
-                // ResultSet might not be scrollable, ignore
+                // ResultSet이 스크롤 불가능할 수 있음, 무시
             }
 
             return rs;
@@ -118,7 +133,7 @@ class SqlCapturePreparedStatement extends SqlCaptureStatement implements Prepare
                             rs.beforeFirst();
                         }
                     } catch (SQLException e) {
-                        // ResultSet might not be scrollable, ignore
+                        // ResultSet이 스크롤 불가능할 수 있음, 무시
                     }
                 }
             } else {
@@ -143,7 +158,7 @@ class SqlCapturePreparedStatement extends SqlCaptureStatement implements Prepare
         return targetPreparedStatement.getUpdateCount();
     }
 
-    // Parameter tracking methods
+    // 파라미터 추적 메서드
     @Override public void setNull(int parameterIndex, int sqlType) throws SQLException { parameters.put(parameterIndex, null); targetPreparedStatement.setNull(parameterIndex, sqlType); }
     @Override public void setBoolean(int parameterIndex, boolean x) throws SQLException { parameters.put(parameterIndex, x); targetPreparedStatement.setBoolean(parameterIndex, x); }
     @Override public void setByte(int parameterIndex, byte x) throws SQLException { parameters.put(parameterIndex, x); targetPreparedStatement.setByte(parameterIndex, x); }
@@ -160,7 +175,7 @@ class SqlCapturePreparedStatement extends SqlCaptureStatement implements Prepare
     @Override public void setTimestamp(int parameterIndex, Timestamp x) throws SQLException { parameters.put(parameterIndex, x); targetPreparedStatement.setTimestamp(parameterIndex, x); }
     @Override public void setObject(int parameterIndex, Object x) throws SQLException { parameters.put(parameterIndex, x); targetPreparedStatement.setObject(parameterIndex, x); }
 
-    // Delegate methods
+    // 위임 메서드
     @Override public void setAsciiStream(int parameterIndex, InputStream x, int length) throws SQLException { targetPreparedStatement.setAsciiStream(parameterIndex, x, length); }
     @Override public void setUnicodeStream(int parameterIndex, InputStream x, int length) throws SQLException { targetPreparedStatement.setUnicodeStream(parameterIndex, x, length); }
     @Override public void setBinaryStream(int parameterIndex, InputStream x, int length) throws SQLException { targetPreparedStatement.setBinaryStream(parameterIndex, x, length); }

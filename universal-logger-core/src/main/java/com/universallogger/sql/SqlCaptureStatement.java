@@ -5,7 +5,28 @@ import com.universallogger.config.LoggerConfig;
 import java.sql.*;
 
 /**
- * Statement wrapper for SQL capture
+ * SQL 캡처를 위한 Statement 래퍼 클래스
+ *
+ * Statement를 래핑하여 SQL 실행 정보를 캡처하고 로깅합니다.
+ * 직접 SQL 문자열을 전달받는 execute, executeQuery, executeUpdate 메서드를 오버라이드하여
+ * SQL 실행 전후로 로깅을 수행합니다.
+ *
+ * <p>주요 기능:</p>
+ * <ul>
+ *   <li>SQL 쿼리 로깅</li>
+ *   <li>SQL 실행 시간 측정</li>
+ *   <li>SELECT 쿼리의 결과 행 수 추적 (RowCountingResultSet 활용)</li>
+ *   <li>UPDATE/INSERT/DELETE 쿼리의 영향받은 행 수 로깅</li>
+ * </ul>
+ *
+ * <p>상속 구조:</p>
+ * <ul>
+ *   <li>{@link SqlCapturePreparedStatement} - PreparedStatement 지원</li>
+ *   <li>{@link SqlCaptureCallableStatement} - CallableStatement 지원</li>
+ * </ul>
+ *
+ * @see SqlCaptureProxy
+ * @see SqlLogger
  */
 class SqlCaptureStatement implements Statement {
     protected final Statement targetStatement;
@@ -16,7 +37,7 @@ class SqlCaptureStatement implements Statement {
     public SqlCaptureStatement(Statement targetStatement, LoggerConfig config, boolean sqlLoggingEnabled) {
         this.targetStatement = targetStatement;
         this.config = config;
-        this.sqlLogger = new SqlLogger(config);
+        this.sqlLogger = new Slf4jSqlLogger(config);
         this.sqlLoggingEnabled = sqlLoggingEnabled;
     }
 
@@ -48,7 +69,7 @@ class SqlCaptureStatement implements Statement {
         try {
             ResultSet rs = targetStatement.executeQuery(sql);
 
-            // Try to count rows using last() and getRow() if ResultSet is scrollable
+            // ResultSet이 스크롤 가능한 경우 last()와 getRow()로 행 수 계산 시도
             int rowCount = -1;
             try {
                 if (rs.getType() != ResultSet.TYPE_FORWARD_ONLY) {
@@ -60,10 +81,10 @@ class SqlCaptureStatement implements Statement {
                     }
                 }
             } catch (SQLException e) {
-                // ResultSet might not be scrollable, ignore
+                // ResultSet이 스크롤 불가능할 수 있음, 무시
             }
 
-            // Wrap ResultSet to count rows for forward-only ResultSets
+            // forward-only ResultSet의 행 수 카운트를 위해 ResultSet 래핑
             return new RowCountingResultSet(rs, callerInfo, config);
         } finally {
             sqlLogger.logExecutionTime(sql, System.currentTimeMillis() - start, callerInfo);
@@ -81,7 +102,7 @@ class SqlCaptureStatement implements Statement {
         long start = System.currentTimeMillis();
         try {
             int updateCount = targetStatement.executeUpdate(sql);
-            // Log update count
+            // 업데이트 수 로깅
             if (updateCount != -1) {
                 sqlLogger.logUpdateCount(updateCount, callerInfo);
             }
@@ -91,7 +112,7 @@ class SqlCaptureStatement implements Statement {
         }
     }
 
-    // Delegate methods
+    // 위임 메서드
     @Override public void close() throws SQLException { targetStatement.close(); }
     @Override public int getMaxFieldSize() throws SQLException { return targetStatement.getMaxFieldSize(); }
     @Override public void setMaxFieldSize(int max) throws SQLException { targetStatement.setMaxFieldSize(max); }

@@ -13,8 +13,19 @@ import java.util.Calendar;
 import java.util.Map;
 
 /**
- * ResultSet wrapper for row counting (like MyBatis ResultSetLogger)
- * Counts rows as they are consumed and logs the total when finished
+ * 행 카운팅을 위한 ResultSet 래퍼 클래스
+ *
+ * MyBatis의 ResultSetLogger와 유사하게 동작하며, SELECT 쿼리 결과의 행 수를 추적합니다.
+ * 결과 집합이 소비될 때 행 수를 카운트하고, 완료 시 총 행 수를 로깅합니다.
+ *
+ * <p>주요 기능:</p>
+ * <ul>
+ *   <li>next() 호출 시마다 행 카운트 증가</li>
+ *   <li>getter 메서드 호출 시 행 접근 추적</li>
+ *   <li>ResultSet 종료 시 총 행 수 로깅 ([SQL-ROWS] 형식)</li>
+ * </ul>
+ *
+ * @see SqlCaptureProxy
  */
 class RowCountingResultSet implements ResultSet {
     private static final Logger logger = LoggerFactory.getLogger("SQL");
@@ -40,13 +51,13 @@ class RowCountingResultSet implements ResultSet {
                 rows = currentRow;
             }
         } else {
-            // Log total when no more rows (like MyBatis ResultSetLogger)
+            // 더 이상 행이 없을 때 총 행 수 로깅 (MyBatis ResultSetLogger 방식)
             logRowCount();
         }
         return hasNext;
     }
 
-    // Track row access through getter methods (MyBatis calls these)
+    // getter 메서드를 통한 행 접근 추적 (MyBatis가 이 메서드들을 호출함)
     private void trackRowAccess() {
         if (currentRow > rows) {
             rows = currentRow;
@@ -58,7 +69,7 @@ class RowCountingResultSet implements ResultSet {
         if (iface.isInstance(this)) {
             return iface.cast(this);
         }
-        // Log row count before unwrapping (MyBatis might unwrap our ResultSet)
+        // 언래핑 전에 행 카운트 로깅 (MyBatis가 ResultSet을 언래핑할 수 있음)
         logRowCount();
         return targetResultSet.unwrap(iface);
     }
@@ -81,7 +92,7 @@ class RowCountingResultSet implements ResultSet {
         }
     }
 
-    // Delegate all other methods to targetResultSet
+    // 나머지 모든 메서드는 targetResultSet에 위임
     @Override public boolean wasNull() throws SQLException { return targetResultSet.wasNull(); }
     @Override public String getString(int columnIndex) throws SQLException { trackRowAccess(); return targetResultSet.getString(columnIndex); }
     @Override public boolean getBoolean(int columnIndex) throws SQLException { trackRowAccess(); return targetResultSet.getBoolean(columnIndex); }

@@ -4,13 +4,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 
-import static com.universallogger.constants.UniversalLoggerConstants.*;
+import static com.universallogger.constants.LoggerConstants.*;
 
 /**
- * Spring Framework Properties Implementation for Log4j2
+ * Log4j2용 Spring Framework 프로퍼티 구현체
  *
- * Plain POJO for Spring Framework (non-Boot) projects.
- * Environment must be manually injected.
+ * Spring Framework(비-Boot) 프로젝트를 위한 순수 POJO 구현체입니다.
+ * Environment는 수동으로 주입해야 합니다.
+ *
+ * <p>주요 기능:</p>
+ * <ul>
+ *   <li>로거 활성화 여부 관리</li>
+ *   <li>설정 파일 경로 관리</li>
+ *   <li>SQL 캡처 설정 관리</li>
+ *   <li>활성 프로파일 해석</li>
+ * </ul>
+ *
+ * @see LoggerProperties
+ * @see SpringConfiguration
  */
 public class SpringProperties implements LoggerProperties {
 
@@ -22,11 +33,11 @@ public class SpringProperties implements LoggerProperties {
     private Environment environment;
 
     /**
-     * Set Spring Environment
+     * Spring Environment 설정
      *
-     * Required for profile resolution in Spring Framework projects.
+     * Spring Framework 프로젝트에서 프로파일 해석을 위해 필요합니다.
      *
-     * @param environment Spring Environment
+     * @param environment Spring Environment 인스턴스
      */
     public void setEnvironment(Environment environment) {
         this.environment = environment;
@@ -62,14 +73,14 @@ public class SpringProperties implements LoggerProperties {
 
     @Override
     public String getActiveProfile() {
-        // Check if logger.profile is already explicitly set (highest priority)
+        // logger.profile이 이미 명시적으로 설정되어 있는지 확인 (최우선 순위)
         String explicitProfile = System.getProperty(PropertyKeys.LOGGER_PROFILE);
         if (explicitProfile != null && !explicitProfile.trim().isEmpty()) {
             logger.debug("Using profile from {}: {}", PropertyKeys.LOGGER_PROFILE, explicitProfile);
             return explicitProfile.trim();
         }
 
-        // Read active profiles from Spring Environment (manually injected)
+        // Spring Environment에서 활성 프로파일 읽기 (수동 주입)
         if (environment != null) {
             String[] activeProfiles = environment.getActiveProfiles();
             if (activeProfiles != null && activeProfiles.length > 0) {

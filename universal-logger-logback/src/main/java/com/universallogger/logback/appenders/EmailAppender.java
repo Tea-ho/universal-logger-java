@@ -12,7 +12,20 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 /**
- * 이메일 어펜더
+ * 이메일 알림을 위한 Logback 커스텀 앱펜더
+ *
+ * ERROR 레벨 이상의 로그 이벤트 발생 시 지정된 수신자에게 이메일 알림을 전송합니다.
+ * SMTP 서버를 통해 이메일을 발송하며, SSL/TLS 암호화를 지원합니다.
+ *
+ * <p>주요 기능:</p>
+ * <ul>
+ *   <li>SMTP 인증 및 SSL/TLS 암호화 지원</li>
+ *   <li>다중 수신자 지원</li>
+ *   <li>포트에 따른 자동 암호화 설정 (465: SSL, 587: TLS)</li>
+ *   <li>연결 타임아웃 설정 (5초)</li>
+ * </ul>
+ *
+ * @see AppenderFactory#createEmailAppender
  */
 public class EmailAppender extends AppenderBase<ILoggingEvent> {
 

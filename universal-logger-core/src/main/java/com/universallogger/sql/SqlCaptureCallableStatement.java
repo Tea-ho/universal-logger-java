@@ -9,7 +9,21 @@ import java.util.Calendar;
 import java.util.Map;
 
 /**
- * CallableStatement wrapper
+ * SQL 캡처를 위한 CallableStatement 래퍼 클래스
+ *
+ * 저장 프로시저(Stored Procedure) 호출을 위한 CallableStatement를 래핑하여
+ * SQL 실행 정보를 캡처하고 로깅합니다.
+ * {@link SqlCapturePreparedStatement}를 상속받아 파라미터 바인딩 추적 기능을 재사용합니다.
+ *
+ * <p>주요 기능:</p>
+ * <ul>
+ *   <li>저장 프로시저 호출 SQL 로깅</li>
+ *   <li>IN/OUT 파라미터 추적</li>
+ *   <li>실행 결과 로깅</li>
+ * </ul>
+ *
+ * @see SqlCapturePreparedStatement
+ * @see SqlCaptureProxy
  */
 class SqlCaptureCallableStatement extends SqlCapturePreparedStatement implements CallableStatement {
     private final CallableStatement targetCallableStatement;
@@ -19,7 +33,7 @@ class SqlCaptureCallableStatement extends SqlCapturePreparedStatement implements
         this.targetCallableStatement = targetCallableStatement;
     }
 
-    // Implement CallableStatement methods (delegate to target)
+    // CallableStatement 메서드 구현 (target에 위임)
     @Override public void registerOutParameter(int parameterIndex, int sqlType) throws SQLException { targetCallableStatement.registerOutParameter(parameterIndex, sqlType); }
     @Override public void registerOutParameter(int parameterIndex, int sqlType, int scale) throws SQLException { targetCallableStatement.registerOutParameter(parameterIndex, sqlType, scale); }
     @Override public boolean wasNull() throws SQLException { return targetCallableStatement.wasNull(); }

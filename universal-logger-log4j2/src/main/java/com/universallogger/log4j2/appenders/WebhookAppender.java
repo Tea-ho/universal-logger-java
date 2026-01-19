@@ -23,7 +23,29 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 /**
- * Log4j2 Custom Appender for Webhook notifications
+ * 웹훅 알림을 위한 Log4j2 커스텀 Appender
+ *
+ * 로그 이벤트 발생 시 지정된 웹훅 URL로 HTTP POST 요청을 전송합니다.
+ * Slack, Discord, Microsoft Teams 등의 웹훅 서비스와 연동할 수 있습니다.
+ *
+ * <p>주요 기능:</p>
+ * <ul>
+ *   <li>Slack/Discord 호환 JSON 페이로드 형식</li>
+ *   <li>메시지 포맷 템플릿 커스터마이징</li>
+ *   <li>예외 스택 트레이스 포함</li>
+ *   <li>HTTP 클라이언트 자동 관리</li>
+ * </ul>
+ *
+ * <p>Log4j2 설정 예시:</p>
+ * <pre>{@code
+ * <UniversalWebhook name="Webhook"
+ *                   webhookUrl="https://hooks.slack.com/services/xxx/yyy/zzz"
+ *                   messageFormat="[{level}] {message}">
+ *     <ThresholdFilter level="ERROR"/>
+ * </UniversalWebhook>
+ * }</pre>
+ *
+ * @see org.apache.logging.log4j.core.appender.AbstractAppender
  */
 @Plugin(name = "UniversalWebhook", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE)
 public class WebhookAppender extends AbstractAppender {
@@ -77,7 +99,7 @@ public class WebhookAppender extends AbstractAppender {
     private String formatMessage(LogEvent event) {
         String format = messageFormat != null ? messageFormat : getDefaultFormat();
 
-        // Extract exception stack trace if present
+        // 예외가 있으면 스택 트레이스 추출
         String exceptionTrace = "";
         if (event.getThrown() != null) {
             StringWriter sw = new StringWriter();

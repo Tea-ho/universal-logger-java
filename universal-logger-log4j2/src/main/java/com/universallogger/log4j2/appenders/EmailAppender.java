@@ -21,7 +21,33 @@ import java.time.format.DateTimeFormatter;
 import java.util.Properties;
 
 /**
- * Log4j2 Custom Appender for Email notifications
+ * 이메일 알림을 위한 Log4j2 커스텀 Appender
+ *
+ * ERROR 레벨 이상의 로그 이벤트 발생 시 지정된 수신자에게 이메일 알림을 전송합니다.
+ * SMTP 서버를 통해 이메일을 발송하며, HTML 형식의 본문을 지원합니다.
+ *
+ * <p>주요 기능:</p>
+ * <ul>
+ *   <li>SMTP 인증 및 TLS 암호화 지원</li>
+ *   <li>다중 수신자 지원 (쉼표로 구분)</li>
+ *   <li>제목/본문 템플릿 커스터마이징</li>
+ *   <li>예외 스택 트레이스 포함</li>
+ * </ul>
+ *
+ * <p>Log4j2 설정 예시:</p>
+ * <pre>{@code
+ * <UniversalEmail name="Email"
+ *                 smtpHost="smtp.gmail.com"
+ *                 smtpPort="587"
+ *                 username="user@gmail.com"
+ *                 password="password"
+ *                 from="sender@gmail.com"
+ *                 to="recipient@example.com">
+ *     <ThresholdFilter level="ERROR"/>
+ * </UniversalEmail>
+ * }</pre>
+ *
+ * @see org.apache.logging.log4j.core.appender.AbstractAppender
  */
 @Plugin(name = "UniversalEmail", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE)
 public class EmailAppender extends AbstractAppender {
@@ -80,7 +106,7 @@ public class EmailAppender extends AbstractAppender {
             Message message = new MimeMessage(session);
             message.setFrom(new InternetAddress(from));
 
-            // Parse comma-separated recipients
+            // 쉼표로 구분된 수신자 파싱
             String[] recipients = to.split(",");
             InternetAddress[] addresses = new InternetAddress[recipients.length];
             for (int i = 0; i < recipients.length; i++) {

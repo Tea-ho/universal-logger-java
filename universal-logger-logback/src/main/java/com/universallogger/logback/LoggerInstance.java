@@ -16,6 +16,31 @@ import java.io.File;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Universal Logger의 Logback 구현체 핵심 클래스
+ *
+ * 설정 파일을 기반으로 Logback 로깅 시스템을 초기화하고 관리합니다.
+ * Builder 패턴을 사용하여 유연한 인스턴스 생성을 지원합니다.
+ *
+ * <p>주요 기능:</p>
+ * <ul>
+ *   <li>YAML 설정 파일 기반 로깅 설정</li>
+ *   <li>프로파일 기반 설정 지원 (dev, prd 등)</li>
+ *   <li>다양한 앱펜더 지원 (콘솔, 파일, 웹훅, 이메일)</li>
+ *   <li>의존성 주입(DI) 지원 (AppenderFactory, ConfigLoader)</li>
+ * </ul>
+ *
+ * <p>사용 예시:</p>
+ * <pre>{@code
+ * LoggerInstance logger = LoggerInstance.builder()
+ *     .configPath("config/universal-logger.yml")
+ *     .profile("dev")
+ *     .build();
+ * }</pre>
+ *
+ * @see AppenderFactory
+ * @see LoggerConfig
+ */
 public class LoggerInstance {
 
     private static final Logger logger = LoggerFactory.getLogger(LoggerInstance.class);
@@ -73,14 +98,14 @@ public class LoggerInstance {
      */
     private LoggerConfig loadConfig(String configPath, String profile) {
         try {
-            // Use explicitly provided profile, or auto-detect if not provided
+            // 명시적으로 제공된 프로파일 사용, 없으면 자동 감지
             String activeProfile = profile != null ? profile : ProfileResolver.resolveProfile();
 
             if (activeProfile != null) {
                 logger.info("Loading configuration with profile: {}", activeProfile);
             }
 
-            // Load configuration with profile support
+            // 프로파일 지원으로 설정 로드
             return configLoader.loadWithProfile(configPath, activeProfile, true);
         } catch (Exception e) {
             logger.error("Failed to load config: {}, falling back to defaults.yml", configPath, e);
@@ -197,7 +222,7 @@ public class LoggerInstance {
         return outputs.containsKey(key) && outputs.get(key).isEnabled();
     }
 
-    // ========== Public API ==========
+    // ========== 공개 API ==========
 
     /**
      * 로거 인스턴스 반환
@@ -213,7 +238,7 @@ public class LoggerInstance {
         return getLogger(clazz.getSimpleName());
     }
 
-    // ========== Getters ==========
+    // ========== Getter 메서드 ==========
 
     /**
      * 현재 설정 반환
@@ -243,7 +268,7 @@ public class LoggerInstance {
         return appenderFactory;
     }
 
-    // ========== Builder ==========
+    // ========== 빌더 ==========
 
     /**
      * Builder 생성

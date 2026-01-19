@@ -15,8 +15,21 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 웹훅 어펜더 (Slack, Discord 등)
- * 비동기 전송 + 타임아웃 적용
+ * 웹훅 알림을 위한 Logback 커스텀 앱펜더
+ *
+ * 로그 이벤트 발생 시 지정된 웹훅 URL로 HTTP POST 요청을 전송합니다.
+ * Slack, Discord, Microsoft Teams 등의 웹훅 서비스와 연동할 수 있습니다.
+ *
+ * <p>주요 기능:</p>
+ * <ul>
+ *   <li>비동기 전송 - 메인 스레드 블로킹 방지</li>
+ *   <li>타임아웃 설정 (3초)</li>
+ *   <li>Slack/Discord 호환 JSON 페이로드 형식</li>
+ *   <li>메시지 포맷 템플릿 커스터마이징</li>
+ *   <li>예외 스택 트레이스 포함</li>
+ * </ul>
+ *
+ * @see AppenderFactory#createWebhookAppender
  */
 public class WebhookAppender extends AppenderBase<ILoggingEvent> {
 

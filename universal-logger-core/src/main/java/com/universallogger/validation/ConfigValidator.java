@@ -1,14 +1,17 @@
 package com.universallogger.validation;
 
 import com.universallogger.config.LoggerConfig;
+import com.universallogger.config.LoggerConfigBuilder;
 import com.universallogger.constants.LoggerConstants;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 설정 검증 클래스
- * 설정 파일의 유효성을 검사하고 오류를 보고
+ * ConfigValidator
+ *
+ * @deprecated 더 이상 사용되지 않습니다.
+ * @see ConfigValidator
  */
 public class ConfigValidator {
 

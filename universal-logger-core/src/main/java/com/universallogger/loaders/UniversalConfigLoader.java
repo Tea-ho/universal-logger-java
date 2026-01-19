@@ -21,14 +21,6 @@ import java.util.Map;
  * YAML, JSON, XML 포맷을 모두 지원하는 설정 로더입니다.
  * 파일 확장자에 따라 적절한 ConfigParser를 선택하여 파싱합니다.
  * 기본적으로 defaults.yml과 병합하여 설정을 로드합니다.
- *
- * 사용법:
- * <pre>
- * ConfigLoader loader = new UniversalConfigLoader();
- * LoggerConfig config = loader.load("logging.yml");   // YAML
- * LoggerConfig config = loader.load("logging.json");  // JSON
- * LoggerConfig config = loader.load("logging.xml");   // XML
- * </pre>
  */
 public class UniversalConfigLoader implements ConfigLoader {
 
@@ -121,7 +113,7 @@ public class UniversalConfigLoader implements ConfigLoader {
             }
         }
 
-        // Merge with defaults if requested
+        // 요청 시 기본 설정과 병합
         if (mergeDefaults) {
             LoggerConfig defaultConfig = loadDefaultConfig();
             defaultConfig.merge(userConfig);
@@ -149,32 +141,32 @@ public class UniversalConfigLoader implements ConfigLoader {
 
     @Override
     public LoggerConfig loadWithProfile(String configPath, String profile, boolean mergeDefaults) throws Exception {
-        // 1. Load base config
+        // 1. 기본 설정 로드
         logger.info("Loading base configuration: {}", configPath);
         LoggerConfig baseConfig = load(configPath, mergeDefaults);
 
-        // 2. If no profile, return base config
+        // 2. 프로파일이 없으면 기본 설정 반환
         if (profile == null || profile.trim().isEmpty()) {
             logger.info("No profile specified, using base configuration only");
             return baseConfig;
         }
 
-        // 3. Build profile-specific config path
+        // 3. 프로파일별 설정 파일 경로 생성
         String profileConfigPath = ProfileResolver.buildProfileConfigPath(configPath, profile);
         logger.info("Attempting to load profile-specific configuration: {}", profileConfigPath);
 
-        // 4. Try to load profile-specific config
+        // 4. 프로파일별 설정 로드 시도
         try {
             LoggerConfig profileConfig = loadProfileConfig(profileConfigPath);
 
             if (profileConfig != null) {
                 logger.info("Successfully loaded profile configuration: {}", profileConfigPath);
-                // Merge profile config into base config
+                // 프로파일 설정을 기본 설정에 병합
                 baseConfig.merge(profileConfig);
                 logger.info("Profile configuration merged successfully");
             }
         } catch (Exception e) {
-            // Profile config not found is acceptable - just log a warning
+            // 프로파일 설정이 없어도 허용 - 경고만 로그
             logger.warn("Profile-specific configuration not found: {} (this is optional)", profileConfigPath);
             logger.debug("Profile config load error details:", e);
         }
@@ -183,38 +175,38 @@ public class UniversalConfigLoader implements ConfigLoader {
     }
 
     /**
-     * Load profile-specific configuration
+     * 프로파일별 설정 로드
      *
-     * Returns null if file doesn't exist (acceptable case)
+     * 파일이 존재하지 않으면 null 반환 (허용되는 경우)
      */
     private LoggerConfig loadProfileConfig(String profileConfigPath) throws Exception {
-        // Try classpath first
+        // 클래스패스에서 먼저 시도
         if (profileConfigPath.startsWith("classpath:")) {
             String resourcePath = profileConfigPath.substring("classpath:".length());
             InputStream inputStream = getClass().getClassLoader().getResourceAsStream(resourcePath);
 
             if (inputStream == null) {
-                return null; // Not found, but acceptable
+                return null; // 찾지 못함, 하지만 허용
             }
 
             String extension = getFileExtension(resourcePath).toLowerCase();
             return parseFromStream(inputStream, extension);
         }
-        // Try file system
+        // 파일 시스템에서 시도
         else if (profileConfigPath.startsWith("file:")) {
             String filePath = profileConfigPath.substring("file:".length());
             File configFile = new File(filePath);
 
             if (!configFile.exists()) {
-                return null; // Not found, but acceptable
+                return null; // 찾지 못함, 하지만 허용
             }
 
             String extension = getFileExtension(filePath).toLowerCase();
             return parseFromFile(configFile, extension);
         }
-        // Smart search: classpath first, then file system
+        // 스마트 탐색: 클래스패스 우선, 파일 시스템 폴백
         else {
-            // 1. Try classpath
+            // 1. 클래스패스에서 시도
             InputStream inputStream = getClass().getClassLoader().getResourceAsStream(profileConfigPath);
 
             if (inputStream != null) {
@@ -223,7 +215,7 @@ public class UniversalConfigLoader implements ConfigLoader {
                 return parseFromStream(inputStream, extension);
             }
 
-            // 2. Try file system
+            // 2. 파일 시스템에서 시도
             File configFile = new File(profileConfigPath);
             if (configFile.exists()) {
                 logger.debug("Found profile config in file system: {}", profileConfigPath);
@@ -231,7 +223,7 @@ public class UniversalConfigLoader implements ConfigLoader {
                 return parseFromFile(configFile, extension);
             }
 
-            // Not found
+            // 찾지 못함
             return null;
         }
     }

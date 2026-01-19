@@ -8,7 +8,23 @@ import java.util.Properties;
 import java.util.concurrent.Executor;
 
 /**
- * Connection wrapper for SQL capture
+ * SQL 캡처를 위한 Connection 래퍼 클래스
+ *
+ * JDBC Connection을 래핑하여 Statement, PreparedStatement, CallableStatement 생성 시
+ * 각각의 SQL 캡처 래퍼 클래스로 감싸서 반환합니다.
+ *
+ * <p>주요 기능:</p>
+ * <ul>
+ *   <li>createStatement() → {@link SqlCaptureStatement} 반환</li>
+ *   <li>prepareStatement() → {@link SqlCapturePreparedStatement} 반환</li>
+ *   <li>prepareCall() → {@link SqlCaptureCallableStatement} 반환</li>
+ *   <li>행 수 카운트를 위해 가능한 경우 스크롤 가능한 ResultSet 생성</li>
+ * </ul>
+ *
+ * @see SqlCaptureProxy
+ * @see SqlCaptureStatement
+ * @see SqlCapturePreparedStatement
+ * @see SqlCaptureCallableStatement
  */
 class SqlCaptureConnection implements Connection {
     private final Connection targetConnection;
@@ -39,7 +55,7 @@ class SqlCaptureConnection implements Connection {
 
     @Override
     public PreparedStatement prepareStatement(String sql) throws SQLException {
-        // Create PreparedStatement with SCROLLABLE result set for row counting
+        // 행 수 카운트를 위해 스크롤 가능한 ResultSet으로 PreparedStatement 생성
         try {
             return new SqlCapturePreparedStatement(
                 targetConnection.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY),
@@ -47,7 +63,7 @@ class SqlCaptureConnection implements Connection {
                 config
             );
         } catch (SQLException e) {
-            // Fallback to default if scrollable not supported
+            // 스크롤이 지원되지 않으면 기본값으로 폴백
             return new SqlCapturePreparedStatement(targetConnection.prepareStatement(sql), sql, config);
         }
     }
@@ -57,7 +73,7 @@ class SqlCaptureConnection implements Connection {
         return new SqlCaptureCallableStatement(targetConnection.prepareCall(sql), sql, config);
     }
 
-    // Delegate all other methods
+    // 나머지 모든 메서드는 위임
     @Override public void close() throws SQLException { targetConnection.close(); }
     @Override public boolean isClosed() throws SQLException { return targetConnection.isClosed(); }
     @Override public void commit() throws SQLException { targetConnection.commit(); }
@@ -75,7 +91,7 @@ class SqlCaptureConnection implements Connection {
     @Override public void clearWarnings() throws SQLException { targetConnection.clearWarnings(); }
     @Override public Statement createStatement(int resultSetType, int resultSetConcurrency) throws SQLException { return new SqlCaptureStatement(targetConnection.createStatement(resultSetType, resultSetConcurrency), config, sqlLoggingEnabled); }
     @Override public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
-        // Force SCROLLABLE result set for row counting
+        // 행 수 카운트를 위해 스크롤 가능한 ResultSet 강제 적용
         return new SqlCapturePreparedStatement(
             targetConnection.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY),
             sql,

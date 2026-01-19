@@ -14,13 +14,21 @@ import ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy;
 import ch.qos.logback.core.util.FileSize;
 
 /**
- * DefaultAppenderFactory - AppenderFactory의 기본 구현
+ * AppenderFactory의 기본 구현체
  *
- * 사용법:
- * <pre>
- * AppenderFactory factory = new DefaultAppenderFactory();
- * Appender appender = factory.createConsoleAppender(context, config, "myApp");
- * </pre>
+ * 콘솔, 파일, 에러 파일, 웹훅, 이메일 앱펜더를 생성하는 기본 팩토리입니다.
+ * LoggerInstance에서 설정에 따라 적절한 앱펜더를 생성하는 데 사용됩니다.
+ *
+ * <p>주요 기능:</p>
+ * <ul>
+ *   <li>콘솔 앱펜더 - ConsoleFormatter를 사용한 컬러 출력</li>
+ *   <li>파일 앱펜더 - SizeAndTimeBasedRollingPolicy를 사용한 롤링</li>
+ *   <li>웹훅 앱펜더 - 비동기 HTTP POST 전송</li>
+ *   <li>이메일 앱펜더 - SMTP를 통한 알림 전송</li>
+ * </ul>
+ *
+ * @see AppenderFactory
+ * @see LoggerInstance
  */
 public class DefaultAppenderFactory implements AppenderFactory {
 
@@ -184,7 +192,7 @@ public class DefaultAppenderFactory implements AppenderFactory {
         return appender;
     }
 
-    // ========== Helper Methods ==========
+    // ========== 헬퍼 메서드 ==========
 
     /**
      * 임계값 필터 추가

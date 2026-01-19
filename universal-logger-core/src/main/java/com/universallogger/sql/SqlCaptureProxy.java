@@ -10,17 +10,34 @@ import java.util.logging.Logger;
 
 /**
  * SQL 자동 캡처를 위한 DataSource 프록시
- * 모든 데이터베이스 지원 (MySQL, Oracle, MSSQL, MongoDB JDBC 등)
  *
- * 사용법:
- * - new SqlCaptureProxy(dataSource) - 기본 설정 사용
- * - new SqlCaptureProxy(dataSource, config) - 커스텀 설정 사용
+ * 원본 DataSource를 래핑하여 모든 SQL 실행을 자동으로 캡처하고 로깅합니다.
+ * 모든 JDBC 호환 데이터베이스를 지원합니다 (MySQL, Oracle, MSSQL, PostgreSQL, MongoDB JDBC 등).
  *
- * 관심사 분리를 위해 리팩토링됨:
- * - SqlFormatter: SQL 포맷팅 로직
- * - ParameterSubstitutor: 파라미터 치환 로직
- * - SqlLogger: SQL 로깅 로직
- * - SqlCaptureConnection, SqlCaptureStatement, SqlCapturePreparedStatement: 별도 래퍼 클래스들
+ * <p>동작 원리:</p>
+ * <ol>
+ *   <li>getConnection() 호출 시 {@link SqlCaptureConnection}으로 래핑된 Connection 반환</li>
+ *   <li>Connection에서 Statement/PreparedStatement/CallableStatement 생성 시 각각의 캡처 래퍼로 래핑</li>
+ *   <li>SQL 실행 시 자동으로 쿼리, 파라미터, 실행 시간, 결과 행 수 등을 로깅</li>
+ * </ol>
+ *
+ * <p>사용 예시:</p>
+ * <pre>{@code
+ * // 기존 DataSource 래핑
+ * DataSource originalDataSource = ...;
+ * DataSource proxiedDataSource = new SqlCaptureProxy(originalDataSource, loggerConfig);
+ *
+ * // Spring에서 사용
+ * @Bean
+ * public DataSource dataSource(DataSource originalDataSource, LoggerConfig config) {
+ *     return new SqlCaptureProxy(originalDataSource, config);
+ * }
+ * }</pre>
+ *
+ * @see SqlCaptureConnection
+ * @see SqlCaptureStatement
+ * @see SqlCapturePreparedStatement
+ * @see SqlCaptureCallableStatement
  */
 public class SqlCaptureProxy implements DataSource {
 

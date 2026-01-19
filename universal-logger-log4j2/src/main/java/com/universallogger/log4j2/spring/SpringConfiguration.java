@@ -24,29 +24,32 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static com.universallogger.constants.UniversalLoggerConstants.*;
+import static com.universallogger.constants.LoggerConstants.*;
 
 /**
- * Spring Framework Configuration for Log4j2
+ * Log4j2용 Spring Framework 설정 클래스
  *
- * Imported by @EnableUniversalLogger annotation for Spring Framework (non-Boot) projects.
- * Uses SpringProperties (plain POJO) instead of @ConfigurationProperties.
+ * Spring Framework(비-Boot) 프로젝트에서 @EnableUniversalLogger 어노테이션에 의해 임포트됩니다.
+ * @ConfigurationProperties 대신 SpringProperties(순수 POJO)를 사용합니다.
  *
- * Features:
- * - LoggerConfig bean creation
- * - Profile-based configuration support
- * - Automatic DataSource wrapping for SQL logging
+ * <p>주요 기능:</p>
+ * <ul>
+ *   <li>LoggerConfig 빈 생성</li>
+ *   <li>프로파일 기반 설정 지원</li>
+ *   <li>SQL 로깅을 위한 DataSource 자동 래핑</li>
+ * </ul>
  *
- * Usage:
- * <pre>
- * {@code
+ * <p>사용 예시:</p>
+ * <pre>{@code
  * @Configuration
  * @EnableUniversalLogger
  * public class AppConfig {
- *     // your configuration
+ *     // 사용자 설정
  * }
- * }
- * </pre>
+ * }</pre>
+ *
+ * @see EnableUniversalLogger
+ * @see SpringProperties
  */
 @Configuration
 @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -70,7 +73,9 @@ public class SpringConfiguration implements BeanPostProcessor, ApplicationContex
     }
 
     /**
-     * Create SpringProperties bean
+     * SpringProperties 빈 생성
+     *
+     * @return SpringProperties 인스턴스
      */
     @Bean
     @ConditionalOnMissingBean(LoggerProperties.class)
@@ -86,20 +91,20 @@ public class SpringConfiguration implements BeanPostProcessor, ApplicationContex
     @Override
     public void setImportMetadata(AnnotationMetadata importMetadata) {
         /*
-         * Configuration Priority:
-         * 1. System Property (highest)
-         * 2. @EnableUniversalLogger annotation
-         * 3. Default value
+         * 설정 우선순위:
+         * 1. 시스템 프로퍼티 (최우선)
+         * 2. @EnableUniversalLogger 어노테이션
+         * 3. 기본값
          */
 
-        // Initialize properties if not already done
+        // 프로퍼티가 아직 초기화되지 않은 경우 초기화
         if (this.properties == null) {
             this.properties = springProperties();
         }
 
         String defaultConfigPath = ConfigPath.DEFAULT;
 
-        // Read @EnableUniversalLogger annotation attributes
+        // @EnableUniversalLogger 어노테이션 속성 읽기
         Map<String, Object> attributes = importMetadata.getAnnotationAttributes(
             EnableUniversalLogger.class.getName());
 
@@ -119,7 +124,7 @@ public class SpringConfiguration implements BeanPostProcessor, ApplicationContex
             }
         }
 
-        // System property override (highest priority)
+        // 시스템 프로퍼티 오버라이드 (최우선 순위)
         String systemConfigPath = System.getProperty(PropertyKeys.CONFIG_PATH);
         if (systemConfigPath != null && !systemConfigPath.trim().isEmpty()) {
             properties.setConfigPath(systemConfigPath);
@@ -137,7 +142,9 @@ public class SpringConfiguration implements BeanPostProcessor, ApplicationContex
     }
 
     /**
-     * Create LoggerConfig bean
+     * LoggerConfig 빈 생성
+     *
+     * @return LoggerConfig 인스턴스
      */
     @Bean
     @ConditionalOnMissingBean(LoggerConfig.class)
@@ -170,7 +177,12 @@ public class SpringConfiguration implements BeanPostProcessor, ApplicationContex
     }
 
     /**
-     * Automatically wrap DataSource beans with SqlCaptureProxy
+     * DataSource 빈을 SqlCaptureProxy로 자동 래핑
+     *
+     * @param bean 처리할 빈
+     * @param beanName 빈 이름
+     * @return 래핑된 빈 또는 원본 빈
+     * @throws BeansException 빈 처리 중 오류 발생 시
      */
     @Override
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {

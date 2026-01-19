@@ -1,7 +1,6 @@
-package com.universallogger.log4j2.spring;
+package com.universallogger.logback.spring;
 
-import com.universallogger.config.LoggerConfig;
-import com.universallogger.loaders.UniversalConfigLoader;
+import com.universallogger.logback.LoggerInstance;
 import com.universallogger.sql.SqlCaptureProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,24 +23,29 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Spring Boot Auto Configuration for Log4j2
+ * Logback용 Spring Boot 자동 설정 클래스
  *
- * Automatically activated when universal-logger-log4j2 dependency is present.
- * Uses SpringBootProperties for @ConfigurationProperties-based configuration.
+ * universal-logger-logback 의존성이 존재할 때 자동으로 활성화됩니다.
+ * @ConfigurationProperties 기반의 SpringBootProperties를 사용합니다.
  *
- * Features:
- * - Automatic LoggerConfig bean creation
- * - Profile-based configuration support
- * - Automatic DataSource wrapping for SQL logging
+ * <p>주요 기능:</p>
+ * <ul>
+ *   <li>LoggerInstance 빈 자동 생성</li>
+ *   <li>프로파일 기반 설정 지원</li>
+ *   <li>SQL 로깅을 위한 DataSource 자동 래핑</li>
+ * </ul>
+ *
+ * @see SpringBootProperties
+ * @see LoggerInstance
  */
 @AutoConfiguration
-@ConditionalOnClass({DataSource.class})
+@ConditionalOnClass({LoggerInstance.class, DataSource.class})
 @ConditionalOnProperty(prefix = "universal-logger", name = "enabled", havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(SpringBootProperties.class)
 @Order(Ordered.HIGHEST_PRECEDENCE)
-public class SpringBootAutoConfiguration implements BeanPostProcessor, ApplicationContextAware {
+public class SpringBootConfiguration implements BeanPostProcessor, ApplicationContextAware {
 
-    private static final Logger logger = LoggerFactory.getLogger(SpringBootAutoConfiguration.class);
+    private static final Logger logger = LoggerFactory.getLogger(SpringBootConfiguration.class);
 
     @Value("${spring.application.name:application}")
     private String applicationName;
@@ -49,9 +53,8 @@ public class SpringBootAutoConfiguration implements BeanPostProcessor, Applicati
     private final LoggerProperties properties;
     private final Set<String> wrappedDataSources = new HashSet<>();
     private ApplicationContext applicationContext;
-    private LoggerConfig loggerConfig;
 
-    public SpringBootAutoConfiguration(SpringBootProperties properties) {
+    public SpringBootConfiguration(SpringBootProperties properties) {
         this.properties = properties;
     }
 
@@ -61,35 +64,36 @@ public class SpringBootAutoConfiguration implements BeanPostProcessor, Applicati
     }
 
     /**
-     * Create LoggerConfig bean
+     * LoggerInstance 빈 생성
+     *
+     * @return LoggerInstance 인스턴스
      */
     @Bean
-    @ConditionalOnMissingBean(LoggerConfig.class)
-    public LoggerConfig loggerConfig() {
-        logger.info("Initializing UniversalLogger (Log4j2) for application: {}", applicationName);
+    @ConditionalOnMissingBean(LoggerInstance.class)
+    public LoggerInstance loggerInstance() {
+        logger.info("Initializing UniversalLogger (Logback) for application: {}", applicationName);
 
         String activeProfile = properties.getActiveProfile();
         if (activeProfile != null) {
             logger.info("Active profile: {}", activeProfile);
         }
 
-        try {
-            UniversalConfigLoader configLoader = new UniversalConfigLoader();
-            this.loggerConfig = configLoader.loadWithProfile(
-                properties.getConfigPath(),
-                activeProfile,
-                true
-            );
-            logger.info("UniversalLogger (Log4j2) initialized successfully");
-            return this.loggerConfig;
-        } catch (Exception e) {
-            logger.error("Failed to initialize UniversalLogger (Log4j2)", e);
-            throw new IllegalStateException("Failed to load UniversalLogger configuration", e);
-        }
+        LoggerInstance instance = LoggerInstance.builder()
+                .configPath(properties.getConfigPath())
+                .profile(activeProfile)
+                .build();
+
+        logger.info("UniversalLogger (Logback) initialized successfully");
+        return instance;
     }
 
     /**
-     * Automatically wrap DataSource beans with SqlCaptureProxy
+     * DataSource 빈을 SqlCaptureProxy로 자동 래핑
+     *
+     * @param bean 처리할 빈
+     * @param beanName 빈 이름
+     * @return 래핑된 빈 또는 원본 빈
+     * @throws BeansException 빈 처리 중 오류 발생 시
      */
     @Override
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
@@ -104,20 +108,17 @@ public class SpringBootAutoConfiguration implements BeanPostProcessor, Applicati
 
             wrappedDataSources.add(beanName);
 
-            LoggerConfig config = this.loggerConfig;
-            if (config == null) {
-                try {
-                    config = applicationContext.getBean(LoggerConfig.class);
-                } catch (Exception e) {
-                    logger.warn("LoggerConfig not found, using fallback");
+            LoggerInstance loggerInstance = null;
+            try {
+                loggerInstance = applicationContext.getBean(LoggerInstance.class);
+                if (loggerInstance != null) {
+                    logger.info("SQL logging enabled - DataSource '{}' wrapped", beanName);
                 }
+            } catch (Exception e) {
+                logger.warn("LoggerInstance not found, using fallback");
             }
 
-            if (config != null) {
-                logger.info("SQL logging enabled - DataSource '{}' wrapped", beanName);
-            }
-
-            return new SqlCaptureProxy((DataSource) bean, config);
+            return new SqlCaptureProxy((DataSource) bean, loggerInstance != null ? loggerInstance.getConfig() : null);
         }
         return bean;
     }

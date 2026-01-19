@@ -5,32 +5,13 @@ import com.universallogger.constants.LoggerConstants;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
 /**
- * LoggerConfigBuilder - LoggerConfig를 프로그래매틱하게 생성하기 위한 빌더
+ * 로거 Config 빌더
  *
- * YAML/JSON 설정 파일 대신 코드에서 직접 설정을 구성할 때 사용.
- * Fluent API를 제공하여 가독성 높은 설정 코드 작성 가능.
- *
- * 사용법:
- * <pre>
- * LoggerConfig config = LoggerConfigBuilder.create()
- *     .appName("my-app")
- *     .rootLevel("DEBUG")
- *     .console()
- *         .enabled(true)
- *         .level("INFO")
- *         .format("[%d{HH:mm:ss}] %level %msg%n")
- *         .and()
- *     .file()
- *         .enabled(true)
- *         .path("logs/app.log")
- *         .maxSize("10MB")
- *         .maxFiles(30)
- *         .and()
- *     .build();
- * </pre>
+ * @deprecated 더 이상 사용되지 않습니다. 해당 프로젝트에서는 LoggerConfig만 사용합니다.
+ * @see LoggerConfigBuilder
  */
+@Deprecated
 public class LoggerConfigBuilder {
 
     private String version = LoggerConstants.Version.CURRENT;

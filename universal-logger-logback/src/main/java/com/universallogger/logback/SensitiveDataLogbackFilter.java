@@ -9,19 +9,24 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Logback Filter for sensitive data masking
+ * 민감 정보 마스킹을 위한 Logback 필터
  *
  * SLF4J를 통한 모든 로그에 자동으로 민감 정보 마스킹을 적용합니다.
+ * 정규표현식 패턴을 사용하여 비밀번호, 신용카드 번호 등의 민감 정보를 마스킹합니다.
  *
- * 설정 예시:
- * <pre>
+ * <p>설정 예시 (universal-logger.yml):</p>
+ * <pre>{@code
  * filters:
  *   sensitiveData:
  *     enabled: true
  *     patterns:
  *       - regex: "password=\\w+"
  *         replace: "password=***"
- * </pre>
+ *       - regex: "\\d{4}-\\d{4}-\\d{4}-\\d{4}"
+ *         replace: "****-****-****-****"
+ * }</pre>
+ *
+ * @see LoggerConfig.FiltersConfig.SensitiveDataConfig
  */
 public class SensitiveDataLogbackFilter extends Filter<ILoggingEvent> {
 
