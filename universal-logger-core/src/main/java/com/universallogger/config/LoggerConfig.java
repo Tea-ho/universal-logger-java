@@ -163,8 +163,10 @@ public class LoggerConfig {
      * 출력 설정 병합
      */
     private void mergeOutputConfig(OutputConfig base, OutputConfig override) {
-        // enabled 플래그는 항상 덮어씀
-        base.setEnabled(override.isEnabled());
+        // enabled 플래그는 명시적으로 설정된 경우에만 덮어씀
+        if (override.getEnabled() != null) {
+            base.setEnabled(override.getEnabled());
+        }
 
         if (override.getLevel() != null && !override.getLevel().isEmpty()) {
             base.setLevel(override.getLevel());
@@ -373,7 +375,7 @@ public class LoggerConfig {
      * 기본값은 universal-logger-defaults.yml에서 로드됨
      */
     public static class OutputConfig {
-        private boolean enabled;
+        private Boolean enabled;
         private String level;
         private String format;
         private String path;
@@ -384,10 +386,14 @@ public class LoggerConfig {
 
         // Getter 및 Setter
         public boolean isEnabled() {
+            return enabled != null && enabled;
+        }
+
+        public Boolean getEnabled() {
             return enabled;
         }
 
-        public void setEnabled(boolean enabled) {
+        public void setEnabled(Boolean enabled) {
             this.enabled = enabled;
         }
 
