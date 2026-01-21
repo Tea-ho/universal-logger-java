@@ -309,9 +309,6 @@ outputs:
     enabled: true
 ```
 
-> 환경별 설정 파일은 공통 설정을 기준으로 병합되어 적용되며,
-> 동일한 항목이 있을 경우 **환경별 설정이 우선 적용**됩니다.
-
 #### 프로파일 활성화 방법
 
 **Spring Boot 환경**
@@ -327,43 +324,20 @@ spring:
 ```properties
 spring.profiles.active=prod
 ```
-
-**Tomcat 환경**
-
-`setenv.sh` (Linux) 또는 `setenv.bat` (Windows)에서 설정합니다.
-
-```bash
-# Linux
-export CATALINA_OPTS="$CATALINA_OPTS -Dspring.profiles.active=prod"
-# 또는
-export CATALINA_OPTS="$CATALINA_OPTS -Dlogger.profile=prod"
-```
-
-```batch
-:: Windows
-set CATALINA_OPTS=%CATALINA_OPTS% -Dspring.profiles.active=prod
-```
-
-**환경 변수**
-
-```bash
-export SPRING_PROFILES_ACTIVE=prod
-```
+**Spring 환경**
 
 **web.xml**
 
 ```xml
 <context-param>
     <param-name>spring.profiles.active</param-name>
-    <param-value>prod</param-value>
+    <param-value>${environment}</param-value>
 </context-param>
 ```
 
 > **프로파일 탐지 우선순위**:
 > 1. `logger.profile` 시스템 속성 (명시적 오버라이드)
 > 2. `spring.profiles.active` 시스템 속성
-> 3. Spring Environment의 activeProfiles
-> 4. 프로파일 미설정 시 기본 설정만 사용
 
 ### Spring Boot 설정
 
