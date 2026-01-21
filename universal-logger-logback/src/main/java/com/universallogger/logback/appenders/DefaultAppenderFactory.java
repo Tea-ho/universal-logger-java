@@ -92,6 +92,7 @@ public class DefaultAppenderFactory implements AppenderFactory {
         rollingPolicy.start();
 
         appender.setRollingPolicy(rollingPolicy);
+        appender.setTriggeringPolicy(rollingPolicy);
 
         // 파일 포맷터 설정
         FileFormatter formatter = new FileFormatter();
@@ -135,6 +136,7 @@ public class DefaultAppenderFactory implements AppenderFactory {
         rollingPolicy.start();
 
         appender.setRollingPolicy(rollingPolicy);
+        appender.setTriggeringPolicy(rollingPolicy);
 
         // 파일 포맷터 설정
         FileFormatter formatter = new FileFormatter();
