@@ -73,7 +73,13 @@ public class SpringBootConfiguration implements BeanPostProcessor, ApplicationCo
     @Bean
     @ConditionalOnMissingBean(LoggerConfig.class)
     public LoggerConfig loggerConfig() {
-        logger.info("Initializing UniversalLogger (Log4j2) for application: {}", applicationName);
+        // applicationName 결정: properties > spring.application.name
+        String appName = properties.getApplicationName();
+        if (appName == null || appName.isEmpty()) {
+            appName = applicationName;
+        }
+
+        logger.info("Initializing UniversalLogger (Log4j2) for application: {}", appName);
 
         String activeProfile = properties.getActiveProfile();
         if (activeProfile != null) {
@@ -87,6 +93,13 @@ public class SpringBootConfiguration implements BeanPostProcessor, ApplicationCo
                 activeProfile,
                 true
             );
+
+            // applicationName이 설정된 경우 적용 (YAML 설정보다 우선)
+            if (appName != null && !appName.equals("application")) {
+                this.loggerConfig.getGlobal().setAppName(appName);
+                logger.debug("Application name overridden: {}", appName);
+            }
+
             logger.info("UniversalLogger (Log4j2) initialized successfully");
             return this.loggerConfig;
         } catch (Exception e) {

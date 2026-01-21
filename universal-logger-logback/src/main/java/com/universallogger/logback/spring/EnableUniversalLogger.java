@@ -13,7 +13,11 @@ import java.lang.annotation.*;
  * <p>사용 예시:</p>
  * <pre>{@code
  * @Configuration
- * @EnableUniversalLogger
+ * @EnableUniversalLogger(
+ *     applicationName = "MyApp",
+ *     configPath = "config/universal-logger.yml",
+ *     enableSqlCapture = true
+ * )
  * public class AppConfig {
  *     // 사용자 빈 정의
  * }
@@ -26,12 +30,13 @@ import java.lang.annotation.*;
  *   <li>SQL 로깅을 위한 DataSource 빈 자동 래핑 (활성화된 경우)</li>
  * </ul>
  *
- * <p>설정 방법:</p>
- * <ul>
- *   <li>기본 설정 경로: config/universal-logger.yml</li>
- *   <li>시스템 프로퍼티로 오버라이드: -Duniversal-logger.config-path=custom/path.yml</li>
- *   <li>프로파일 지원: -Dspring.profiles.active=dev (universal-logger-dev.yml 로드)</li>
- * </ul>
+ * <p>설정 우선순위:</p>
+ * <ol>
+ *   <li>시스템 프로퍼티 (최우선)</li>
+ *   <li>@EnableUniversalLogger 어노테이션 속성</li>
+ *   <li>YAML 설정 파일 (global.appName)</li>
+ *   <li>기본값</li>
+ * </ol>
  *
  * @see SpringConfiguration
  */
@@ -40,6 +45,16 @@ import java.lang.annotation.*;
 @Documented
 @Import(SpringConfiguration.class)
 public @interface EnableUniversalLogger {
+
+    /**
+     * 애플리케이션 이름
+     *
+     * 로그 파일 경로의 {appName} 플레이스홀더 치환에 사용됩니다.
+     * 빈 문자열("")인 경우 spring.application.name 또는 YAML 설정값이 사용됩니다.
+     *
+     * @return 애플리케이션 이름
+     */
+    String applicationName() default "";
 
     /**
      * 사용자 정의 설정 파일 경로

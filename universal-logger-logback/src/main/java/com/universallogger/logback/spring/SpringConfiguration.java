@@ -92,7 +92,9 @@ public class SpringConfiguration implements BeanPostProcessor, ApplicationContex
          * 설정 우선순위:
          * 1. 시스템 프로퍼티 (최우선)
          * 2. @EnableUniversalLogger 어노테이션
-         * 3. 기본값
+         * 3. spring.application.name (Spring 환경)
+         * 4. YAML 설정 파일 (global.appName)
+         * 5. 기본값
          */
 
         // 프로퍼티가 아직 초기화되지 않은 경우 초기화
@@ -107,6 +109,13 @@ public class SpringConfiguration implements BeanPostProcessor, ApplicationContex
             EnableUniversalLogger.class.getName());
 
         if (attributes != null) {
+            // applicationName 처리
+            String annotationAppName = (String) attributes.get("applicationName");
+            if (annotationAppName != null && !annotationAppName.trim().isEmpty()) {
+                properties.setApplicationName(annotationAppName.trim());
+                logger.debug("Using applicationName from @EnableUniversalLogger: {}", annotationAppName);
+            }
+
             String annotationConfigPath = (String) attributes.get("configPath");
             if (annotationConfigPath != null &&
                 !annotationConfigPath.trim().isEmpty() &&
@@ -122,7 +131,21 @@ public class SpringConfiguration implements BeanPostProcessor, ApplicationContex
             }
         }
 
+        // applicationName이 설정되지 않은 경우 spring.application.name 사용
+        if (properties.getApplicationName() == null || properties.getApplicationName().isEmpty()) {
+            if (applicationName != null && !applicationName.equals("application")) {
+                properties.setApplicationName(applicationName);
+                logger.debug("Using applicationName from spring.application.name: {}", applicationName);
+            }
+        }
+
         // 시스템 프로퍼티 오버라이드 (최우선 순위)
+        String systemAppName = System.getProperty(PropertyKeys.APPLICATION_NAME);
+        if (systemAppName != null && !systemAppName.trim().isEmpty()) {
+            properties.setApplicationName(systemAppName.trim());
+            logger.info("Application name overridden by system property: {}", systemAppName);
+        }
+
         String systemConfigPath = System.getProperty(PropertyKeys.CONFIG_PATH);
         if (systemConfigPath != null && !systemConfigPath.trim().isEmpty()) {
             properties.setConfigPath(systemConfigPath);
@@ -135,6 +158,7 @@ public class SpringConfiguration implements BeanPostProcessor, ApplicationContex
             logger.info("SQL capture overridden by system property: {}", systemEnableSql);
         }
 
+        logger.info("Final applicationName: {}", properties.getApplicationName());
         logger.info("Final configPath: {}", properties.getConfigPath());
         logger.info("Final enableSqlCapture: {}", properties.getSqlCapture().isEnabled());
     }
@@ -151,7 +175,9 @@ public class SpringConfiguration implements BeanPostProcessor, ApplicationContex
             this.properties = springProperties();
         }
 
-        logger.info("Initializing UniversalLogger (Logback) for application: {}", applicationName);
+        String appName = properties.getApplicationName();
+        logger.info("Initializing UniversalLogger (Logback) for application: {}",
+            appName != null ? appName : applicationName);
         logger.info("Config path: {}", properties.getConfigPath());
 
         String activeProfile = properties.getActiveProfile();
@@ -159,10 +185,16 @@ public class SpringConfiguration implements BeanPostProcessor, ApplicationContex
             logger.info("Active profile: {}", activeProfile);
         }
 
-        LoggerInstance instance = LoggerInstance.builder()
+        LoggerInstance.Builder builder = LoggerInstance.builder()
                 .configPath(properties.getConfigPath())
-                .profile(activeProfile)
-                .build();
+                .profile(activeProfile);
+
+        // applicationName이 설정된 경우 적용
+        if (appName != null && !appName.isEmpty()) {
+            builder.applicationName(appName);
+        }
+
+        LoggerInstance instance = builder.build();
 
         logger.info("UniversalLogger (Logback) initialized successfully");
         return instance;

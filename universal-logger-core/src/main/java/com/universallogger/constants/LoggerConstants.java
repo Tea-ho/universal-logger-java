@@ -120,7 +120,11 @@ public final class LoggerConstants {
         // Spring profile (standard Spring property)
         public static final String SPRING_PROFILES_ACTIVE = "spring.profiles.active";
 
+        // Spring application name
+        public static final String SPRING_APPLICATION_NAME = "spring.application.name";
+
         // Universal Logger configuration
+        public static final String APPLICATION_NAME = "universal-logger.application-name";
         public static final String CONFIG_PATH = "universal-logger.config-path";
         public static final String SQL_CAPTURE_ENABLED = "universal-logger.sql-capture.enabled";
 

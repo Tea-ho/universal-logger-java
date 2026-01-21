@@ -71,17 +71,29 @@ public class SpringBootConfiguration implements BeanPostProcessor, ApplicationCo
     @Bean
     @ConditionalOnMissingBean(LoggerInstance.class)
     public LoggerInstance loggerInstance() {
-        logger.info("Initializing UniversalLogger (Logback) for application: {}", applicationName);
+        // applicationName 결정: properties > spring.application.name
+        String appName = properties.getApplicationName();
+        if (appName == null || appName.isEmpty()) {
+            appName = applicationName;
+        }
+
+        logger.info("Initializing UniversalLogger (Logback) for application: {}", appName);
 
         String activeProfile = properties.getActiveProfile();
         if (activeProfile != null) {
             logger.info("Active profile: {}", activeProfile);
         }
 
-        LoggerInstance instance = LoggerInstance.builder()
+        LoggerInstance.Builder builder = LoggerInstance.builder()
                 .configPath(properties.getConfigPath())
-                .profile(activeProfile)
-                .build();
+                .profile(activeProfile);
+
+        // applicationName이 설정된 경우 적용
+        if (appName != null && !appName.equals("application")) {
+            builder.applicationName(appName);
+        }
+
+        LoggerInstance instance = builder.build();
 
         logger.info("UniversalLogger (Logback) initialized successfully");
         return instance;

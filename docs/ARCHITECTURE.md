@@ -15,14 +15,14 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     Application Layer                        │
+│                     Application Layer                       │
 │  (User Code with SLF4J API: @Slf4j, log.info(), etc.)       │
 └───────────────────────────┬─────────────────────────────────┘
                             │
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│                    SLF4J Abstraction Layer                   │
-│              (org.slf4j.Logger interface)                    │
+│                    SLF4J Abstraction Layer                  │
+│              (org.slf4j.Logger interface)                   │
 └───────────────────────────┬─────────────────────────────────┘
                             │
                 ┌───────────┴───────────┐
@@ -30,41 +30,43 @@
                 ↓                       ↓
     ┌─────────────────────┐  ┌─────────────────────┐
     │   Logback Binding   │  │   Log4j2 Binding    │
-    │   (사용자 선택)      │  │   (사용자 선택)      │
+    │   (사용자 선택)       │  │   (사용자 선택)       │
     └──────────┬──────────┘  └──────────┬──────────┘
                │                        │
                ↓                        ↓
 ┌─────────────────────────────────────────────────────────────┐
-│              Universal Logger Multi-Module                   │
-│                                                              │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │         universal-logger-core (공통 모듈)            │  │
-│  │  • 설정 로더 (YAML/XML/JSON)                         │  │
-│  │  • 공통 모델 (LoggerConfig)                          │  │
-│  │  • SQL 캡처 프록시                                    │  │
-│  │  • 유틸리티 (파서, 밸리데이터)                        │  │
-│  └──────────────────────────────────────────────────────┘  │
-│                                                              │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │      universal-logger-logback (Logback 구현)         │  │
-│  │  • Logback Configurator (ServiceLoader)              │  │
-│  │  • Custom Appenders (Email, Webhook)                 │  │
-│  │  • Spring Boot Auto-Configuration                    │  │
-│  │  • Spring Integration                                │  │
-│  └──────────────────────────────────────────────────────┘  │
-│                                                              │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │      universal-logger-log4j2 (Log4j2 구현)           │  │
-│  │  • Log4j2 ConfigurationFactory (SPI)                 │  │
-│  │  • Custom Plugin Appenders (Email, Webhook)          │  │
-│  │  • Spring Boot Auto-Configuration                    │  │
-│  │  • Spring Integration                                │  │
-│  └──────────────────────────────────────────────────────┘  │
+│              Universal Logger Multi-Module                  │
+│                                                             │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │         universal-logger-core (Common)               │   │
+│  │  • ConfigLoader                                      │   │
+│  │  • LoggerConfig (설정 모델)                           │   │
+│  │  • SQL Capture (Proxy, Connection, Statement)        │   │
+│  │  • SqlLogger / SqlFormatter / ParameterSubstitutor   │   │
+│  │  • ProfileResolver (프로파일 해석)                     │   │
+│  │  • LoggerConstants (상수)                             │   │
+│  └──────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │      universal-logger-logback                        │   │
+│  │  • LoggerInstance (핵심 로거 인스턴스)                  │   │
+│  │  • AppenderFactory / DefaultAppenderFactory          │   │
+│  │  • Custom Appenders (Email, Webhook)                 │   │
+│  │  • Formatters (Console, File)                        │   │
+│  │  • Spring / Spring Boot                              │   │
+│  └──────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │      universal-logger-log4j2                         │   │
+│  │  • Log4j2 ConfigurationFactory (SPI)                 │   │
+│  │  • Custom Plugin Appenders (Email, Webhook)          │   │
+│  │  • Spring / Spring Boot                              │   │
+│  └──────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
                             │
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│                      Output Destinations                     │
+│                      Output Destinations                    │
 │  • Console (STDOUT/STDERR)                                  │
 │  • File (Rolling, Compression)                              │
 │  • Email (SMTP)                                             │
@@ -76,36 +78,43 @@
 
 ### 1. universal-logger-core
 
-**역할**: 공통 기능 및 코어 로직
+**역할**: 공통 기능 및 코어 로직 (로깅 프레임워크 독립적)
 
 **주요 컴포넌트**:
 ```
 universal-logger-core/
 ├── config/
-│   ├── LoggerConfig.java              # 설정 모델 (POJO)
-│   ├── LoggerConfigBuilder.java       # Builder 패턴
-│   └── (Inner classes: OutputConfig, EmailConfig, etc.)
+│   ├── LoggerConfig.java                   # 설정 모델
+├── constants/
+│   └── LoggerConstants.java                # 상수 정의 (PropertyKeys, ConfigPath 등)
 ├── loaders/
-│   ├── ConfigLoader.java              # 인터페이스
-│   └── UniversalConfigLoader.java     # 구현체
+│   ├── ConfigLoader.java                   # 설정 로더 인터페이스
+│   └── UniversalConfigLoader.java          # 설정 로더 구현체
 ├── parsers/
-│   ├── ConfigParser.java              # 인터페이스
-│   ├── YamlParser.java                # YAML 파싱
-│   ├── XmlParser.java                 # XML 파싱
-│   └── JsonParser.java                # JSON 파싱
+│   ├── ConfigParser.java                   # 파서 인터페이스
+│   ├── YamlParser.java                     # YAML 파싱
+│   ├── XmlParser.java                      # XML 파싱
+│   └── JsonParser.java                     # JSON 파싱
 ├── sql/
-│   ├── SqlCaptureProxy.java           # DataSource 프록시
-│   ├── SqlCaptureConnection.java      # Connection 래퍼
-│   ├── SqlCapturePreparedStatement.java
-│   ├── SqlCaptureStatement.java
-│   ├── SqlLogger.java                 # SQL 로깅 로직
-│   ├── SqlFormatter.java              # SQL 포매팅
-│   └── ParameterSubstitutor.java      # 파라미터 치환
+│   ├── SqlCaptureProxy.java                # DataSource 프록시
+│   ├── SqlCaptureConnection.java           # Connection 래퍼
+│   ├── SqlCaptureStatement.java            # Statement 래퍼
+│   ├── SqlCapturePreparedStatement.java    # PreparedStatement 래퍼
+│   ├── SqlCaptureCallableStatement.java    # CallableStatement 래퍼
+│   ├── RowCountingResultSet.java           # ResultSet 행 수 추적
+│   ├── SqlLogger.java                      # SQL 로깅 인터페이스
+│   ├── Slf4jSqlLogger.java                 # SqlLogger SLF4J 구현체
+│   ├── SqlFormatter.java                   # SQL 포매팅 인터페이스
+│   ├── MyBatisSqlFormatter.java            # SqlFormatter MyBatis 스타일 구현체
+│   ├── ParameterSubstitutor.java           # 파라미터 치환 인터페이스
+│   └── DefaultParameterSubstitutor.java    # ParameterSubstitutor 기본 구현체
+├── utils/
+│   └── ProfileResolver.java                # 프로파일 해석 유틸리티
 ├── validation/
-│   └── ConfigValidator.java           # 설정 검증
+│   └── ConfigValidator.java                # 설정 검증
 └── resources/
     └── defaults/
-        └── universal-logger-defaults.yml  # 기본 설정
+        └── universal-logger-defaults.yml   # 기본 설정
 ```
 
 **의존성**:
@@ -115,30 +124,38 @@ universal-logger-core/
 
 **특징**:
 - 로깅 프레임워크 독립적
+- 인터페이스 기반 설계 (SqlLogger, SqlFormatter, ParameterSubstitutor)
 - 재사용 가능한 공통 로직
-- 불변 설정 객체
 - 스레드 안전
 
 ### 2. universal-logger-logback
 
-**역할**: Logback 구현 및 통합
+**역할**: Logback 구현 및 Spring 통합
 
 **주요 컴포넌트**:
 ```
 universal-logger-logback/
-├── configurator/
-│   └── LogbackConfigurator.java       # ServiceLoader 진입점
+├── LoggerInstance.java                # 핵심 로거 인스턴스 (Builder 패턴)
+├── SensitiveDataLogbackFilter.java    # 민감 정보 마스킹 필터
 ├── appenders/
+│   ├── AppenderFactory.java           # 앱펜더 팩토리 인터페이스
+│   ├── DefaultAppenderFactory.java    # 앱펜더 팩토리 기본 구현체
 │   ├── EmailAppender.java             # 이메일 Appender
-│   └── WebhookAppender.java           # 웹훅 Appender
+│   └── WebhookAppender.java           # 웹훅 Appender (비동기)
+├── formatters/
+│   ├── ConsoleFormatter.java          # 콘솔 포맷터 (컬러 지원)
+│   └── FileFormatter.java             # 파일 포맷터
 ├── spring/
-│   ├── UniversalLoggerAutoConfiguration.java    # Spring Boot Auto-Config
-│   ├── UniversalLoggerConfiguration.java        # Spring Config
-│   └── UniversalLoggerProperties.java           # @ConfigurationProperties
+│   ├── EnableUniversalLogger.java     # @EnableUniversalLogger 어노테이션
+│   ├── SpringConfiguration.java       # Spring Framework 설정
+│   ├── SpringBootConfiguration.java   # Spring Boot 자동 설정
+│   ├── LoggerProperties.java          # 프로퍼티 인터페이스
+│   ├── SpringProperties.java          # Spring Framework 프로퍼티 구현체
+│   └── SpringBootProperties.java      # Spring Boot 프로퍼티 구현체
 └── resources/
     └── META-INF/
         ├── services/
-        │   └── ch.qos.logback.classic.spi.Configurator  # ServiceLoader
+        │   └── ch.qos.logback.classic.spi.Configurator
         └── spring/
             └── org.springframework.boot.autoconfigure.AutoConfiguration.imports
 ```
@@ -146,7 +163,7 @@ universal-logger-logback/
 **동작 방식**:
 1. **ServiceLoader 자동 발견**: Logback이 시작 시 `Configurator` SPI를 통해 자동 로드
 2. **설정 로드 및 병합**: YAML 파일 + 기본값 병합
-3. **Logback 프로그래밍 설정**: LoggerContext API로 Appender/Logger 구성
+3. **LoggerInstance 빌더**: AppenderFactory를 통해 Appender 생성 및 구성
 4. **Spring Boot 자동 설정**: BeanPostProcessor를 통해 DataSource 자동 래핑
 
 **의존성**:
@@ -158,7 +175,7 @@ universal-logger-logback/
 
 ### 3. universal-logger-log4j2
 
-**역할**: Log4j2 구현 및 통합
+**역할**: Log4j2 구현 및 Spring 통합
 
 **주요 컴포넌트**:
 ```
@@ -168,9 +185,12 @@ universal-logger-log4j2/
 │   ├── EmailAppender.java             # @Plugin Appender
 │   └── WebhookAppender.java           # @Plugin Appender
 ├── spring/
-│   ├── UniversalLoggerAutoConfiguration.java    # Spring Boot Auto-Config
-│   ├── UniversalLoggerConfiguration.java        # Spring Config
-│   └── UniversalLoggerProperties.java           # @ConfigurationProperties
+│   ├── EnableUniversalLogger.java     # @EnableUniversalLogger 어노테이션
+│   ├── SpringConfiguration.java       # Spring Framework 설정
+│   ├── SpringBootConfiguration.java   # Spring Boot 자동 설정
+│   ├── LoggerProperties.java          # 프로퍼티 인터페이스
+│   ├── SpringProperties.java          # Spring Framework 프로퍼티 구현체
+│   └── SpringBootProperties.java      # Spring Boot 프로퍼티 구현체
 └── resources/
     └── META-INF/
         ├── services/
@@ -196,7 +216,7 @@ universal-logger-log4j2/
 
 ### 1. 설정 시스템
 
-#### ConfigLoader
+#### ConfigLoader 인터페이스
 ```java
 public interface ConfigLoader {
     LoggerConfig load(String configPath);
@@ -240,41 +260,42 @@ config/universal-logger.yml             (base config)
 config/universal-logger-{profile}.yml   (profile-specific, optional)
 ```
 
-**예시**:
-- Profile: "prod"
-- Base: `config/universal-logger.yml`
-- Profile: `config/universal-logger-prod.yml` (자동 생성된 경로)
-
-#### LoggerConfig
+#### LoggerConstants
 ```java
-public class LoggerConfig {
-    private GlobalConfig global;
-    private Map<String, String> levels;
-    private SqlConfig sql;
-    private Map<String, OutputConfig> outputs;
-    private FiltersConfig filters;
-    private PerformanceConfig performance;
-    // ... getters/setters
+public final class LoggerConstants {
+    public static final class ConfigPath {
+        public static final String DEFAULT = "config/universal-logger.yml";
+    }
+
+    public static final class PropertyKeys {
+        public static final String CONFIG_PATH = "universal-logger.config-path";
+        public static final String SQL_CAPTURE_ENABLED = "universal-logger.sql-capture.enabled";
+        public static final String LOGGER_PROFILE = "logger.profile";
+        public static final String SPRING_PROFILES_ACTIVE = "spring.profiles.active";
+    }
+
+    public static final class EnvironmentKeys {
+        public static final String SPRING_PROFILES_ACTIVE = "SPRING_PROFILES_ACTIVE";
+    }
 }
 ```
 
-**특징**:
-- 불변 객체 (Thread-safe)
-- Builder 패턴 지원
-- Jackson 어노테이션 기반 직렬화/역직렬화
+**역할**: 프로젝트 전체에서 사용하는 상수 정의
 
 ### 2. SQL 캡처 시스템
 
 #### SqlCaptureProxy
 ```java
 public class SqlCaptureProxy implements DataSource {
-    private final DataSource delegate;
+    private final DataSource targetDataSource;
     private final LoggerConfig config;
+
+    public SqlCaptureProxy(DataSource targetDataSource, LoggerConfig config) { ... }
 
     @Override
     public Connection getConnection() throws SQLException {
-        Connection conn = delegate.getConnection();
-        return new SqlCaptureConnection(conn, config);
+        Connection connection = targetDataSource.getConnection();
+        return enabled ? new SqlCaptureConnection(connection, config) : connection;
     }
 }
 ```
@@ -286,82 +307,132 @@ DataSource (원본)
 SqlCaptureProxy
     ↓ getConnection()
 SqlCaptureConnection
-    ↓ prepareStatement()
-SqlCapturePreparedStatement
+    ↓ prepareStatement() / createStatement() / prepareCall()
+SqlCapturePreparedStatement / SqlCaptureStatement / SqlCaptureCallableStatement
     ↓ execute()
-    → SQL 로깅 (SqlLogger)
-    → 파라미터 치환 (ParameterSubstitutor)
+    → SQL 로깅 (SqlLogger 인터페이스)
+    → 파라미터 치환 (ParameterSubstitutor 인터페이스)
+    → SQL 포매팅 (SqlFormatter 인터페이스)
     → 실행 시간 측정
-    → 결과 행 수 로깅
+    → 결과 행 수 로깅 (RowCountingResultSet)
 ```
 
-**지원 기능**:
-- PreparedStatement 파라미터 캡처
-- SQL 포매팅 (가독성 향상)
-- 파라미터 치환 (? → 실제 값)
-- 실행 시간 측정
-- 결과 행 수 추적
-
-### 3. Appender 시스템
-
-#### Logback Appenders
-```java
-public class EmailAppender extends AppenderBase<ILoggingEvent> {
-    @Override
-    protected void append(ILoggingEvent event) {
-        // JavaMail API로 이메일 전송
-    }
-}
-
-public class WebhookAppender extends AppenderBase<ILoggingEvent> {
-    @Override
-    protected void append(ILoggingEvent event) {
-        // Apache HttpClient로 HTTP POST
-    }
-}
-```
-
-#### Log4j2 Appenders
-```java
-@Plugin(name = "UniversalEmail", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE)
-public class EmailAppender extends AbstractAppender {
-    @Override
-    public void append(LogEvent event) {
-        // JavaMail API로 이메일 전송
-    }
-}
-
-@Plugin(name = "UniversalWebhook", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE)
-public class WebhookAppender extends AbstractAppender {
-    @Override
-    public void append(LogEvent event) {
-        // Apache HttpClient로 HTTP POST
-    }
-}
-```
 
 ### 4. Spring 통합
 
-#### Auto-Configuration (Spring Boot)
+#### @EnableUniversalLogger 어노테이션
+```java
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Import(SpringConfiguration.class)
+public @interface EnableUniversalLogger {
+    String applicationName() default "";  // 애플리케이션 이름
+    String configPath() default LoggerConstants.ConfigPath.DEFAULT;
+    boolean enableSqlCapture() default true;
+}
+```
+
+**역할**: Spring Framework 프로젝트에서 Universal Logger 활성화
+
+**속성**:
+- `applicationName`: 로그 파일 경로의 `{appName}` 플레이스홀더 치환에 사용
+- `configPath`: 설정 파일 경로
+- `enableSqlCapture`: SQL 캡처 활성화 여부
+
+#### LoggerProperties 인터페이스
+```java
+public interface LoggerProperties {
+    boolean isEnabled();
+    String getApplicationName();
+    void setApplicationName(String applicationName);
+    String getConfigPath();
+    void setConfigPath(String configPath);
+    SqlCaptureConfig getSqlCapture();
+    String getActiveProfile();
+}
+```
+
+**구현체**:
+- `SpringProperties` - Spring Framework용
+- `SpringBootProperties` - Spring Boot용 (@ConfigurationProperties)
+
+#### Spring Framework Configuration
+
+Spring Framework(비-Boot) 프로젝트에서 Universal Logger를 사용하기 위한 설정입니다.
+
+**사용 방법**:
+```java
+@Configuration
+@EnableUniversalLogger(
+    applicationName = "MyApp",
+    configPath = "config/universal-logger.yml",
+    enableSqlCapture = true
+)
+public class AppConfig {
+    // 애플리케이션 설정
+}
+```
+
+**SpringConfiguration 클래스**:
+```java
+@Configuration
+public class SpringConfiguration implements ImportAware, EnvironmentAware, BeanPostProcessor {
+
+    private String configPath;
+    private boolean enableSqlCapture;
+    private Environment environment;
+
+    @Override
+    public void setImportMetadata(AnnotationMetadata metadata) { ... }
+
+    @Override
+    public void setEnvironment(Environment environment) { ... }
+
+    @Bean
+    public SpringProperties springProperties() { ... }
+
+    @Bean
+    public LoggerConfig loggerConfig(SpringProperties properties) { ... }
+
+    @Override
+    public Object postProcessAfterInitialization(Object bean, String beanName) { ... }
+}
+```
+
+**주요 특징**:
+- `ImportAware`: `@EnableUniversalLogger` 어노테이션의 속성값(configPath, enableSqlCapture) 읽기
+- `EnvironmentAware`: Spring Environment 주입 (프로파일 해석용)
+- `BeanPostProcessor`: DataSource 자동 래핑
+- 순수 POJO 기반 `SpringProperties` 사용 (Boot의 @ConfigurationProperties 없이)
+
+**Spring Framework vs Spring Boot 비교**:
+
+| 항목 | Spring Framework | Spring Boot |
+|------|------------------|-------------|
+| 활성화 방법 | `@EnableUniversalLogger` | 자동 (Auto-Configuration) |
+| 프로퍼티 클래스 | `SpringProperties` | `SpringBootProperties` (@ConfigurationProperties) |
+| 설정 소스 | 어노테이션 속성 | application.yml/properties |
+| 설정 소스 | 어노테이션 속성 | application.yml/properties |
+| Environment 주입 | `setEnvironment()` 수동 주입 | `@Autowired` 자동 주입 |
+| DataSource 래핑 | `BeanPostProcessor` | `BeanPostProcessor` |
+
+#### Spring Boot Auto-Configuration
 ```java
 @AutoConfiguration
 @ConditionalOnClass({DataSource.class})
 @ConditionalOnProperty(prefix = "universal-logger", name = "enabled", havingValue = "true", matchIfMissing = true)
-@EnableConfigurationProperties(UniversalLoggerProperties.class)
-public class UniversalLoggerAutoConfiguration implements BeanPostProcessor {
+@EnableConfigurationProperties(SpringBootProperties.class)
+public class SpringBootConfiguration implements BeanPostProcessor, ApplicationContextAware {
 
     @Bean
-    public LoggerConfig loggerConfig() {
-        // 설정 로드 및 Bean 등록
-    }
+    @ConditionalOnMissingBean
+    public LoggerConfig loggerConfig() { ... }  // Logback
+    // 또는
+    public LoggerInstance loggerInstance() { ... }  // Log4j2
 
     @Override
-    public Object postProcessAfterInitialization(Object bean, String beanName) {
-        if (bean instanceof DataSource) {
-            return new SqlCaptureProxy((DataSource) bean, config);
-        }
-        return bean;
-    }
+    public Object postProcessAfterInitialization(Object bean, String beanName) { ... }
 }
 ```
 
@@ -369,7 +440,7 @@ public class UniversalLoggerAutoConfiguration implements BeanPostProcessor {
 1. `@AutoConfiguration`: Spring Boot가 자동으로 로드
 2. `@ConditionalOnClass`: DataSource 클래스가 있을 때만 활성화
 3. `@ConditionalOnProperty`: application.yml 설정으로 제어 가능
-4. `BeanPostProcessor`: DataSource Bean을 자동으로 래핑
+4. `BeanPostProcessor`: DataSource Bean을 자동으로 SqlCaptureProxy로 래핑
 
 ## 설계 원칙
 
@@ -393,13 +464,16 @@ Logback / Log4j2 (구현체)
 
 ### 3. 개방-폐쇄 원칙 (Open-Closed Principle)
 
-- **확장에 열려있음**: 새로운 Appender, Parser 추가 가능
-- **수정에 닫혀있음**: 기존 코드 변경 없이 확장
+- **확장에 열려있음**: 새로운 Appender, Parser, SqlLogger, SqlFormatter 추가 가능
+- **수정에 닫혀있음**: 기존 코드 변경 없이 인터페이스 구현으로 확장
 
 ### 4. 단일 책임 원칙 (Single Responsibility)
 
 - `ConfigLoader`: 설정 로드만 담당
 - `SqlCaptureProxy`: SQL 캡처만 담당
+- `SqlLogger`: SQL 로깅만 담당
+- `SqlFormatter`: SQL 포매팅만 담당
+- `ParameterSubstitutor`: 파라미터 치환만 담당
 - `Appender`: 특정 출력 채널만 담당
 
 ### 5. 인터페이스 분리 원칙 (Interface Segregation)
@@ -408,64 +482,11 @@ Logback / Log4j2 (구현체)
 // 작은 인터페이스로 분리
 public interface ConfigLoader { ... }
 public interface ConfigParser { ... }
-public interface ConfigValidator { ... }
-```
-
-## 확장 포인트
-
-### 1. 새로운 설정 포맷 추가
-
-```java
-// 1. ConfigParser 구현
-public class TomlParser implements ConfigParser {
-    @Override
-    public LoggerConfig parse(String content) {
-        // TOML 파싱 로직
-    }
-}
-
-// 2. UniversalConfigLoader에 등록
-private ConfigParser selectParser(String path) {
-    if (path.endsWith(".toml")) {
-        return new TomlParser();
-    }
-    // ...
-}
-```
-
-### 2. 새로운 Appender 추가
-
-#### Logback
-```java
-public class DatabaseAppender extends AppenderBase<ILoggingEvent> {
-    @Override
-    protected void append(ILoggingEvent event) {
-        // 데이터베이스에 로그 저장
-    }
-}
-```
-
-#### Log4j2
-```java
-@Plugin(name = "UniversalDatabase", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE)
-public class DatabaseAppender extends AbstractAppender {
-    @Override
-    public void append(LogEvent event) {
-        // 데이터베이스에 로그 저장
-    }
-}
-```
-
-### 3. 커스텀 필터 추가
-
-```java
-public class CustomFilter extends Filter<ILoggingEvent> {
-    @Override
-    public FilterReply decide(ILoggingEvent event) {
-        // 커스텀 필터링 로직
-        return FilterReply.NEUTRAL;
-    }
-}
+public interface SqlLogger { ... }
+public interface SqlFormatter { ... }
+public interface ParameterSubstitutor { ... }
+public interface AppenderFactory { ... }
+public interface LoggerProperties { ... }
 ```
 
 ## 동작 흐름
@@ -480,6 +501,8 @@ public class CustomFilter extends Filter<ILoggingEvent> {
 [ServiceLoader가 Configurator 탐색]
          ↓
 [LogbackConfigurator.configure() 호출]
+         ↓
+[LoggerInstance.builder() 사용]
          ↓
 [UniversalConfigLoader로 설정 로드]
          ↓
@@ -497,43 +520,18 @@ public class CustomFilter extends Filter<ILoggingEvent> {
          ↓
 [설정 병합 (defaults → base → profile)]
          ↓
-[LoggerContext API로 Logback 구성]
-    • Appender 생성 및 등록
-    • Logger 레벨 설정
-    • Layout 설정
+[AppenderFactory로 Appender 생성]
+    • ConsoleAppender (ConsoleFormatter)
+    • FileAppender (FileFormatter, RollingPolicy)
+    • EmailAppender
+    • WebhookAppender
+         ↓
+[LoggerContext에 Appender 등록]
          ↓
 [로깅 준비 완료]
 ```
 
-### 2. Log4j2 초기화 흐름
-
-```
-[Application Start]
-         ↓
-[Log4j2 초기화]
-         ↓
-[ServiceLoader가 ConfigurationFactory 탐색]
-         ↓
-[ConfigurationFactory.getConfiguration() 호출]
-         ↓
-[UniversalConfigLoader로 설정 로드]
-         ↓
-[ProfileResolver가 활성 프로파일 탐지]
-         ↓
-[설정 파일 로드 및 병합]
-    1. defaults (JAR)
-    2. base config
-    3. profile config (if exists)
-         ↓
-[ConfigurationBuilder로 Log4j2 구성]
-    • Appender 추가
-    • Logger 레벨 설정
-    • Layout 설정
-         ↓
-[로깅 준비 완료]
-```
-
-### 3. SQL 캡처 흐름
+### 2. SQL 캡처 흐름
 
 ```
 [SQL 실행 요청]
@@ -546,41 +544,44 @@ public class CustomFilter extends Filter<ILoggingEvent> {
          ↓
 [SqlCapturePreparedStatement 생성]
     • SQL 문자열 저장
-    • 파라미터 리스트 초기화
+    • 파라미터 Map 초기화
          ↓
 [setString(), setInt() 등 파라미터 설정]
-    • 파라미터 저장 (index, value)
+    • 파라미터 저장 (index → value)
          ↓
 [execute() / executeQuery() / executeUpdate()]
     • 실행 시작 시간 기록
     • 실제 SQL 실행 (delegate)
     • 실행 종료 시간 기록
-    • 결과 행 수 추적
+    • RowCountingResultSet으로 결과 행 수 추적
          ↓
-[SqlLogger.log()]
-    • [SQL] 원본 SQL
-    • [SQL-PARAMS] 파라미터 목록
-    • [SQL-FORMATTED] 파라미터 치환된 SQL
-    • [SQL-ROWS] 결과 행 수
-    • [SQL-TIME] 실행 시간
+[Slf4jSqlLogger.logAllResults()]
+    • MyBatisSqlFormatter로 SQL 포매팅
+    • DefaultParameterSubstitutor로 파라미터 치환
+    • [SQL] 포매팅된 SQL
+    • [SQL-ROWS] 결과 행 수 / 업데이트 수
+    • [SQL-TIME] 실행 시간 (1초 이상 시 [SQL-SLOW] 경고)
          ↓
 [결과 반환]
 ```
 
-### 4. Spring Boot 통합 흐름
+### 3. Spring Boot 통합 흐름
 
 ```
 [Spring Boot Application Start]
          ↓
 [Auto-Configuration 스캔]
          ↓
-[UniversalLoggerAutoConfiguration 활성화]
+[SpringBootConfiguration 활성화]
     • @ConditionalOnClass 체크
     • @ConditionalOnProperty 체크
          ↓
-[loggerConfig() Bean 생성]
+[SpringBootProperties 바인딩]
+    • application.yml에서 universal-logger.* 속성 읽기
+         ↓
+[loggerConfig() 또는 loggerInstance() Bean 생성]
     • UniversalConfigLoader로 설정 로드
-    • LoggerConfig Bean 등록
+    • LoggerConfig / LoggerInstance Bean 등록
          ↓
 [BeanPostProcessor.postProcessAfterInitialization()]
          ↓
@@ -594,90 +595,78 @@ public class CustomFilter extends Filter<ILoggingEvent> {
     • SQL 자동 캡처 활성화
 ```
 
-## 성능 고려사항
+### 4. Spring Framework 통합 흐름
 
-### 1. 설정 로드
-- **캐싱**: 설정은 한 번만 로드되고 재사용
-- **Lazy Loading**: 필요할 때만 파싱
+```
+[Spring Application Start]
+         ↓
+[@Configuration 클래스 스캔]
+         ↓
+[@EnableUniversalLogger 발견]
+         ↓
+[@Import(SpringConfiguration.class)]
+         ↓
+[SpringConfiguration 초기화]
+         ↓
+[ImportAware.setImportMetadata() 호출]
+    • @EnableUniversalLogger 속성 읽기
+    • configPath, enableSqlCapture 추출
+         ↓
+[EnvironmentAware.setEnvironment() 호출]
+    • Spring Environment 주입
+         ↓
+[SpringProperties Bean 생성]
+    • configPath 설정
+    • sqlCapture.enabled 설정
+    • Environment 수동 주입
+         ↓
+[LoggerConfig Bean 생성]
+    • UniversalConfigLoader로 설정 로드
+    • SpringProperties.getActiveProfile()로 프로파일 탐지
+      (logger.profile → Spring Environment activeProfiles)
+         ↓
+[BeanPostProcessor.postProcessAfterInitialization()]
+         ↓
+[DataSource Bean 발견]
+         ↓
+[SqlCaptureProxy로 래핑]
+    • 원본 DataSource를 SqlCaptureProxy로 교체
+    • LoggerConfig 주입
+         ↓
+[애플리케이션에서 DataSource 사용]
+    • SQL 자동 캡처 활성화
+```
 
-### 2. SQL 캡처
-- **Proxy 패턴**: 최소한의 오버헤드
-- **조건부 로깅**: 로그 레벨에 따라 선택적 캡처
-- **비동기 옵션**: 설정으로 비동기 로깅 활성화 가능
+**Spring Framework vs Spring Boot 초기화 차이점**:
 
-### 3. Appender
-- **비동기 Appender**: 메인 스레드 블로킹 방지
-- **버퍼링**: 대량 로그 처리 시 성능 향상
-- **연결 풀링**: HTTP/SMTP 연결 재사용
+| 단계 | Spring Framework | Spring Boot |
+|------|------------------|-------------|
+| 활성화 트리거 | `@EnableUniversalLogger` 명시적 선언 | Auto-Configuration 자동 스캔 |
+| 설정값 소스 | 어노테이션 속성 | application.yml/properties |
+| 프로퍼티 바인딩 | `ImportAware` 인터페이스 | `@ConfigurationProperties` |
+| Environment 주입 | `EnvironmentAware` 인터페이스 | `@Autowired` |
+| 프로파일 탐지 | `SpringProperties.getActiveProfile()` | `SpringBootProperties.getActiveProfile()` |
 
-## 스레드 안전성
+## 프로파일 설정 가이드
 
-### 1. 불변 설정
-- `LoggerConfig`는 생성 후 변경 불가
-- Thread-safe by design
+### Tomcat 환경
 
-### 2. 동기화
-- SQL 캡처: Connection별 독립적 상태
-- Appender: Logback/Log4j2가 스레드 안전성 보장
+**setenv.sh (Linux) 또는 setenv.bat (Windows)**:
+```bash
+export CATALINA_OPTS="$CATALINA_OPTS -Dspring.profiles.active=prd"
+# 또는
+export CATALINA_OPTS="$CATALINA_OPTS -Dlogger.profile=prd"
+```
 
-### 3. 공유 리소스
-- HTTP Client: ThreadSafe HttpClient 사용
-- SMTP Session: 요청마다 새로운 Session 생성
+### 환경 변수
+```bash
+export SPRING_PROFILES_ACTIVE=prd
+```
 
-## 테스트 전략
-
-### 1. 단위 테스트
-- ConfigLoader 테스트
-- ConfigParser 테스트
-- SqlFormatter 테스트
-
-### 2. 통합 테스트
-- Logback/Log4j2 통합 테스트
-- Spring Boot 자동 설정 테스트
-- SQL 캡처 End-to-End 테스트
-
-### 3. 성능 테스트
-- SQL 캡처 오버헤드 측정
-- Appender 처리량 테스트
-- 메모리 사용량 프로파일링
-
-## 문제 해결 가이드
-
-### 디버그 모드 활성화
-
-**Logback:**
+### web.xml
 ```xml
-<configuration debug="true">
-    <!-- ... -->
-</configuration>
+<context-param>
+    <param-name>spring.profiles.active</param-name>
+    <param-value>prd</param-value>
+</context-param>
 ```
-
-**Log4j2:**
-```xml
-<Configuration status="DEBUG">
-    <!-- ... -->
-</Configuration>
-```
-
-### 설정 로드 확인
-```java
-LoggerConfig config = new UniversalConfigLoader().load("config/universal-logger.yml");
-System.out.println(config); // 로드된 설정 출력
-```
-
-### SQL 캡처 확인
-```java
-// DataSource가 SqlCaptureProxy로 래핑되었는지 확인
-System.out.println(dataSource.getClass().getName());
-// 출력: com.universallogger.sql.SqlCaptureProxy
-```
-
-## 결론
-
-Universal Logger는 모듈화된 아키텍처를 통해:
-- **유연성**: Logback/Log4j2 선택 가능
-- **확장성**: 새로운 기능 추가 용이
-- **재사용성**: 공통 로직의 중앙화
-- **테스트 용이성**: 각 레이어의 독립적 테스트
-
-프로젝트에 맞는 로깅 프레임워크를 선택하고, 필요한 기능을 선택적으로 활성화할 수 있습니다.

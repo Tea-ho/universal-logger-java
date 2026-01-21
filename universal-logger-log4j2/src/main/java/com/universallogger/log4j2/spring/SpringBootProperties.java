@@ -32,6 +32,7 @@ public class SpringBootProperties implements LoggerProperties {
     private static final Logger logger = LoggerFactory.getLogger(SpringBootProperties.class);
 
     private boolean enabled = true;
+    private String applicationName;
     private String configPath = ConfigPath.DEFAULT;
     private SqlCaptureConfig sqlCapture = new SqlCaptureConfig();
 
@@ -45,6 +46,16 @@ public class SpringBootProperties implements LoggerProperties {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    @Override
+    public String getApplicationName() {
+        return applicationName;
+    }
+
+    @Override
+    public void setApplicationName(String applicationName) {
+        this.applicationName = applicationName;
     }
 
     @Override

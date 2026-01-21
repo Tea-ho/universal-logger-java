@@ -78,6 +78,12 @@ public class LoggerInstance {
             this.config = loadDefaultConfig();
         }
 
+        // applicationName 오버라이드 (Builder에서 지정된 경우)
+        if (builder.applicationName != null && !builder.applicationName.trim().isEmpty()) {
+            this.config.getGlobal().setAppName(builder.applicationName.trim());
+            logger.debug("Application name overridden by builder: {}", builder.applicationName);
+        }
+
         this.loggerContext = initLoggerContext();
         this.initialized = setupLogging();
     }
@@ -289,6 +295,7 @@ public class LoggerInstance {
     public static class Builder {
         private String configPath;
         private String profile;
+        private String applicationName;
         private LoggerConfig config;
         private AppenderFactory appenderFactory;
         private com.universallogger.loaders.ConfigLoader configLoader;
@@ -315,6 +322,19 @@ public class LoggerInstance {
          */
         public Builder profile(String profile) {
             this.profile = profile;
+            return this;
+        }
+
+        /**
+         * 애플리케이션 이름 지정
+         *
+         * 로그 파일 경로의 {appName} 플레이스홀더 치환에 사용됩니다.
+         * 지정 시 YAML 설정 파일의 global.appName보다 우선 적용됩니다.
+         *
+         * @param applicationName 애플리케이션 이름
+         */
+        public Builder applicationName(String applicationName) {
+            this.applicationName = applicationName;
             return this;
         }
 

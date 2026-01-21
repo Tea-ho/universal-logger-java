@@ -25,6 +25,20 @@ public interface LoggerProperties {
     boolean isEnabled();
 
     /**
+     * 애플리케이션 이름 조회
+     *
+     * @return 애플리케이션 이름
+     */
+    String getApplicationName();
+
+    /**
+     * 애플리케이션 이름 설정
+     *
+     * @param applicationName 애플리케이션 이름
+     */
+    void setApplicationName(String applicationName);
+
+    /**
      * 설정 파일 경로 조회
      *
      * @return 설정 파일 경로
