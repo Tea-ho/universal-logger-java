@@ -34,6 +34,8 @@ import java.io.File;
  */
 public class DefaultAppenderFactory implements AppenderFactory {
 
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(DefaultAppenderFactory.class);
+
     /**
      * 기본 생성자
      */
@@ -73,13 +75,22 @@ public class DefaultAppenderFactory implements AppenderFactory {
             LoggerConfig.OutputConfig outputConfig,
             String appName) {
 
+        System.out.println("[UniversalLogger] Creating FILE appender...");
+        System.out.println("[UniversalLogger] - appName: " + appName);
+        System.out.println("[UniversalLogger] - outputConfig.getPath(): " + outputConfig.getPath());
+
         RollingFileAppender<ILoggingEvent> appender = new RollingFileAppender<>();
         appender.setContext(context);
         appender.setName("FILE");
 
         // 파일 경로 설정
         String filePath = replacePlaceholders(outputConfig.getPath(), appName);
+        System.out.println("[UniversalLogger] - filePath after placeholder: " + filePath);
+
         createParentDirectories(filePath);
+        File parentDir = new File(filePath).getParentFile();
+        System.out.println("[UniversalLogger] - parentDir exists: " + (parentDir != null && parentDir.exists()));
+
         appender.setFile(filePath);
 
         // 롤링 정책 설정
@@ -93,6 +104,7 @@ public class DefaultAppenderFactory implements AppenderFactory {
         rollingPolicy.setMaxFileSize(FileSize.valueOf(outputConfig.getRotation().getMaxSize()));
         rollingPolicy.setMaxHistory(outputConfig.getRotation().getMaxFiles());
         rollingPolicy.start();
+        System.out.println("[UniversalLogger] - rollingPolicy.isStarted(): " + rollingPolicy.isStarted());
 
         appender.setRollingPolicy(rollingPolicy);
         appender.setTriggeringPolicy(rollingPolicy);
@@ -109,6 +121,9 @@ public class DefaultAppenderFactory implements AppenderFactory {
         addThresholdFilter(appender, outputConfig.getLevel());
 
         appender.start();
+        System.out.println("[UniversalLogger] - appender.isStarted(): " + appender.isStarted());
+        System.out.println("[UniversalLogger] FILE appender created: " + filePath);
+
         return appender;
     }
 
