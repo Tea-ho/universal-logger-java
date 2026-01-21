@@ -11,6 +11,7 @@ Universal Logger는 **Spring / Java 환경에서 공통 로깅과 SQL 캡처 기
 3. [라이브러리 빌드 및 설치](#라이브러리-빌드-및-설치)
 4. [빌드 도구별 설정](#빌드-도구별-설정)
 5. [기본 설정](#기본-설정)
+   - [환경별 설정 분리](#환경별-설정-분리)
 6. [사용법](#사용법)
 
 ## 주의사항
@@ -257,6 +258,18 @@ outputs:
 운영 환경(DEV / TEST / PROD 등)에 따라 서로 다른 로깅 설정이 필요한 경우,
 **공통 설정 파일 + 환경별 설정 파일** 구조로 설정할 수 있습니다.
 
+#### 프로파일 설정이 필요한 상황
+
+| 상황 | 설명 |
+|------|------|
+| 로그 레벨 분리 | 개발 환경에서는 DEBUG, 운영 환경에서는 INFO/WARN 레벨 사용 |
+| 로그 보관 정책 차이 | 운영 환경에서 더 긴 보관 기간, 더 큰 파일 크기 설정 |
+| 알림 설정 차이 | 운영 환경에서만 Slack/Webhook 알림 활성화 |
+| 로그 경로 분리 | 환경별로 다른 로그 저장 경로 사용 |
+| 압축 정책 차이 | 운영 환경에서 로그 압축 활성화로 디스크 절약 |
+
+#### 설정 파일 구조
+
 **1) 공통 설정 파일 (필수)**
 
 ```
@@ -265,8 +278,6 @@ universal-logger.yml
 
 - 모든 환경에서 공통으로 사용하는 설정을 정의합니다.
 - 환경별로 달라질 수 있는 값은 최소화하는 것을 권장합니다.
-
----
 
 **2) 환경별 설정 파일 (선택)**
 
@@ -300,6 +311,59 @@ outputs:
 
 > 환경별 설정 파일은 공통 설정을 기준으로 병합되어 적용되며,
 > 동일한 항목이 있을 경우 **환경별 설정이 우선 적용**됩니다.
+
+#### 프로파일 활성화 방법
+
+**Spring Boot 환경**
+
+`application.yml` 또는 `application.properties`에서 활성 프로파일을 설정합니다.
+
+```yaml
+spring:
+  profiles:
+    active: prod
+```
+
+```properties
+spring.profiles.active=prod
+```
+
+**Tomcat 환경**
+
+`setenv.sh` (Linux) 또는 `setenv.bat` (Windows)에서 설정합니다.
+
+```bash
+# Linux
+export CATALINA_OPTS="$CATALINA_OPTS -Dspring.profiles.active=prod"
+# 또는
+export CATALINA_OPTS="$CATALINA_OPTS -Dlogger.profile=prod"
+```
+
+```batch
+:: Windows
+set CATALINA_OPTS=%CATALINA_OPTS% -Dspring.profiles.active=prod
+```
+
+**환경 변수**
+
+```bash
+export SPRING_PROFILES_ACTIVE=prod
+```
+
+**web.xml**
+
+```xml
+<context-param>
+    <param-name>spring.profiles.active</param-name>
+    <param-value>prod</param-value>
+</context-param>
+```
+
+> **프로파일 탐지 우선순위**:
+> 1. `logger.profile` 시스템 속성 (명시적 오버라이드)
+> 2. `spring.profiles.active` 시스템 속성
+> 3. Spring Environment의 activeProfiles
+> 4. 프로파일 미설정 시 기본 설정만 사용
 
 ### Spring Boot 설정
 

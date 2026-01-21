@@ -8,8 +8,7 @@
 2. [모듈 구조](#모듈-구조)
 3. [핵심 컴포넌트](#핵심-컴포넌트)
 4. [설계 원칙](#설계-원칙)
-5. [확장 포인트](#확장-포인트)
-6. [동작 흐름](#동작-흐름)
+5. [동작 흐름](#동작-흐름)
 
 ## 전체 아키텍처
 
@@ -49,7 +48,7 @@
 │                                                             │
 │  ┌──────────────────────────────────────────────────────┐   │
 │  │      universal-logger-logback                        │   │
-│  │  • LoggerInstance (핵심 로거 인스턴스)                  │   │
+│  │  • LoggerInstance                                    │   │
 │  │  • AppenderFactory / DefaultAppenderFactory          │   │
 │  │  • Custom Appenders (Email, Webhook)                 │   │
 │  │  • Formatters (Console, File)                        │   │
@@ -448,7 +447,6 @@ public class SpringBootConfiguration implements BeanPostProcessor, ApplicationCo
 
 - **Core**: 로깅 프레임워크 독립적 로직
 - **Logback/Log4j2**: 각 프레임워크 특화 구현
-- **Spring**: Spring 통합 로직
 
 ### 2. 의존성 역전 원칙 (Dependency Inversion)
 
@@ -647,26 +645,4 @@ public interface LoggerProperties { ... }
 | Environment 주입 | `EnvironmentAware` 인터페이스 | `@Autowired` |
 | 프로파일 탐지 | `SpringProperties.getActiveProfile()` | `SpringBootProperties.getActiveProfile()` |
 
-## 프로파일 설정 가이드
-
-### Tomcat 환경
-
-**setenv.sh (Linux) 또는 setenv.bat (Windows)**:
-```bash
-export CATALINA_OPTS="$CATALINA_OPTS -Dspring.profiles.active=prd"
-# 또는
-export CATALINA_OPTS="$CATALINA_OPTS -Dlogger.profile=prd"
-```
-
-### 환경 변수
-```bash
-export SPRING_PROFILES_ACTIVE=prd
-```
-
-### web.xml
-```xml
-<context-param>
-    <param-name>spring.profiles.active</param-name>
-    <param-value>prd</param-value>
-</context-param>
-```
+> 프로파일 설정 방법은 [USER_GUIDE.md](USER_GUIDE.md#환경별-설정-분리)를 참고하세요.
