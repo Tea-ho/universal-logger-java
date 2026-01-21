@@ -13,6 +13,8 @@ import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy;
 import ch.qos.logback.core.util.FileSize;
 
+import java.io.File;
+
 /**
  * AppenderFactory의 기본 구현체
  *
@@ -77,6 +79,7 @@ public class DefaultAppenderFactory implements AppenderFactory {
 
         // 파일 경로 설정
         String filePath = replacePlaceholders(outputConfig.getPath(), appName);
+        createParentDirectories(filePath);
         appender.setFile(filePath);
 
         // 롤링 정책 설정
@@ -121,6 +124,7 @@ public class DefaultAppenderFactory implements AppenderFactory {
 
         // 파일 경로 설정
         String filePath = replacePlaceholders(outputConfig.getPath(), appName);
+        createParentDirectories(filePath);
         appender.setFile(filePath);
 
         // 롤링 정책 설정
@@ -205,6 +209,19 @@ public class DefaultAppenderFactory implements AppenderFactory {
             thresholdFilter.setLevel(level);
             thresholdFilter.start();
             appender.addFilter(thresholdFilter);
+        }
+    }
+
+    /**
+     * 부모 디렉토리 생성
+     */
+    private void createParentDirectories(String filePath) {
+        if (filePath != null) {
+            File file = new File(filePath);
+            File parentDir = file.getParentFile();
+            if (parentDir != null && !parentDir.exists()) {
+                parentDir.mkdirs();
+            }
         }
     }
 
