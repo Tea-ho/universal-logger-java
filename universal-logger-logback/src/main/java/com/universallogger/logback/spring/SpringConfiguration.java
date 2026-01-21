@@ -175,6 +175,11 @@ public class SpringConfiguration implements BeanPostProcessor, ApplicationContex
             this.properties = springProperties();
         }
 
+        // Environment 재주입 (setImportMetadata가 setApplicationContext보다 먼저 호출되는 문제 해결)
+        if (this.environment != null && this.properties instanceof SpringProperties) {
+            ((SpringProperties) this.properties).setEnvironment(this.environment);
+        }
+
         String appName = properties.getApplicationName();
         logger.info("Initializing UniversalLogger (Logback) for application: {}",
             appName != null ? appName : applicationName);
