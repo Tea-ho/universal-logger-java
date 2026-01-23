@@ -103,13 +103,24 @@ public class ConfigurationFactory extends org.apache.logging.log4j.core.config.C
 
     /**
      * 설정 파일 로드
+     *
+     * 로드 순서:
+     * 1. 클래스패스에서 config/universal-logger.yml 찾기
+     * 2. 없으면 JAR 내부 defaults.yml 사용
      */
     private LoggerConfig loadConfig() {
         try {
-            return configLoader.loadDefaultConfig();
+            // 사용자 설정 파일 로드 시도
+            String configPath = "config/universal-logger.yml";
+            return configLoader.load(configPath, true);
         } catch (Exception e) {
-            System.err.println("Failed to load config, using minimal defaults");
-            throw new IllegalStateException("Failed to load default configuration", e);
+            System.err.println("User config not found, using defaults: " + e.getMessage());
+            try {
+                return configLoader.loadDefaultConfig();
+            } catch (Exception ex) {
+                System.err.println("Failed to load default config: " + ex.getMessage());
+                throw new IllegalStateException("Failed to load configuration", ex);
+            }
         }
     }
 
