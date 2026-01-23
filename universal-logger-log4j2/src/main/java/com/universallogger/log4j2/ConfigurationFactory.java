@@ -123,7 +123,7 @@ public class ConfigurationFactory extends org.apache.logging.log4j.core.config.C
         // 콘솔 Appender
         if (isOutputEnabled(outputs, "console")) {
             LoggerConfig.OutputConfig consoleConfig = outputs.get("console");
-            String pattern = consoleConfig.getFormat().replace("${appName}", appName);
+            String pattern = consoleConfig.getFormat().replace("{appName}", appName);
 
             AppenderComponentBuilder consoleAppender = builder.newAppender("Console", "CONSOLE")
                 .addAttribute("target", "SYSTEM_OUT");
@@ -135,8 +135,8 @@ public class ConfigurationFactory extends org.apache.logging.log4j.core.config.C
         // 파일 Appender
         if (isOutputEnabled(outputs, "file")) {
             LoggerConfig.OutputConfig fileConfig = outputs.get("file");
-            String filePath = fileConfig.getPath().replace("${appName}", appName);
-            String pattern = fileConfig.getFormat().replace("${appName}", appName);
+            String filePath = fileConfig.getPath().replace("{appName}", appName);
+            String pattern = fileConfig.getFormat().replace("{appName}", appName);
 
             AppenderComponentBuilder fileAppender = builder.newAppender("File", "RollingFile")
                 .addAttribute("fileName", filePath)
@@ -153,8 +153,8 @@ public class ConfigurationFactory extends org.apache.logging.log4j.core.config.C
         // 에러 파일 Appender
         if (isOutputEnabled(outputs, "errorFile")) {
             LoggerConfig.OutputConfig errorConfig = outputs.get("errorFile");
-            String filePath = errorConfig.getPath().replace("${appName}", appName);
-            String pattern = errorConfig.getFormat().replace("${appName}", appName);
+            String filePath = errorConfig.getPath().replace("{appName}", appName);
+            String pattern = errorConfig.getFormat().replace("{appName}", appName);
 
             AppenderComponentBuilder errorAppender = builder.newAppender("ErrorFile", "RollingFile")
                 .addAttribute("fileName", filePath)
@@ -178,7 +178,7 @@ public class ConfigurationFactory extends org.apache.logging.log4j.core.config.C
             if (webhookConfig != null && webhookConfig.getUrl() != null) {
                 String messageFormat = webhookConfig.getFormat();
                 if (messageFormat != null) {
-                    messageFormat = messageFormat.replace("${appName}", appName);
+                    messageFormat = messageFormat.replace("{appName}", appName);
                 }
 
                 AppenderComponentBuilder webhookAppender = builder.newAppender("Webhook", "UniversalWebhook")
