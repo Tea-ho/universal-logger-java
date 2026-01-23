@@ -14,6 +14,7 @@ import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFact
 import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 
+import java.io.File;
 import java.util.Map;
 
 /**
@@ -55,12 +56,18 @@ public class ConfigurationFactory extends org.apache.logging.log4j.core.config.C
             setupAppenders(builder, config);
 
             // 루트 로거 설정
-            org.apache.logging.log4j.core.config.builder.api.RootLoggerComponentBuilder rootLogger = builder.newRootLogger(rootLevel)
-                .add(builder.newAppenderRef("Console"))
-                .add(builder.newAppenderRef("File"))
-                .add(builder.newAppenderRef("ErrorFile"));
+            org.apache.logging.log4j.core.config.builder.api.RootLoggerComponentBuilder rootLogger = builder.newRootLogger(rootLevel);
 
-            // Add Webhook and Email appenders if enabled
+            // 활성화된 appender만 참조 추가
+            if (isOutputEnabled(config.getOutputs(), "console")) {
+                rootLogger.add(builder.newAppenderRef("Console"));
+            }
+            if (isOutputEnabled(config.getOutputs(), "file")) {
+                rootLogger.add(builder.newAppenderRef("File"));
+            }
+            if (isOutputEnabled(config.getOutputs(), "errorFile")) {
+                rootLogger.add(builder.newAppenderRef("ErrorFile"));
+            }
             if (isOutputEnabled(config.getOutputs(), "webhook")) {
                 rootLogger.add(builder.newAppenderRef("Webhook"));
             }
@@ -70,23 +77,12 @@ public class ConfigurationFactory extends org.apache.logging.log4j.core.config.C
 
             builder.add(rootLogger);
 
-            // 모듈별 로거 레벨 설정
+            // 모듈별 로거 레벨 설정 (appender는 루트에서 상속받음)
             for (Map.Entry<String, String> entry : config.getLevels().entrySet()) {
                 if (!"root".equals(entry.getKey())) {
                     Level level = Level.valueOf(entry.getValue());
                     org.apache.logging.log4j.core.config.builder.api.LoggerComponentBuilder logger = builder.newLogger(entry.getKey(), level)
-                        .add(builder.newAppenderRef("Console"))
-                        .add(builder.newAppenderRef("File"))
-                        .add(builder.newAppenderRef("ErrorFile"));
-
-                    // Add Webhook and Email appenders if enabled
-                    if (isOutputEnabled(config.getOutputs(), "webhook")) {
-                        logger.add(builder.newAppenderRef("Webhook"));
-                    }
-                    if (isOutputEnabled(config.getOutputs(), "email")) {
-                        logger.add(builder.newAppenderRef("Email"));
-                    }
-
+                        .addAttribute("additivity", "true");  // 루트 로거의 appender 사용
                     builder.add(logger);
                 }
             }
@@ -149,15 +145,29 @@ public class ConfigurationFactory extends org.apache.logging.log4j.core.config.C
             String filePath = fileConfig.getPath().replace("{appName}", appName);
             String pattern = fileConfig.getFormat().replace("{appName}", appName);
 
+            // 부모 디렉토리 생성
+            createParentDirectories(filePath);
+
+            // 롤링 설정
+            LoggerConfig.RotationConfig rotation = fileConfig.getRotation();
+            String maxSize = rotation != null && rotation.getMaxSize() != null ? rotation.getMaxSize() : "50MB";
+            int maxFiles = rotation != null && rotation.getMaxFiles() > 0 ? rotation.getMaxFiles() : 30;
+            boolean compress = rotation != null && rotation.isCompress();
+            String filePattern = compress
+                ? filePath + ".%d{yyyy-MM-dd}.%i.gz"
+                : filePath + ".%d{yyyy-MM-dd}.%i";
+
             AppenderComponentBuilder fileAppender = builder.newAppender("File", "RollingFile")
                 .addAttribute("fileName", filePath)
-                .addAttribute("filePattern", filePath + ".%d{yyyy-MM-dd}.gz");
+                .addAttribute("filePattern", filePattern)
+                .addAttribute("append", "true");
             fileAppender.add(builder.newLayout("PatternLayout")
                 .addAttribute("pattern", pattern));
             fileAppender.addComponent(builder.newComponent("Policies")
-                .addComponent(builder.newComponent("TimeBasedTriggeringPolicy")
-                    .addAttribute("interval", "1")
-                    .addAttribute("modulate", "true")));
+                .addComponent(builder.newComponent("SizeBasedTriggeringPolicy")
+                    .addAttribute("size", maxSize)));
+            fileAppender.addComponent(builder.newComponent("DefaultRolloverStrategy")
+                .addAttribute("max", String.valueOf(maxFiles)));
             builder.add(fileAppender);
         }
 
@@ -167,15 +177,29 @@ public class ConfigurationFactory extends org.apache.logging.log4j.core.config.C
             String filePath = errorConfig.getPath().replace("{appName}", appName);
             String pattern = errorConfig.getFormat().replace("{appName}", appName);
 
+            // 부모 디렉토리 생성
+            createParentDirectories(filePath);
+
+            // 롤링 설정
+            LoggerConfig.RotationConfig rotation = errorConfig.getRotation();
+            String maxSize = rotation != null && rotation.getMaxSize() != null ? rotation.getMaxSize() : "50MB";
+            int maxFiles = rotation != null && rotation.getMaxFiles() > 0 ? rotation.getMaxFiles() : 30;
+            boolean compress = rotation != null && rotation.isCompress();
+            String filePattern = compress
+                ? filePath + ".%d{yyyy-MM-dd}.%i.gz"
+                : filePath + ".%d{yyyy-MM-dd}.%i";
+
             AppenderComponentBuilder errorAppender = builder.newAppender("ErrorFile", "RollingFile")
                 .addAttribute("fileName", filePath)
-                .addAttribute("filePattern", filePath + ".%d{yyyy-MM-dd}.gz");
+                .addAttribute("filePattern", filePattern)
+                .addAttribute("append", "true");
             errorAppender.add(builder.newLayout("PatternLayout")
                 .addAttribute("pattern", pattern));
             errorAppender.addComponent(builder.newComponent("Policies")
-                .addComponent(builder.newComponent("TimeBasedTriggeringPolicy")
-                    .addAttribute("interval", "1")
-                    .addAttribute("modulate", "true")));
+                .addComponent(builder.newComponent("SizeBasedTriggeringPolicy")
+                    .addAttribute("size", maxSize)));
+            errorAppender.addComponent(builder.newComponent("DefaultRolloverStrategy")
+                .addAttribute("max", String.valueOf(maxFiles)));
             errorAppender.addComponent(builder.newFilter("ThresholdFilter", "ACCEPT", "DENY")
                 .addAttribute("level", "ERROR"));
             builder.add(errorAppender);
@@ -241,5 +265,18 @@ public class ConfigurationFactory extends org.apache.logging.log4j.core.config.C
      */
     private boolean isOutputEnabled(Map<String, LoggerConfig.OutputConfig> outputs, String key) {
         return outputs.containsKey(key) && outputs.get(key).isEnabled();
+    }
+
+    /**
+     * 부모 디렉토리 생성
+     */
+    private void createParentDirectories(String filePath) {
+        if (filePath != null) {
+            File file = new File(filePath);
+            File parentDir = file.getParentFile();
+            if (parentDir != null && !parentDir.exists()) {
+                parentDir.mkdirs();
+            }
+        }
     }
 }
