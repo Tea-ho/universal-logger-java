@@ -12,7 +12,6 @@ import com.universallogger.utils.ProfileResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -33,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>사용 예시:</p>
  * <pre>{@code
  * LoggerInstance logger = LoggerInstance.builder()
- *     .configPath("config/universal-logger.yml")
+ *     .configPath("META-INF/universal-logger/universal-logger.yml")
  *     .profile("dev")
  *     .build();
  * }</pre>
@@ -150,9 +149,6 @@ public class LoggerInstance {
      */
     private boolean setupLogging() {
         try {
-            // 로그 디렉토리 생성
-            new File("logs").mkdirs();
-
             // 루트 로거 설정
             ch.qos.logback.classic.Logger rootLogger =
                 loggerContext.getLogger(Logger.ROOT_LOGGER_NAME);

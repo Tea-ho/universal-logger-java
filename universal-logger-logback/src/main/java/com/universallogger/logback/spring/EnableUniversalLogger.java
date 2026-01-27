@@ -15,7 +15,7 @@ import java.lang.annotation.*;
  * @Configuration
  * @EnableUniversalLogger(
  *     applicationName = "MyApp",
- *     configPath = "config/universal-logger.yml",
+ *     configPath = "META-INF/universal-logger/universal-logger.yml",
  *     enableSqlCapture = true
  * )
  * public class AppConfig {
@@ -58,7 +58,7 @@ public @interface EnableUniversalLogger {
 
     /**
      * 사용자 정의 설정 파일 경로
-     * 기본값: config/universal-logger.yml
+     * 기본값: META-INF/universal-logger/universal-logger.yml
      *
      * @return 설정 파일 경로
      */

@@ -1,6 +1,7 @@
 package com.universallogger.log4j2;
 
 import com.universallogger.config.LoggerConfig;
+import com.universallogger.constants.LoggerConstants;
 import com.universallogger.loaders.UniversalConfigLoader;
 
 import org.apache.logging.log4j.Level;
@@ -101,13 +102,13 @@ public class ConfigurationFactory extends org.apache.logging.log4j.core.config.C
      * 설정 파일 로드
      *
      * 로드 순서:
-     * 1. 클래스패스에서 config/universal-logger.yml 찾기
+     * 1. 클래스패스에서 META-INF/universal-logger/universal-logger.yml 찾기
      * 2. 없으면 JAR 내부 defaults.yml 사용
      */
     private LoggerConfig loadConfig() {
         try {
             // 사용자 설정 파일 로드 시도
-            String configPath = "config/universal-logger.yml";
+            String configPath = LoggerConstants.ConfigPath.DEFAULT;
             return configLoader.load(configPath, true);
         } catch (Exception e) {
             System.err.println("User config not found, using defaults: " + e.getMessage());

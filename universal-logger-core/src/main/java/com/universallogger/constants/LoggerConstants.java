@@ -27,9 +27,10 @@ public final class LoggerConstants {
      * 설정 파일 경로 (자동 감지 우선순위)
      */
     public static final class ConfigPath {
-        public static final String DEFAULT = "config/universal-logger.yml";
+        public static final String DEFAULT = "META-INF/universal-logger/universal-logger.yml";
         public static final String DEFAULTS_RESOURCE = "defaults/universal-logger-defaults.yml";
         public static final String[] SEARCH_PATHS = {
+            "META-INF/universal-logger/universal-logger.yml",
             "universal-logger.yml",
             "config/universal-logger.yml",
             "universal-logger.xml",

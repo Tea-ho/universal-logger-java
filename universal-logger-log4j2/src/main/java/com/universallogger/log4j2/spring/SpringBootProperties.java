@@ -18,7 +18,7 @@ import static com.universallogger.constants.LoggerConstants.*;
  * <pre>{@code
  * universal-logger:
  *   enabled: true
- *   config-path: config/universal-logger.yml
+ *   config-path: META-INF/universal-logger/universal-logger.yml
  *   sql-capture:
  *     enabled: true
  * }</pre>

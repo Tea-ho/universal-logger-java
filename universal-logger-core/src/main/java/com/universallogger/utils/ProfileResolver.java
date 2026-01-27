@@ -98,8 +98,8 @@ public class ProfileResolver {
      *
      * <p>예시:</p>
      * <ul>
-     *   <li>baseConfigPath: "config/universal-logger.yml", profile: "prod"</li>
-     *   <li>결과: "config/universal-logger-prod.yml"</li>
+     *   <li>baseConfigPath: "META-INF/universal-logger/universal-logger.yml", profile: "prod"</li>
+     *   <li>결과: "META-INF/universal-logger/universal-logger-prod.yml"</li>
      * </ul>
      *
      * @param baseConfigPath 기본 설정 파일 경로

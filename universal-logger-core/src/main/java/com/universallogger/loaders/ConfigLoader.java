@@ -54,8 +54,8 @@ public interface ConfigLoader {
      * <p>예시:</p>
      * <ul>
      *   <li>프로파일: "prod"</li>
-     *   <li>기본: config/universal-logger.yml</li>
-     *   <li>프로파일: config/universal-logger-prod.yml</li>
+     *   <li>기본: META-INF/universal-logger/universal-logger.yml</li>
+     *   <li>프로파일: META-INF/universal-logger/universal-logger-prod.yml</li>
      * </ul>
      *
      * @param configPath 기본 설정 파일 경로
