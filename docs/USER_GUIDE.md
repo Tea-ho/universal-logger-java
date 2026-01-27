@@ -199,7 +199,7 @@ dependencies {
 
 ### 설정 파일 생성
 
-`src/main/resources/config/universal-logger.yml`
+`src/main/resources/META-INF/universal-logger/universal-logger.yml`
 
 ```yaml
 version: "1.0"
@@ -351,7 +351,7 @@ spring:
 universal-logger:
   enabled: true
   application-name: MyApp  # 애플리케이션 이름 (로그 경로 {appName} 치환용)
-  config-path: "config/universal-logger.yml"
+  config-path: "META-INF/universal-logger/universal-logger.yml"
   sql-capture:
     enabled: false # true가 기본옵션으로, 자동 캡쳐 사용 필요 없을 경우 false 처리
 ```
@@ -366,7 +366,7 @@ ex> `project.properties`
 
 ```properties
 spring.application.name=MyApp
-universal-logger.config-path=config/universal-logger.yml
+universal-logger.config-path=META-INF/universal-logger/universal-logger.yml
 universal-logger.sql-capture.enabled=false
 ```
 
@@ -379,7 +379,7 @@ import com.universallogger.logback.spring.EnableUniversalLogger;
 
 @EnableUniversalLogger(
     applicationName = "MyApp",  // 애플리케이션 이름 (로그 경로 {appName} 치환용)
-    configPath = "config/universal-logger.yml",
+    configPath = "META-INF/universal-logger/universal-logger.yml",
     enableSqlCapture = true
 )
 public class ServerConfig extends WebMvcConfigurerAdapter {

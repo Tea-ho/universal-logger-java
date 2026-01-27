@@ -254,7 +254,7 @@ public class ProfileResolver {
 ```
 defaults/universal-logger-defaults.yml  (JAR 내장)
     ↓ merge
-config/universal-logger.yml             (base config)
+config/META-INF/universal-logger/universal-logger.yml             (base config)
     ↓ merge
 config/universal-logger-{profile}.yml   (profile-specific, optional)
 ```
@@ -263,7 +263,7 @@ config/universal-logger-{profile}.yml   (profile-specific, optional)
 ```java
 public final class LoggerConstants {
     public static final class ConfigPath {
-        public static final String DEFAULT = "config/universal-logger.yml";
+        public static final String DEFAULT = "config/META-INF/universal-logger/universal-logger.yml";
     }
 
     public static final class PropertyKeys {
@@ -365,7 +365,7 @@ Spring Framework(비-Boot) 프로젝트에서 Universal Logger를 사용하기 �
 @Configuration
 @EnableUniversalLogger(
     applicationName = "MyApp",
-    configPath = "config/universal-logger.yml",
+    configPath = "config/META-INF/universal-logger/universal-logger.yml",
     enableSqlCapture = true
 )
 public class AppConfig {
@@ -511,7 +511,7 @@ public interface LoggerProperties { ... }
          ↓
 [설정 파일 탐색 및 로드]
     1. defaults/universal-logger-defaults.yml (JAR)
-    2. config/universal-logger.yml (base)
+    2. config/META-INF/universal-logger/universal-logger.yml (base)
     3. config/universal-logger-{profile}.yml (optional)
          ↓
 [YAML/XML/JSON 파싱]
