@@ -1,6 +1,7 @@
 package com.universallogger.loaders;
 
 import com.universallogger.config.LoggerConfig;
+import com.universallogger.constants.LoggerConstants;
 import com.universallogger.parsers.ConfigParser;
 import com.universallogger.parsers.YamlParser;
 import com.universallogger.parsers.JsonParser;
@@ -28,6 +29,9 @@ public class UniversalConfigLoader implements ConfigLoader {
 
     private final Map<String, ConfigParser> parsers;
     private final ConfigParser defaultParser;
+
+    /** SEARCH_PATHS 폴백으로 발견된 실제 경로 (loadWithProfile에서 profile 경로 생성에 사용) */
+    private volatile String lastResolvedPath;
 
     /**
      * 기본 생성자
@@ -75,7 +79,11 @@ public class UniversalConfigLoader implements ConfigLoader {
             }
 
             String extension = getFileExtension(resourcePath).toLowerCase();
-            userConfig = parseFromStream(inputStream, extension);
+            try {
+                userConfig = parseFromStream(inputStream, extension);
+            } finally {
+                inputStream.close();
+            }
         }
         // "file:" 프리픽스가 명시된 경우
         else if (configPath.startsWith("file:")) {
@@ -90,27 +98,7 @@ public class UniversalConfigLoader implements ConfigLoader {
         }
         // 프리픽스가 없는 경우: 스마트 탐색 (classpath 우선, file system fallback)
         else {
-            // 1. 클래스패스에서 먼저 시도
-            InputStream inputStream = getClass().getClassLoader().getResourceAsStream(configPath);
-
-            if (inputStream != null) {
-                logger.info("Initialized with config: classpath:" + configPath);
-                String extension = getFileExtension(configPath).toLowerCase();
-                userConfig = parseFromStream(inputStream, extension);
-            }
-            // 2. 클래스패스에 없으면 파일 시스템에서 시도
-            else {
-                File configFile = new File(configPath);
-                if (configFile.exists()) {
-                    logger.info("Initialized with config: file:" + configPath);
-                    String extension = getFileExtension(configPath).toLowerCase();
-                    userConfig = parseFromFile(configFile, extension);
-                } else {
-                    throw new IllegalArgumentException(
-                        "Config file not found in classpath or file system: " + configPath
-                    );
-                }
-            }
+            userConfig = searchAndLoad(configPath);
         }
 
         // 요청 시 기본 설정과 병합
@@ -136,14 +124,30 @@ public class UniversalConfigLoader implements ConfigLoader {
         }
 
         logger.info("Loading default configuration from JAR");
-        return defaultParser.parse(defaultStream);
+        try {
+            return defaultParser.parse(defaultStream);
+        } finally {
+            defaultStream.close();
+        }
     }
 
     @Override
     public LoggerConfig loadWithProfile(String configPath, String profile, boolean mergeDefaults) throws Exception {
-        // 1. 기본 설정 로드
+        // 1. 기본 설정 로드 (없으면 defaults.yml 사용)
         logger.info("Loading base configuration: {}", configPath);
-        LoggerConfig baseConfig = load(configPath, mergeDefaults);
+        LoggerConfig baseConfig;
+        String resolvedPath = configPath; // 실제로 발견된 경로 추적
+        try {
+            baseConfig = load(configPath, mergeDefaults);
+            // load()에서 SEARCH_PATHS 폴백으로 찾은 경우 실제 경로 확인
+            if (lastResolvedPath != null) {
+                resolvedPath = lastResolvedPath;
+            }
+        } catch (IllegalArgumentException e) {
+            // 기본 설정 파일이 없으면 defaults.yml을 base로 사용
+            logger.warn("Base config not found: {}, using defaults as base", configPath);
+            baseConfig = loadDefaultConfig();
+        }
 
         // 2. 프로파일이 없으면 기본 설정 반환
         if (profile == null || profile.trim().isEmpty()) {
@@ -151,8 +155,8 @@ public class UniversalConfigLoader implements ConfigLoader {
             return baseConfig;
         }
 
-        // 3. 프로파일별 설정 파일 경로 생성
-        String profileConfigPath = ProfileResolver.buildProfileConfigPath(configPath, profile);
+        // 3. 실제 발견된 경로 기준으로 프로파일별 설정 파일 경로 생성
+        String profileConfigPath = ProfileResolver.buildProfileConfigPath(resolvedPath, profile);
         logger.info("Attempting to load profile-specific configuration: {}", profileConfigPath);
 
         // 4. 프로파일별 설정 로드 시도
@@ -175,6 +179,93 @@ public class UniversalConfigLoader implements ConfigLoader {
     }
 
     /**
+     * 지정 경로 → SEARCH_PATHS 순서로 설정 파일 탐색 및 로드
+     *
+     * classpath → filesystem 순서로 각 경로를 시도합니다.
+     * 발견된 경로는 lastResolvedPath에 저장됩니다.
+     *
+     * @param configPath 최초 시도할 경로
+     * @return 로드된 설정
+     * @throws IllegalArgumentException 모든 경로에서 파일을 찾지 못한 경우
+     */
+    private LoggerConfig searchAndLoad(String configPath) throws Exception {
+        lastResolvedPath = null;
+
+        // 1. 지정된 configPath에서 먼저 시도
+        LoggerConfig result = tryLoadFromPath(configPath);
+        if (result != null) {
+            lastResolvedPath = configPath;
+            return result;
+        }
+
+        // 2. SEARCH_PATHS 폴백 순회
+        for (String searchPath : LoggerConstants.ConfigPath.SEARCH_PATHS) {
+            // 이미 시도한 경로는 건너뜀
+            if (searchPath.equals(configPath)) {
+                continue;
+            }
+            result = tryLoadFromPath(searchPath);
+            if (result != null) {
+                lastResolvedPath = searchPath;
+                logger.info("Config found via fallback search: {}", searchPath);
+                return result;
+            }
+        }
+
+        // 3. 모든 경로에서 실패
+        throw new IllegalArgumentException(
+            "Config file not found in any search path. Tried: " + configPath +
+            " and " + LoggerConstants.ConfigPath.SEARCH_PATHS.length + " fallback paths"
+        );
+    }
+
+    /**
+     * 단일 경로에서 설정 파일 로드 시도
+     *
+     * @param path 시도할 경로 (classpath: 프리픽스 포함 가능)
+     * @return 로드된 설정, 파일을 찾지 못하면 null
+     */
+    private LoggerConfig tryLoadFromPath(String path) throws Exception {
+        // "classpath:" 프리픽스가 있는 경우
+        if (path.startsWith("classpath:")) {
+            String resourcePath = path.substring("classpath:".length());
+            InputStream inputStream = getClass().getClassLoader().getResourceAsStream(resourcePath);
+            if (inputStream == null) {
+                return null;
+            }
+            logger.info("Initialized with config: classpath:{}", resourcePath);
+            String extension = getFileExtension(resourcePath).toLowerCase();
+            try {
+                return parseFromStream(inputStream, extension);
+            } finally {
+                inputStream.close();
+            }
+        }
+
+        // classpath에서 시도
+        InputStream inputStream = getClass().getClassLoader().getResourceAsStream(path);
+        if (inputStream != null) {
+            logger.info("Initialized with config: classpath:{}", path);
+            String extension = getFileExtension(path).toLowerCase();
+            try {
+                return parseFromStream(inputStream, extension);
+            } finally {
+                inputStream.close();
+            }
+        }
+
+        // filesystem에서 시도
+        File configFile = new File(path);
+        if (configFile.exists()) {
+            logger.info("Initialized with config: file:{}", path);
+            String extension = getFileExtension(path).toLowerCase();
+            return parseFromFile(configFile, extension);
+        }
+
+        return null;
+    }
+
+    /**
      * 프로파일별 설정 로드
      *
      * 파일이 존재하지 않으면 null 반환 (허용되는 경우)
@@ -190,7 +281,11 @@ public class UniversalConfigLoader implements ConfigLoader {
             }
 
             String extension = getFileExtension(resourcePath).toLowerCase();
-            return parseFromStream(inputStream, extension);
+            try {
+                return parseFromStream(inputStream, extension);
+            } finally {
+                inputStream.close();
+            }
         }
         // 파일 시스템에서 시도
         else if (profileConfigPath.startsWith("file:")) {
@@ -212,7 +307,11 @@ public class UniversalConfigLoader implements ConfigLoader {
             if (inputStream != null) {
                 logger.debug("Found profile config in classpath: {}", profileConfigPath);
                 String extension = getFileExtension(profileConfigPath).toLowerCase();
-                return parseFromStream(inputStream, extension);
+                try {
+                    return parseFromStream(inputStream, extension);
+                } finally {
+                    inputStream.close();
+                }
             }
 
             // 2. 파일 시스템에서 시도

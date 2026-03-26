@@ -19,6 +19,11 @@ import java.io.StringWriter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 이메일 알림을 위한 Log4j2 커스텀 Appender
@@ -28,29 +33,24 @@ import java.util.Properties;
  *
  * <p>주요 기능:</p>
  * <ul>
+ *   <li>SMTP Session 재사용 (매번 생성하지 않음)</li>
+ *   <li>SMTP 타임아웃 설정</li>
+ *   <li>비동기 전송 - 메인 스레드 블로킹 방지</li>
+ *   <li>Rate limiting - 이메일 폭탄 방지 (분당 최대 10건)</li>
  *   <li>SMTP 인증 및 TLS 암호화 지원</li>
  *   <li>다중 수신자 지원 (쉼표로 구분)</li>
  *   <li>제목/본문 템플릿 커스터마이징</li>
  *   <li>예외 스택 트레이스 포함</li>
  * </ul>
  *
- * <p>Log4j2 설정 예시:</p>
- * <pre>{@code
- * <UniversalEmail name="Email"
- *                 smtpHost="smtp.gmail.com"
- *                 smtpPort="587"
- *                 username="user@gmail.com"
- *                 password="password"
- *                 from="sender@gmail.com"
- *                 to="recipient@example.com">
- *     <ThresholdFilter level="ERROR"/>
- * </UniversalEmail>
- * }</pre>
- *
  * @see org.apache.logging.log4j.core.appender.AbstractAppender
  */
 @Plugin(name = "UniversalEmail", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE)
 public class EmailAppender extends AbstractAppender {
+
+    // Rate limiting: 분당 최대 10건
+    private static final int MAX_EMAILS_PER_MINUTE = 10;
+    private static final long RATE_LIMIT_WINDOW_MS = 60_000L;
 
     private final String smtpHost;
     private final int smtpPort;
@@ -60,6 +60,16 @@ public class EmailAppender extends AbstractAppender {
     private final String to;
     private final String subjectTemplate;
     private final String bodyTemplate;
+
+    // SMTP Session 재사용
+    private final Session mailSession;
+
+    // 비동기 전송
+    private final ExecutorService executorService;
+
+    // Rate limiting
+    private final AtomicInteger emailCount = new AtomicInteger(0);
+    private final AtomicLong windowStart = new AtomicLong(System.currentTimeMillis());
 
     protected EmailAppender(String name, Filter filter,
                             String smtpHost, int smtpPort,
@@ -75,35 +85,80 @@ public class EmailAppender extends AbstractAppender {
         this.to = to;
         this.subjectTemplate = subjectTemplate;
         this.bodyTemplate = bodyTemplate;
+
+        // SMTP Session 1회 생성 후 재사용
+        this.mailSession = createMailSession();
+
+        // 비동기 전송을 위한 스레드 풀
+        this.executorService = Executors.newSingleThreadExecutor(r -> {
+            Thread thread = new Thread(r, "Log4j2-EmailAppender-Thread");
+            thread.setDaemon(true);
+            return thread;
+        });
+    }
+
+    /**
+     * SMTP Session 생성 (1회)
+     */
+    private Session createMailSession() {
+        Properties props = new Properties();
+        props.put("mail.smtp.host", smtpHost);
+        props.put("mail.smtp.port", String.valueOf(smtpPort));
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+
+        // SMTP 타임아웃 설정 (5초)
+        props.put("mail.smtp.connectiontimeout", "5000");
+        props.put("mail.smtp.timeout", "5000");
+        props.put("mail.smtp.writetimeout", "5000");
+
+        return Session.getInstance(props, new Authenticator() {
+            @Override
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(username, password);
+            }
+        });
+    }
+
+    /**
+     * Rate limiting 체크
+     */
+    private boolean isRateLimitAllowed() {
+        long now = System.currentTimeMillis();
+        long windowStartValue = windowStart.get();
+
+        if (now - windowStartValue > RATE_LIMIT_WINDOW_MS) {
+            windowStart.set(now);
+            emailCount.set(0);
+        }
+
+        return emailCount.incrementAndGet() <= MAX_EMAILS_PER_MINUTE;
     }
 
     @Override
     public void append(LogEvent event) {
-        try {
-            String subject = formatSubject(event);
-            String body = formatBody(event);
-            sendEmail(subject, body);
-        } catch (Exception e) {
-            error("Failed to send email notification", e);
+        // Rate limiting 체크
+        if (!isRateLimitAllowed()) {
+            error("Email rate limit exceeded. Skipping email notification.");
+            return;
         }
+
+        // 비동기 전송
+        final LogEvent immutableEvent = event.toImmutable();
+        executorService.submit(() -> {
+            try {
+                String subject = formatSubject(immutableEvent);
+                String body = formatBody(immutableEvent);
+                sendEmail(subject, body);
+            } catch (Exception e) {
+                error("Failed to send email notification", e);
+            }
+        });
     }
 
     private void sendEmail(String subject, String body) {
         try {
-            Properties props = new Properties();
-            props.put("mail.smtp.host", smtpHost);
-            props.put("mail.smtp.port", String.valueOf(smtpPort));
-            props.put("mail.smtp.auth", "true");
-            props.put("mail.smtp.starttls.enable", "true");
-
-            Session session = Session.getInstance(props, new Authenticator() {
-                @Override
-                protected PasswordAuthentication getPasswordAuthentication() {
-                    return new PasswordAuthentication(username, password);
-                }
-            });
-
-            Message message = new MimeMessage(session);
+            Message message = new MimeMessage(mailSession);
             message.setFrom(new InternetAddress(from));
 
             // 쉼표로 구분된 수신자 파싱
@@ -121,6 +176,23 @@ public class EmailAppender extends AbstractAppender {
         } catch (Exception e) {
             error("Failed to send email", e);
         }
+    }
+
+    @Override
+    public void stop() {
+        // ExecutorService 종료
+        if (executorService != null) {
+            executorService.shutdown();
+            try {
+                if (!executorService.awaitTermination(10, TimeUnit.SECONDS)) {
+                    executorService.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                executorService.shutdownNow();
+            }
+        }
+
+        super.stop();
     }
 
     private String formatSubject(LogEvent event) {

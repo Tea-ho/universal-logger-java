@@ -10,6 +10,11 @@ import javax.mail.internet.MimeMessage;
 import java.util.Properties;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 이메일 알림을 위한 Logback 커스텀 앱펜더
@@ -21,6 +26,8 @@ import java.time.format.DateTimeFormatter;
  * <ul>
  *   <li>SMTP 인증 및 SSL/TLS 암호화 지원</li>
  *   <li>다중 수신자 지원</li>
+ *   <li>비동기 전송 - 메인 스레드 블로킹 방지</li>
+ *   <li>Rate limiting - 이메일 폭탄 방지 (분당 최대 10건)</li>
  *   <li>포트에 따른 자동 암호화 설정 (465: SSL, 587: TLS)</li>
  *   <li>연결 타임아웃 설정 (5초)</li>
  * </ul>
@@ -29,13 +36,46 @@ import java.time.format.DateTimeFormatter;
  */
 public class EmailAppender extends AppenderBase<ILoggingEvent> {
 
+    // Rate limiting: 분당 최대 10건
+    private static final int MAX_EMAILS_PER_MINUTE = 10;
+    private static final long RATE_LIMIT_WINDOW_MS = 60_000L;
+
     private LoggerConfig.EmailConfig emailConfig;
     private Session mailSession;
+    private ExecutorService executorService;
+
+    // Rate limiting 필드
+    private final AtomicInteger emailCount = new AtomicInteger(0);
+    private final AtomicLong windowStart = new AtomicLong(System.currentTimeMillis());
 
     @Override
     public void start() {
         super.start();
         setupMailSession();
+
+        // 비동기 전송을 위한 스레드 풀
+        executorService = Executors.newSingleThreadExecutor(r -> {
+            Thread thread = new Thread(r, "EmailAppender-Thread");
+            thread.setDaemon(true);
+            return thread;
+        });
+    }
+
+    @Override
+    public void stop() {
+        // ExecutorService 종료
+        if (executorService != null) {
+            executorService.shutdown();
+            try {
+                if (!executorService.awaitTermination(10, TimeUnit.SECONDS)) {
+                    executorService.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                executorService.shutdownNow();
+            }
+        }
+
+        super.stop();
     }
 
     private void setupMailSession() {
@@ -88,41 +128,68 @@ public class EmailAppender extends AppenderBase<ILoggingEvent> {
         }
     }
 
+    /**
+     * Rate limiting 체크
+     *
+     * @return 전송 가능하면 true
+     */
+    private boolean isRateLimitAllowed() {
+        long now = System.currentTimeMillis();
+        long windowStartValue = windowStart.get();
+
+        // 윈도우 초과 시 리셋
+        if (now - windowStartValue > RATE_LIMIT_WINDOW_MS) {
+            windowStart.set(now);
+            emailCount.set(0);
+        }
+
+        return emailCount.incrementAndGet() <= MAX_EMAILS_PER_MINUTE;
+    }
+
     @Override
     protected void append(ILoggingEvent event) {
-        try {
-            if (mailSession == null || emailConfig.getTo() == null) {
-                return;
-            }
-
-            MimeMessage message = new MimeMessage(mailSession);
-            message.setFrom(new InternetAddress(emailConfig.getSmtp().getUsername()));
-
-            for (String recipient : emailConfig.getTo()) {
-                message.addRecipient(Message.RecipientType.TO, new InternetAddress(recipient));
-            }
-
-            String subject = emailConfig.getSubject()
-                .replace("{appName}", "JavaApp")
-                .replace("{level}", event.getLevel().toString());
-
-            message.setSubject(subject);
-
-            String body = String.format(
-                "시간: %s\n레벨: %s\n로거: %s\n메시지: %s\n",
-                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
-                event.getLevel().toString(),
-                event.getLoggerName(),
-                event.getFormattedMessage()
-            );
-
-            message.setText(body);
-
-            Transport.send(message);
-
-        } catch (Exception e) {
-            addError("Failed to send email: " + e.getMessage());
+        if (mailSession == null || emailConfig.getTo() == null) {
+            return;
         }
+
+        // Rate limiting 체크
+        if (!isRateLimitAllowed()) {
+            addWarn("Email rate limit exceeded. Skipping email notification.");
+            return;
+        }
+
+        // 비동기 전송
+        executorService.submit(() -> {
+            try {
+                MimeMessage message = new MimeMessage(mailSession);
+                message.setFrom(new InternetAddress(emailConfig.getSmtp().getUsername()));
+
+                for (String recipient : emailConfig.getTo()) {
+                    message.addRecipient(Message.RecipientType.TO, new InternetAddress(recipient));
+                }
+
+                String subject = emailConfig.getSubject()
+                    .replace("{appName}", "JavaApp")
+                    .replace("{level}", event.getLevel().toString());
+
+                message.setSubject(subject);
+
+                String body = String.format(
+                    "시간: %s\n레벨: %s\n로거: %s\n메시지: %s\n",
+                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
+                    event.getLevel().toString(),
+                    event.getLoggerName(),
+                    event.getFormattedMessage()
+                );
+
+                message.setText(body);
+
+                Transport.send(message);
+
+            } catch (Exception e) {
+                addError("Failed to send email: " + e.getMessage());
+            }
+        });
     }
 
     public void setEmailConfig(LoggerConfig.EmailConfig emailConfig) {

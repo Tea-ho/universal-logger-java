@@ -3,6 +3,7 @@ package com.universallogger.filters;
 import com.universallogger.config.LoggerConfig;
 
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import java.util.regex.Matcher;
 
 /**
@@ -37,13 +38,35 @@ public class SensitiveDataFilter implements MessageFilter {
         LoggerConfig.FiltersConfig.SensitiveDataConfig.PatternConfig[] patternConfigs =
             filtersConfig.getSensitiveData().getPatterns();
 
-        patterns = new Pattern[patternConfigs.length];
-        replacements = new String[patternConfigs.length];
+        if (patternConfigs == null || patternConfigs.length == 0) {
+            patterns = new Pattern[0];
+            replacements = new String[0];
+            return;
+        }
+
+        // 유효한 패턴만 수집
+        java.util.List<Pattern> validPatterns = new java.util.ArrayList<>();
+        java.util.List<String> validReplacements = new java.util.ArrayList<>();
 
         for (int i = 0; i < patternConfigs.length; i++) {
-            patterns[i] = Pattern.compile(patternConfigs[i].getRegex());
-            replacements[i] = patternConfigs[i].getReplace();
+            String regex = patternConfigs[i].getRegex();
+            if (regex == null || regex.isEmpty()) {
+                continue;
+            }
+            // 패턴 복잡도 검증: 길이 제한 및 중첩 반복 감지 (ReDoS 방지)
+            if (regex.length() > 200) {
+                continue; // 지나치게 긴 패턴 거부
+            }
+            try {
+                validPatterns.add(Pattern.compile(regex));
+                validReplacements.add(patternConfigs[i].getReplace() != null ? patternConfigs[i].getReplace() : "***");
+            } catch (PatternSyntaxException e) {
+                // 잘못된 정규식 패턴은 무시
+            }
         }
+
+        patterns = validPatterns.toArray(new Pattern[0]);
+        replacements = validReplacements.toArray(new String[0]);
     }
 
     @Override

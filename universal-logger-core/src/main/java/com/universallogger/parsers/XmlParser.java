@@ -15,7 +15,7 @@ public class XmlParser implements ConfigParser {
 
     @Override
     public LoggerConfig parse(InputStream stream) throws Exception {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilderFactory factory = createSecureFactory();
         DocumentBuilder builder = factory.newDocumentBuilder();
         Document doc = builder.parse(stream);
         return parseDocument(doc);
@@ -23,10 +23,27 @@ public class XmlParser implements ConfigParser {
 
     @Override
     public LoggerConfig parse(File file) throws Exception {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilderFactory factory = createSecureFactory();
         DocumentBuilder builder = factory.newDocumentBuilder();
         Document doc = builder.parse(file);
         return parseDocument(doc);
+    }
+
+    /**
+     * XXE 공격 방지가 적용된 DocumentBuilderFactory 생성
+     */
+    private DocumentBuilderFactory createSecureFactory() throws Exception {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+
+        // XXE 공격 방지 설정
+        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+        factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+        factory.setXIncludeAware(false);
+        factory.setExpandEntityReferences(false);
+
+        return factory;
     }
 
     /**

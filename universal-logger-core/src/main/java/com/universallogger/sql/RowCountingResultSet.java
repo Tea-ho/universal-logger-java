@@ -34,7 +34,7 @@ class RowCountingResultSet implements ResultSet {
     private final LoggerConfig config;
     private int rows = 0;
     private int currentRow = 0;
-    private boolean countLogged = false;
+    private volatile boolean countLogged = false;
 
     public RowCountingResultSet(ResultSet targetResultSet, String callerInfo, LoggerConfig config) {
         this.targetResultSet = targetResultSet;

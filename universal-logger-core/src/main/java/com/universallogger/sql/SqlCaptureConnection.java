@@ -2,6 +2,9 @@ package com.universallogger.sql;
 
 import com.universallogger.config.LoggerConfig;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.*;
 import java.util.Map;
 import java.util.Properties;
@@ -27,6 +30,8 @@ import java.util.concurrent.Executor;
  * @see SqlCaptureCallableStatement
  */
 class SqlCaptureConnection implements Connection {
+    private static final Logger logger = LoggerFactory.getLogger(SqlCaptureConnection.class);
+
     private final Connection targetConnection;
     private final LoggerConfig config;
     private final boolean sqlLoggingEnabled;
@@ -118,8 +123,8 @@ class SqlCaptureConnection implements Connection {
     @Override public NClob createNClob() throws SQLException { return targetConnection.createNClob(); }
     @Override public SQLXML createSQLXML() throws SQLException { return targetConnection.createSQLXML(); }
     @Override public boolean isValid(int timeout) throws SQLException { return targetConnection.isValid(timeout); }
-    @Override public void setClientInfo(String name, String value) { try { targetConnection.setClientInfo(name, value); } catch (Exception e) {} }
-    @Override public void setClientInfo(Properties properties) { try { targetConnection.setClientInfo(properties); } catch (Exception e) {} }
+    @Override public void setClientInfo(String name, String value) { try { targetConnection.setClientInfo(name, value); } catch (Exception e) { logger.debug("Failed to set client info: {}={}", name, value, e); } }
+    @Override public void setClientInfo(Properties properties) { try { targetConnection.setClientInfo(properties); } catch (Exception e) { logger.debug("Failed to set client info properties", e); } }
     @Override public String getClientInfo(String name) throws SQLException { return targetConnection.getClientInfo(name); }
     @Override public Properties getClientInfo() throws SQLException { return targetConnection.getClientInfo(); }
     @Override public Array createArrayOf(String typeName, Object[] elements) throws SQLException { return targetConnection.createArrayOf(typeName, elements); }

@@ -7,6 +7,7 @@ import com.universallogger.config.LoggerConfig;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 /**
  * 민감 정보 마스킹을 위한 Logback 필터
@@ -55,12 +56,28 @@ public class SensitiveDataLogbackFilter extends Filter<ILoggingEvent> {
             return;
         }
 
-        patterns = new Pattern[patternConfigs.length];
-        replacements = new String[patternConfigs.length];
+        // 유효한 패턴만 수집 (ReDoS 방지)
+        java.util.List<Pattern> validPatterns = new java.util.ArrayList<>();
+        java.util.List<String> validReplacements = new java.util.ArrayList<>();
 
         for (int i = 0; i < patternConfigs.length; i++) {
-            patterns[i] = Pattern.compile(patternConfigs[i].getRegex());
-            replacements[i] = patternConfigs[i].getReplace();
+            String regex = patternConfigs[i].getRegex();
+            if (regex == null || regex.isEmpty() || regex.length() > 200) {
+                continue;
+            }
+            try {
+                validPatterns.add(Pattern.compile(regex));
+                validReplacements.add(patternConfigs[i].getReplace() != null ? patternConfigs[i].getReplace() : "***");
+            } catch (PatternSyntaxException e) {
+                // 잘못된 정규식 패턴은 무시
+            }
+        }
+
+        patterns = validPatterns.toArray(new Pattern[0]);
+        replacements = validReplacements.toArray(new String[0]);
+
+        if (patterns.length == 0) {
+            this.enabled = false;
         }
     }
 

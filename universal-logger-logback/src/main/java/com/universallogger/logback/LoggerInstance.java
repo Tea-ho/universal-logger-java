@@ -12,6 +12,8 @@ import com.universallogger.utils.ProfileResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.PreDestroy;
+import java.io.Closeable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -40,7 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @see AppenderFactory
  * @see LoggerConfig
  */
-public class LoggerInstance {
+public class LoggerInstance implements Closeable {
 
     private static final Logger logger = LoggerFactory.getLogger(LoggerInstance.class);
     private static final Object INIT_LOCK = new Object();
@@ -181,6 +183,14 @@ public class LoggerInstance {
         Map<String, LoggerConfig.OutputConfig> outputs = config.getOutputs();
         String appName = config.getGlobal().getAppName();
 
+        // Timezone 설정 (DefaultAppenderFactory인 경우)
+        if (appenderFactory instanceof DefaultAppenderFactory) {
+            String timezone = config.getGlobal().getTimezone();
+            if (timezone != null && !timezone.isEmpty()) {
+                ((DefaultAppenderFactory) appenderFactory).setTimezone(timezone);
+            }
+        }
+
         // 콘솔 앱펜더
         if (isOutputEnabled(outputs, "console")) {
             Appender<ILoggingEvent> appender = appenderFactory.createConsoleAppender(
@@ -238,6 +248,25 @@ public class LoggerInstance {
      */
     public Logger getLogger(Class<?> clazz) {
         return getLogger(clazz.getSimpleName());
+    }
+
+    /**
+     * LoggerContext 종료 및 리소스 정리
+     *
+     * Spring Bean으로 사용 시 @PreDestroy에 의해 자동 호출됩니다.
+     * try-with-resources로도 사용 가능합니다.
+     */
+    @PreDestroy
+    public void destroy() {
+        logger.info("Shutting down UniversalLogger (Logback)");
+        if (loggerContext != null) {
+            loggerContext.stop();
+        }
+    }
+
+    @Override
+    public void close() {
+        destroy();
     }
 
     // ========== Getter 메서드 ==========

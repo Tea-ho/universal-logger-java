@@ -43,6 +43,9 @@ public class ConfigValidator {
             });
         }
 
+        // 성능 설정 검증
+        validatePerformanceConfig(config.getPerformance(), result);
+
         return result;
     }
 
@@ -159,6 +162,33 @@ public class ConfigValidator {
 
         if (config.getTo() == null || config.getTo().length == 0) {
             result.addError("Email recipient(s) not set");
+        }
+    }
+
+    /**
+     * 성능 설정 검증
+     */
+    private static void validatePerformanceConfig(LoggerConfig.PerformanceConfig performance, ValidationResult result) {
+        if (performance == null) {
+            return;
+        }
+
+        if (performance.getBufferSize() < 0) {
+            result.addError("Performance bufferSize cannot be negative: " + performance.getBufferSize());
+        }
+
+        if (performance.getFlushInterval() < 0) {
+            result.addError("Performance flushInterval cannot be negative: " + performance.getFlushInterval());
+        }
+
+        if (performance.getMaxQueueSize() < 0) {
+            result.addError("Performance maxQueueSize cannot be negative: " + performance.getMaxQueueSize());
+        }
+
+        if (performance.getBufferSize() > 0 && performance.getMaxQueueSize() > 0
+                && performance.getBufferSize() > performance.getMaxQueueSize()) {
+            result.addWarning("Performance bufferSize (" + performance.getBufferSize()
+                    + ") is larger than maxQueueSize (" + performance.getMaxQueueSize() + ")");
         }
     }
 

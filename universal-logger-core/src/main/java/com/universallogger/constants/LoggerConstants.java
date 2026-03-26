@@ -1,5 +1,7 @@
 package com.universallogger.constants;
 
+import java.util.TimeZone;
+
 /**
  * 로거 상수 정의
  * Hard-code 제거를 위한 중앙 집중식 상수 관리
@@ -52,7 +54,8 @@ public final class LoggerConstants {
     public static final class Defaults {
         public static final String APP_NAME = "UniversalLogger";
         public static final String LOG_LEVEL = "INFO";
-        public static final String TIMEZONE = "Asia/Seoul";
+        /** 서버 기본 Timezone 사용 (yml에서 override 가능) */
+        public static final String TIMEZONE = TimeZone.getDefault().getID();
         public static final String ENCODING = "UTF-8";
         public static final String LOG_DIR = "logs";
         public static final String TABLE_NAME = "app_logs";

@@ -1,5 +1,7 @@
 package com.universallogger.sql;
 
+import java.util.regex.Pattern;
+
 /**
  * MyBatis 스타일 SQL 포맷터 구현체
  *
@@ -14,20 +16,30 @@ package com.universallogger.sql;
  *   <li>INSERT, UPDATE, DELETE 구문 지원</li>
  * </ul>
  *
- * <p>사용 예시:</p>
- * <pre>{@code
- * SqlFormatter formatter = new MyBatisSqlFormatter();
- * String formatted = formatter.format("SELECT * FROM users WHERE id = ?");
- * // 결과:
- * // SELECT *
- * //        FROM users
- * //        WHERE id = ?
- * }</pre>
- *
  * @see SqlFormatter
  * @see Slf4jSqlLogger
  */
 public class MyBatisSqlFormatter implements SqlFormatter {
+
+    // 컴파일된 Pattern 캐싱 (성능 최적화)
+    private static final Pattern P_SELECT = Pattern.compile("(?i)\\s+(SELECT)\\s+");
+    private static final Pattern P_FROM = Pattern.compile("(?i)\\s+(FROM)\\s+");
+    private static final Pattern P_WHERE = Pattern.compile("(?i)\\s+(WHERE)\\s+");
+    private static final Pattern P_AND = Pattern.compile("(?i)\\s+(AND)\\s+");
+    private static final Pattern P_OR = Pattern.compile("(?i)\\s+(OR)\\s+");
+    private static final Pattern P_ORDER_BY = Pattern.compile("(?i)\\s+(ORDER BY)\\s+");
+    private static final Pattern P_GROUP_BY = Pattern.compile("(?i)\\s+(GROUP BY)\\s+");
+    private static final Pattern P_HAVING = Pattern.compile("(?i)\\s+(HAVING)\\s+");
+    private static final Pattern P_LIMIT = Pattern.compile("(?i)\\s+(LIMIT)\\s+");
+    private static final Pattern P_OFFSET = Pattern.compile("(?i)\\s+(OFFSET)\\s+");
+    private static final Pattern P_JOIN = Pattern.compile("(?i)\\s+(LEFT JOIN|RIGHT JOIN|INNER JOIN|OUTER JOIN|CROSS JOIN|JOIN)\\s+");
+    private static final Pattern P_ON = Pattern.compile("(?i)\\s+(ON)\\s+");
+    private static final Pattern P_INSERT_INTO = Pattern.compile("(?i)\\s+(INSERT INTO)\\s+");
+    private static final Pattern P_VALUES = Pattern.compile("(?i)\\s+(VALUES)\\s+");
+    private static final Pattern P_UPDATE = Pattern.compile("(?i)\\s+(UPDATE)\\s+");
+    private static final Pattern P_SET = Pattern.compile("(?i)\\s+(SET)\\s+");
+    private static final Pattern P_DELETE_FROM = Pattern.compile("(?i)\\s+(DELETE FROM)\\s+");
+    private static final Pattern P_DELETE = Pattern.compile("(?i)\\s+(DELETE)\\s+");
 
     @Override
     public String format(String sql) {
@@ -40,32 +52,32 @@ public class MyBatisSqlFormatter implements SqlFormatter {
             return sql;  // 이미 포맷팅되어 있으면 그대로 반환
         }
 
-        String formatted = sql
-            // SELECT 구문
-            .replaceAll("(?i)\\s+(SELECT)\\s+", "\n$1 ")
-            .replaceAll("(?i)\\s+(FROM)\\s+", "\n       $1 ")
-            .replaceAll("(?i)\\s+(WHERE)\\s+", "\n       $1 ")
-            .replaceAll("(?i)\\s+(AND)\\s+", "\n       $1 ")
-            .replaceAll("(?i)\\s+(OR)\\s+", "\n       $1 ")
-            .replaceAll("(?i)\\s+(ORDER BY)\\s+", "\n       $1 ")
-            .replaceAll("(?i)\\s+(GROUP BY)\\s+", "\n       $1 ")
-            .replaceAll("(?i)\\s+(HAVING)\\s+", "\n       $1 ")
-            .replaceAll("(?i)\\s+(LIMIT)\\s+", "\n       $1 ")
-            .replaceAll("(?i)\\s+(OFFSET)\\s+", "\n       $1 ")
-            // JOIN 구문
-            .replaceAll("(?i)\\s+(LEFT JOIN|RIGHT JOIN|INNER JOIN|OUTER JOIN|CROSS JOIN|JOIN)\\s+", "\n       $1 ")
-            .replaceAll("(?i)\\s+(ON)\\s+", " $1 ")
-            // INSERT 구문
-            .replaceAll("(?i)\\s+(INSERT INTO)\\s+", "\n$1 ")
-            .replaceAll("(?i)\\s+(VALUES)\\s+", "\n       $1 ")
-            // UPDATE 구문
-            .replaceAll("(?i)\\s+(UPDATE)\\s+", "\n$1 ")
-            .replaceAll("(?i)\\s+(SET)\\s+", "\n       $1 ")
-            // DELETE 구문
-            .replaceAll("(?i)\\s+(DELETE FROM)\\s+", "\n$1 ")
-            .replaceAll("(?i)\\s+(DELETE)\\s+", "\n$1 ")
-            .trim();
+        String formatted = sql;
 
-        return formatted;
+        // SELECT 구문
+        formatted = P_SELECT.matcher(formatted).replaceAll("\n$1 ");
+        formatted = P_FROM.matcher(formatted).replaceAll("\n       $1 ");
+        formatted = P_WHERE.matcher(formatted).replaceAll("\n       $1 ");
+        formatted = P_AND.matcher(formatted).replaceAll("\n       $1 ");
+        formatted = P_OR.matcher(formatted).replaceAll("\n       $1 ");
+        formatted = P_ORDER_BY.matcher(formatted).replaceAll("\n       $1 ");
+        formatted = P_GROUP_BY.matcher(formatted).replaceAll("\n       $1 ");
+        formatted = P_HAVING.matcher(formatted).replaceAll("\n       $1 ");
+        formatted = P_LIMIT.matcher(formatted).replaceAll("\n       $1 ");
+        formatted = P_OFFSET.matcher(formatted).replaceAll("\n       $1 ");
+        // JOIN 구문
+        formatted = P_JOIN.matcher(formatted).replaceAll("\n       $1 ");
+        formatted = P_ON.matcher(formatted).replaceAll(" $1 ");
+        // INSERT 구문
+        formatted = P_INSERT_INTO.matcher(formatted).replaceAll("\n$1 ");
+        formatted = P_VALUES.matcher(formatted).replaceAll("\n       $1 ");
+        // UPDATE 구문
+        formatted = P_UPDATE.matcher(formatted).replaceAll("\n$1 ");
+        formatted = P_SET.matcher(formatted).replaceAll("\n       $1 ");
+        // DELETE 구문
+        formatted = P_DELETE_FROM.matcher(formatted).replaceAll("\n$1 ");
+        formatted = P_DELETE.matcher(formatted).replaceAll("\n$1 ");
+
+        return formatted.trim();
     }
 }

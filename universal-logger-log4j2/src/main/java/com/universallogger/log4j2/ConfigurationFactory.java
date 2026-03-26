@@ -3,6 +3,7 @@ package com.universallogger.log4j2;
 import com.universallogger.config.LoggerConfig;
 import com.universallogger.constants.LoggerConstants;
 import com.universallogger.loaders.UniversalConfigLoader;
+import com.universallogger.utils.ProfileResolver;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.LoggerContext;
@@ -17,6 +18,9 @@ import org.apache.logging.log4j.core.config.plugins.Plugin;
 
 import java.io.File;
 import java.util.Map;
+import java.util.TimeZone;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Log4j2 ConfigurationFactory - Log4j2 시작 시 자동으로 호출됨
@@ -29,6 +33,9 @@ import java.util.Map;
 public class ConfigurationFactory extends org.apache.logging.log4j.core.config.ConfigurationFactory {
 
     private static final com.universallogger.loaders.ConfigLoader configLoader = new UniversalConfigLoader();
+
+    /** %d{...} 패턴 매칭용 정규식 (timezone이 없는 경우만) */
+    private static final Pattern DATE_PATTERN = Pattern.compile("%d\\{([^}]+)}(?!\\{)");
 
     @Override
     protected String[] getSupportedTypes() {
@@ -105,11 +112,12 @@ public class ConfigurationFactory extends org.apache.logging.log4j.core.config.C
      * 1. 클래스패스에서 META-INF/universal-logger/universal-logger.yml 찾기
      * 2. 없으면 JAR 내부 defaults.yml 사용
      */
-    private LoggerConfig loadConfig() {
+    private synchronized LoggerConfig loadConfig() {
         try {
-            // 사용자 설정 파일 로드 시도
+            // 사용자 설정 파일 로드 시도 (프로파일 지원)
             String configPath = LoggerConstants.ConfigPath.DEFAULT;
-            return configLoader.load(configPath, true);
+            String profile = ProfileResolver.resolveProfile();
+            return configLoader.loadWithProfile(configPath, profile, true);
         } catch (Exception e) {
             System.err.println("User config not found, using defaults: " + e.getMessage());
             try {
@@ -128,10 +136,17 @@ public class ConfigurationFactory extends org.apache.logging.log4j.core.config.C
         Map<String, LoggerConfig.OutputConfig> outputs = config.getOutputs();
         String appName = config.getGlobal().getAppName();
 
+        // Timezone 설정 (null이면 서버 기본값)
+        String timezone = config.getGlobal().getTimezone();
+        if (timezone == null || timezone.isEmpty()) {
+            timezone = TimeZone.getDefault().getID();
+        }
+
         // 콘솔 Appender
         if (isOutputEnabled(outputs, "console")) {
             LoggerConfig.OutputConfig consoleConfig = outputs.get("console");
-            String pattern = consoleConfig.getFormat().replace("{appName}", appName);
+            String pattern = applyTimezoneToPattern(
+                consoleConfig.getFormat().replace("{appName}", appName), timezone);
 
             AppenderComponentBuilder consoleAppender = builder.newAppender("Console", "CONSOLE")
                 .addAttribute("target", "SYSTEM_OUT");
@@ -144,7 +159,8 @@ public class ConfigurationFactory extends org.apache.logging.log4j.core.config.C
         if (isOutputEnabled(outputs, "file")) {
             LoggerConfig.OutputConfig fileConfig = outputs.get("file");
             String filePath = fileConfig.getPath().replace("{appName}", appName);
-            String pattern = fileConfig.getFormat().replace("{appName}", appName);
+            String pattern = applyTimezoneToPattern(
+                fileConfig.getFormat().replace("{appName}", appName), timezone);
 
             // 부모 디렉토리 생성
             createParentDirectories(filePath);
@@ -164,11 +180,15 @@ public class ConfigurationFactory extends org.apache.logging.log4j.core.config.C
                 .addAttribute("append", "true");
             fileAppender.add(builder.newLayout("PatternLayout")
                 .addAttribute("pattern", pattern));
+            // 시간 + 크기 기반 롤링 정책
             fileAppender.addComponent(builder.newComponent("Policies")
+                .addComponent(builder.newComponent("TimeBasedTriggeringPolicy")
+                    .addAttribute("interval", "1")
+                    .addAttribute("modulate", "true"))
                 .addComponent(builder.newComponent("SizeBasedTriggeringPolicy")
                     .addAttribute("size", maxSize)));
-            fileAppender.addComponent(builder.newComponent("DefaultRolloverStrategy")
-                .addAttribute("max", String.valueOf(maxFiles)));
+            // 롤오버 전략 + 오래된 파일 자동 삭제
+            fileAppender.addComponent(buildRolloverStrategy(builder, filePath, maxFiles));
             builder.add(fileAppender);
         }
 
@@ -176,7 +196,8 @@ public class ConfigurationFactory extends org.apache.logging.log4j.core.config.C
         if (isOutputEnabled(outputs, "errorFile")) {
             LoggerConfig.OutputConfig errorConfig = outputs.get("errorFile");
             String filePath = errorConfig.getPath().replace("{appName}", appName);
-            String pattern = errorConfig.getFormat().replace("{appName}", appName);
+            String pattern = applyTimezoneToPattern(
+                errorConfig.getFormat().replace("{appName}", appName), timezone);
 
             // 부모 디렉토리 생성
             createParentDirectories(filePath);
@@ -196,11 +217,15 @@ public class ConfigurationFactory extends org.apache.logging.log4j.core.config.C
                 .addAttribute("append", "true");
             errorAppender.add(builder.newLayout("PatternLayout")
                 .addAttribute("pattern", pattern));
+            // 시간 + 크기 기반 롤링 정책
             errorAppender.addComponent(builder.newComponent("Policies")
+                .addComponent(builder.newComponent("TimeBasedTriggeringPolicy")
+                    .addAttribute("interval", "1")
+                    .addAttribute("modulate", "true"))
                 .addComponent(builder.newComponent("SizeBasedTriggeringPolicy")
                     .addAttribute("size", maxSize)));
-            errorAppender.addComponent(builder.newComponent("DefaultRolloverStrategy")
-                .addAttribute("max", String.valueOf(maxFiles)));
+            // 롤오버 전략 + 오래된 파일 자동 삭제
+            errorAppender.addComponent(buildRolloverStrategy(builder, filePath, maxFiles));
             errorAppender.addComponent(builder.newFilter("ThresholdFilter", "ACCEPT", "DENY")
                 .addAttribute("level", "ERROR"));
             builder.add(errorAppender);
@@ -220,6 +245,13 @@ public class ConfigurationFactory extends org.apache.logging.log4j.core.config.C
                 AppenderComponentBuilder webhookAppender = builder.newAppender("Webhook", "UniversalWebhook")
                     .addAttribute("webhookUrl", webhookConfig.getUrl())
                     .addAttribute("messageFormat", messageFormat);
+
+                // AlertPolicy 설정 전달 (Rate Limiting + Deduplication)
+                LoggerConfig.WebhookConfig.AlertPolicyConfig alertPolicy = webhookConfig.getAlertPolicy();
+                if (alertPolicy != null) {
+                    webhookAppender.addAttribute("rateLimit", alertPolicy.getRateLimit());
+                    webhookAppender.addAttribute("deduplicationSeconds", alertPolicy.getDeduplicationSeconds());
+                }
 
                 // Add level filter if specified
                 String level = webhookOutput.getLevel();
@@ -262,6 +294,39 @@ public class ConfigurationFactory extends org.apache.logging.log4j.core.config.C
     }
 
     /**
+     * 롤오버 전략 생성 (파일 인덱스 제한 + 오래된 파일 자동 삭제)
+     *
+     * @param builder 설정 빌더
+     * @param filePath 로그 파일 경로
+     * @param maxFiles 최대 보관 일수
+     * @return DefaultRolloverStrategy 컴포넌트
+     */
+    private org.apache.logging.log4j.core.config.builder.api.ComponentBuilder<?>
+            buildRolloverStrategy(ConfigurationBuilder<BuiltConfiguration> builder,
+                                  String filePath, int maxFiles) {
+        org.apache.logging.log4j.core.config.builder.api.ComponentBuilder<?> strategy =
+            builder.newComponent("DefaultRolloverStrategy")
+                .addAttribute("max", String.valueOf(maxFiles));
+
+        // Delete 액션: maxFiles 일수 초과된 파일 자동 삭제
+        File logFile = new File(filePath);
+        String parentDir = logFile.getParent();
+        String fileName = logFile.getName();
+
+        if (parentDir != null) {
+            strategy.addComponent(builder.newComponent("Delete")
+                .addAttribute("basePath", parentDir)
+                .addAttribute("maxDepth", "1")
+                .addComponent(builder.newComponent("IfFileName")
+                    .addAttribute("glob", fileName + ".*"))
+                .addComponent(builder.newComponent("IfLastModified")
+                    .addAttribute("age", maxFiles + "d")));
+        }
+
+        return strategy;
+    }
+
+    /**
      * 출력 활성화 여부 확인
      */
     private boolean isOutputEnabled(Map<String, LoggerConfig.OutputConfig> outputs, String key) {
@@ -279,5 +344,32 @@ public class ConfigurationFactory extends org.apache.logging.log4j.core.config.C
                 parentDir.mkdirs();
             }
         }
+    }
+
+    /**
+     * 패턴에 Timezone 적용 (Log4j2 형식)
+     *
+     * %d{yyyy-MM-dd HH:mm:ss} 형식을 %d{yyyy-MM-dd HH:mm:ss}{Asia/Seoul} 형식으로 변환합니다.
+     * 이미 timezone이 지정된 경우(%d{...}{...}) 변환하지 않습니다.
+     *
+     * @param pattern 원본 패턴
+     * @param timezone Timezone ID
+     * @return Timezone이 적용된 패턴
+     */
+    private String applyTimezoneToPattern(String pattern, String timezone) {
+        if (pattern == null || timezone == null || timezone.isEmpty()) {
+            return pattern;
+        }
+
+        Matcher matcher = DATE_PATTERN.matcher(pattern);
+        StringBuffer result = new StringBuffer();
+
+        while (matcher.find()) {
+            String dateFormat = matcher.group(1);
+            matcher.appendReplacement(result, "%d{" + dateFormat + "}{" + timezone + "}");
+        }
+        matcher.appendTail(result);
+
+        return result.toString();
     }
 }

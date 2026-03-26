@@ -19,9 +19,9 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.type.AnnotationMetadata;
 
 import javax.sql.DataSource;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.universallogger.constants.LoggerConstants.*;
 
@@ -60,7 +60,7 @@ public class SpringConfiguration implements BeanPostProcessor, ApplicationContex
     private String applicationName;
 
     private LoggerProperties properties;
-    private final Set<String> wrappedDataSources = new HashSet<>();
+    private final Set<String> wrappedDataSources = ConcurrentHashMap.newKeySet();
     private ApplicationContext applicationContext;
     private Environment environment;
 

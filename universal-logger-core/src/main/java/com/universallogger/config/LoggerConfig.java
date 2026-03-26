@@ -499,6 +499,7 @@ public class LoggerConfig {
     public static class WebhookConfig {
         private String url;
         private String format;
+        private AlertPolicyConfig alertPolicy;
 
         public String getUrl() {
             return url;
@@ -514,6 +515,39 @@ public class LoggerConfig {
 
         public void setFormat(String format) {
             this.format = format;
+        }
+
+        public AlertPolicyConfig getAlertPolicy() {
+            return alertPolicy;
+        }
+
+        public void setAlertPolicy(AlertPolicyConfig alertPolicy) {
+            this.alertPolicy = alertPolicy;
+        }
+
+        /**
+         * 웹훅 알림 정책 설정
+         * Rate Limiting과 Deduplication을 통해 알림 피로도를 줄인다.
+         */
+        public static class AlertPolicyConfig {
+            private int rateLimit = 10;              // 분당 최대 전송 수
+            private int deduplicationSeconds = 300;  // 동일 에러 무시 시간(초), 0이면 비활성화
+
+            public int getRateLimit() {
+                return rateLimit;
+            }
+
+            public void setRateLimit(int rateLimit) {
+                this.rateLimit = rateLimit;
+            }
+
+            public int getDeduplicationSeconds() {
+                return deduplicationSeconds;
+            }
+
+            public void setDeduplicationSeconds(int deduplicationSeconds) {
+                this.deduplicationSeconds = deduplicationSeconds;
+            }
         }
     }
 

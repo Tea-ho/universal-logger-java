@@ -50,6 +50,9 @@ public class DefaultParameterSubstitutor implements ParameterSubstitutor {
 
     @Override
     public String substitute(String sql, Map<Integer, Object> params) {
+        if (sql == null) {
+            return null;
+        }
         if (params == null || params.isEmpty()) {
             return sql;
         }

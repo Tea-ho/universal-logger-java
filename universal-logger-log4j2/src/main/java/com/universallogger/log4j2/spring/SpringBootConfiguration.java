@@ -20,8 +20,8 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 
 import javax.sql.DataSource;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Log4j2용 Spring Boot 자동 설정 클래스
@@ -52,7 +52,7 @@ public class SpringBootConfiguration implements BeanPostProcessor, ApplicationCo
     private String applicationName;
 
     private final LoggerProperties properties;
-    private final Set<String> wrappedDataSources = new HashSet<>();
+    private final Set<String> wrappedDataSources = ConcurrentHashMap.newKeySet();
     private ApplicationContext applicationContext;
     private LoggerConfig loggerConfig;
 

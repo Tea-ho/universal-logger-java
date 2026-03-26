@@ -28,14 +28,14 @@
         <!-- Dependency Versions -->
         <slf4j.version>1.7.36</slf4j.version>
         <logback.version>1.2.12</logback.version>
-        <log4j2.version>2.20.0</log4j2.version>
-        <jackson.version>2.15.2</jackson.version>
-        <snakeyaml.version>2.0</snakeyaml.version>
+        <log4j2.version>2.24.3</log4j2.version>
+        <jackson.version>2.17.3</jackson.version>
+        <snakeyaml.version>2.3</snakeyaml.version>
         <httpclient.version>4.5.14</httpclient.version>
         <javax.mail.version>1.4.7</javax.mail.version>
         <mysql.version>8.0.33</mysql.version>
         <spring.boot.version>2.7.18</spring.boot.version>
-        <spring.version>5.3.31</spring.version>
+        <spring.version>5.3.39</spring.version>
         <junit.version>4.13.2</junit.version>
     </properties>
 

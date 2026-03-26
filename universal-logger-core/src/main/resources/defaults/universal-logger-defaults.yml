@@ -6,7 +6,7 @@ version: "1.0"
 
 global:
   appName: "UniversalLogger"
-  timezone: "Asia/Seoul"
+  # timezone: 미설정 시 서버 기본 Timezone 사용 (예: "Asia/Seoul", "UTC")
   encoding: "UTF-8"
 
 levels:
@@ -32,7 +32,7 @@ outputs:
   file:
     enabled: true
     level: "DEBUG"
-    path: "C:/log/{appName}/application.log"
+    path: "logs/{appName}/application.log"
     format: "[%d{yyyy-MM-dd HH:mm:ss}] [%-5level] [%thread] [%logger{50}:%line] %msg%n"
     rotation:
       maxSize: "50MB"
@@ -43,7 +43,7 @@ outputs:
   errorFile:
     enabled: true
     level: "ERROR"
-    path: "C:/log/{appName}/error.log"
+    path: "logs/{appName}/error.log"
     format: "[%d{yyyy-MM-dd HH:mm:ss}] [%-5level] [%thread] [%logger{50}:%line] %msg%n%ex"
     rotation:
       maxSize: "50MB"
@@ -60,6 +60,9 @@ outputs:
     webhook:
       url: ""
       format: "🚨 *{level}* in {appName}\\n*Logger:* {logger}\\n*Message:* {message}"
+      alertPolicy:
+        rateLimit: 10
+        deduplicationSeconds: 300
 
   # Email - disabled by default
   # Interface IIT 기본 폼

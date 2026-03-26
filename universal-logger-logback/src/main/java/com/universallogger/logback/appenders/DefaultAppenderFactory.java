@@ -13,7 +13,13 @@ import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy;
 import ch.qos.logback.core.util.FileSize;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
+import java.util.TimeZone;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * AppenderFactory의 기본 구현체
@@ -27,6 +33,7 @@ import java.io.File;
  *   <li>파일 앱펜더 - SizeAndTimeBasedRollingPolicy를 사용한 롤링</li>
  *   <li>웹훅 앱펜더 - 비동기 HTTP POST 전송</li>
  *   <li>이메일 앱펜더 - SMTP를 통한 알림 전송</li>
+ *   <li>Timezone 지원 - 로그 timestamp에 지정된 timezone 적용</li>
  * </ul>
  *
  * @see AppenderFactory
@@ -34,11 +41,37 @@ import java.io.File;
  */
 public class DefaultAppenderFactory implements AppenderFactory {
 
+    private static final Logger log = LoggerFactory.getLogger(DefaultAppenderFactory.class);
+
+    /** %d{...} 패턴 매칭용 정규식 */
+    private static final Pattern DATE_PATTERN = Pattern.compile("%d\\{([^}]+)}");
+
+    /** Timezone 설정 (null이면 서버 기본값 사용) */
+    private String timezone;
+
     /**
-     * 기본 생성자
+     * 기본 생성자 - 서버 기본 Timezone 사용
      */
     public DefaultAppenderFactory() {
-        // 기본 생성자
+        this.timezone = TimeZone.getDefault().getID();
+    }
+
+    /**
+     * Timezone 설정
+     *
+     * @param timezone Timezone ID (예: "Asia/Seoul", "UTC")
+     */
+    public void setTimezone(String timezone) {
+        this.timezone = timezone;
+    }
+
+    /**
+     * 현재 설정된 Timezone 반환
+     *
+     * @return Timezone ID
+     */
+    public String getTimezone() {
+        return timezone;
     }
 
     @Override
@@ -54,7 +87,7 @@ public class DefaultAppenderFactory implements AppenderFactory {
         // 콘솔 포맷터 설정 (컬러 지원)
         ConsoleFormatter formatter = new ConsoleFormatter();
         formatter.setContext(context);
-        formatter.setPattern(outputConfig.getFormat());
+        formatter.setPattern(applyTimezoneToPattern(outputConfig.getFormat()));
         formatter.setColors(outputConfig.getColors());
         formatter.start();
 
@@ -83,15 +116,21 @@ public class DefaultAppenderFactory implements AppenderFactory {
         appender.setFile(filePath);
 
         // 롤링 정책 설정
+        LoggerConfig.RotationConfig rotation = outputConfig.getRotation();
+        String maxSize = rotation != null && rotation.getMaxSize() != null ? rotation.getMaxSize() : "50MB";
+        int maxFiles = rotation != null && rotation.getMaxFiles() > 0 ? rotation.getMaxFiles() : 30;
+
         SizeAndTimeBasedRollingPolicy<ILoggingEvent> rollingPolicy =
             new SizeAndTimeBasedRollingPolicy<>();
         rollingPolicy.setContext(context);
         rollingPolicy.setParent(appender);
         // compress 설정에 따라 파일 패턴 결정
-        String filePattern = buildFileNamePattern(filePath, outputConfig.getRotation().isCompress());
+        String filePattern = buildFileNamePattern(filePath, rotation != null && rotation.isCompress());
         rollingPolicy.setFileNamePattern(filePattern);
-        rollingPolicy.setMaxFileSize(FileSize.valueOf(outputConfig.getRotation().getMaxSize()));
-        rollingPolicy.setMaxHistory(outputConfig.getRotation().getMaxFiles());
+        rollingPolicy.setMaxFileSize(FileSize.valueOf(maxSize));
+        rollingPolicy.setMaxHistory(maxFiles);
+        // 전체 로그 용량 상한 (디스크 고갈 방지: maxSize * maxFiles)
+        rollingPolicy.setTotalSizeCap(calculateTotalSizeCap(maxSize, maxFiles));
         rollingPolicy.start();
 
         appender.setRollingPolicy(rollingPolicy);
@@ -100,7 +139,7 @@ public class DefaultAppenderFactory implements AppenderFactory {
         // 파일 포맷터 설정
         FileFormatter formatter = new FileFormatter();
         formatter.setContext(context);
-        formatter.setPattern(outputConfig.getFormat());
+        formatter.setPattern(applyTimezoneToPattern(outputConfig.getFormat()));
         formatter.start();
 
         appender.setEncoder(formatter);
@@ -128,15 +167,21 @@ public class DefaultAppenderFactory implements AppenderFactory {
         appender.setFile(filePath);
 
         // 롤링 정책 설정
+        LoggerConfig.RotationConfig errorRotation = outputConfig.getRotation();
+        String errorMaxSize = errorRotation != null && errorRotation.getMaxSize() != null ? errorRotation.getMaxSize() : "50MB";
+        int errorMaxFiles = errorRotation != null && errorRotation.getMaxFiles() > 0 ? errorRotation.getMaxFiles() : 30;
+
         SizeAndTimeBasedRollingPolicy<ILoggingEvent> rollingPolicy =
             new SizeAndTimeBasedRollingPolicy<>();
         rollingPolicy.setContext(context);
         rollingPolicy.setParent(appender);
         // compress 설정에 따라 파일 패턴 결정
-        String filePattern = buildFileNamePattern(filePath, outputConfig.getRotation().isCompress());
+        String filePattern = buildFileNamePattern(filePath, errorRotation != null && errorRotation.isCompress());
         rollingPolicy.setFileNamePattern(filePattern);
-        rollingPolicy.setMaxFileSize(FileSize.valueOf(outputConfig.getRotation().getMaxSize()));
-        rollingPolicy.setMaxHistory(outputConfig.getRotation().getMaxFiles());
+        rollingPolicy.setMaxFileSize(FileSize.valueOf(errorMaxSize));
+        rollingPolicy.setMaxHistory(errorMaxFiles);
+        // 전체 로그 용량 상한 (디스크 고갈 방지: maxSize * maxFiles)
+        rollingPolicy.setTotalSizeCap(calculateTotalSizeCap(errorMaxSize, errorMaxFiles));
         rollingPolicy.start();
 
         appender.setRollingPolicy(rollingPolicy);
@@ -145,7 +190,7 @@ public class DefaultAppenderFactory implements AppenderFactory {
         // 파일 포맷터 설정
         FileFormatter formatter = new FileFormatter();
         formatter.setContext(context);
-        formatter.setPattern(outputConfig.getFormat());
+        formatter.setPattern(applyTimezoneToPattern(outputConfig.getFormat()));
         formatter.start();
 
         appender.setEncoder(formatter);
@@ -169,6 +214,11 @@ public class DefaultAppenderFactory implements AppenderFactory {
         if (outputConfig.getWebhook() != null) {
             appender.setUrl(outputConfig.getWebhook().getUrl());
             appender.setFormat(outputConfig.getWebhook().getFormat());
+
+            // AlertPolicy 설정 전달 (Rate Limiting + Deduplication)
+            if (outputConfig.getWebhook().getAlertPolicy() != null) {
+                appender.setAlertPolicy(outputConfig.getWebhook().getAlertPolicy());
+            }
         }
 
         // 임계값 필터 추가 (레벨 필터링)
@@ -220,7 +270,10 @@ public class DefaultAppenderFactory implements AppenderFactory {
             File file = new File(filePath);
             File parentDir = file.getParentFile();
             if (parentDir != null && !parentDir.exists()) {
-                parentDir.mkdirs();
+                boolean created = parentDir.mkdirs();
+                if (!created && !parentDir.exists()) {
+                    log.warn("Failed to create log directory: {}", parentDir.getAbsolutePath());
+                }
             }
         }
     }
@@ -239,6 +292,23 @@ public class DefaultAppenderFactory implements AppenderFactory {
     }
 
     /**
+     * 전체 로그 용량 상한 계산 (maxSize * maxFiles)
+     *
+     * @param maxSize 개별 파일 최대 크기 (예: "50MB")
+     * @param maxFiles 최대 파일 수
+     * @return 전체 용량 상한
+     */
+    private FileSize calculateTotalSizeCap(String maxSize, int maxFiles) {
+        try {
+            long sizeBytes = FileSize.valueOf(maxSize).getSize();
+            return new FileSize(sizeBytes * maxFiles);
+        } catch (Exception e) {
+            // 파싱 실패 시 안전 기본값 5GB
+            return FileSize.valueOf("5GB");
+        }
+    }
+
+    /**
      * 파일명 패턴 생성
      *
      * compress가 true이면 .gz 확장자 추가
@@ -254,5 +324,34 @@ public class DefaultAppenderFactory implements AppenderFactory {
         } else {
             return filePath + ".%d{yyyy-MM-dd}.%i";
         }
+    }
+
+    /**
+     * 패턴에 Timezone 적용
+     *
+     * %d{yyyy-MM-dd HH:mm:ss} 형식을 %d{yyyy-MM-dd HH:mm:ss, Asia/Seoul} 형식으로 변환합니다.
+     * 이미 timezone이 지정된 경우(%d{..., ...}) 변환하지 않습니다.
+     *
+     * @param pattern 원본 패턴
+     * @return Timezone이 적용된 패턴
+     */
+    private String applyTimezoneToPattern(String pattern) {
+        if (pattern == null || timezone == null || timezone.isEmpty()) {
+            return pattern;
+        }
+
+        Matcher matcher = DATE_PATTERN.matcher(pattern);
+        StringBuffer result = new StringBuffer();
+
+        while (matcher.find()) {
+            String dateFormat = matcher.group(1);
+            // 이미 timezone이 지정되어 있으면 (쉼표 포함) 스킵
+            if (!dateFormat.contains(",")) {
+                matcher.appendReplacement(result, "%d{" + dateFormat + ", " + timezone + "}");
+            }
+        }
+        matcher.appendTail(result);
+
+        return result.toString();
     }
 }
