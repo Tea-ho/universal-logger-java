@@ -11,7 +11,10 @@ import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.ConsoleAppender;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy;
+import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.util.FileSize;
+
+import java.lang.reflect.Field;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,8 +133,14 @@ public class DefaultAppenderFactory implements AppenderFactory {
         rollingPolicy.setMaxFileSize(FileSize.valueOf(maxSize));
         rollingPolicy.setMaxHistory(maxFiles);
         // 전체 로그 용량 상한 (디스크 고갈 방지: maxSize * maxFiles)
-        rollingPolicy.setTotalSizeCap(calculateTotalSizeCap(maxSize, maxFiles));
+        FileSize totalSizeCap = calculateTotalSizeCap(maxSize, maxFiles);
+        rollingPolicy.setTotalSizeCap(totalSizeCap);
         rollingPolicy.start();
+
+        // Logback 1.2.x DefaultArchiveRemover의 %i 미처리 버그 우회:
+        // 커스텀 SizeAndTimeBasedArchiveRemover로 교체하여 자정 롤오버 시 정상 삭제 보장
+        injectCustomArchiveRemover(rollingPolicy, filePath,
+                rotation != null && rotation.isCompress(), maxFiles, totalSizeCap.getSize());
 
         appender.setRollingPolicy(rollingPolicy);
         appender.setTriggeringPolicy(rollingPolicy);
@@ -181,8 +190,14 @@ public class DefaultAppenderFactory implements AppenderFactory {
         rollingPolicy.setMaxFileSize(FileSize.valueOf(errorMaxSize));
         rollingPolicy.setMaxHistory(errorMaxFiles);
         // 전체 로그 용량 상한 (디스크 고갈 방지: maxSize * maxFiles)
-        rollingPolicy.setTotalSizeCap(calculateTotalSizeCap(errorMaxSize, errorMaxFiles));
+        FileSize errorTotalSizeCap = calculateTotalSizeCap(errorMaxSize, errorMaxFiles);
+        rollingPolicy.setTotalSizeCap(errorTotalSizeCap);
         rollingPolicy.start();
+
+        // Logback 1.2.x DefaultArchiveRemover의 %i 미처리 버그 우회:
+        // 커스텀 SizeAndTimeBasedArchiveRemover로 교체하여 자정 롤오버 시 정상 삭제 보장
+        injectCustomArchiveRemover(rollingPolicy, filePath,
+                errorRotation != null && errorRotation.isCompress(), errorMaxFiles, errorTotalSizeCap.getSize());
 
         appender.setRollingPolicy(rollingPolicy);
         appender.setTriggeringPolicy(rollingPolicy);
@@ -249,6 +264,43 @@ public class DefaultAppenderFactory implements AppenderFactory {
     }
 
     // ========== 헬퍼 메서드 ==========
+
+    /**
+     * SizeAndTimeBasedRollingPolicy에 커스텀 ArchiveRemover 주입
+     *
+     * Logback 1.2.x의 {@code DefaultArchiveRemover}는 {@code %i} 인덱스가 포함된 파일 패턴을
+     * 올바르게 처리하지 못해 {@code maxHistory}에 따른 파일 삭제가 동작하지 않습니다.
+     * {@code TimeBasedRollingPolicy.archiveRemover} 필드를 reflection으로 교체합니다.
+     *
+     * @param rollingPolicy  대상 롤링 정책
+     * @param filePath       기본 로그 파일 경로
+     * @param compress       gz 압축 여부
+     * @param maxHistory     보관할 최대 일수
+     * @param totalSizeCap   전체 용량 상한 (bytes)
+     */
+    private void injectCustomArchiveRemover(
+            SizeAndTimeBasedRollingPolicy<ILoggingEvent> rollingPolicy,
+            String filePath,
+            boolean compress,
+            int maxHistory,
+            long totalSizeCap) {
+        try {
+            SizeAndTimeBasedArchiveRemover customRemover =
+                    new SizeAndTimeBasedArchiveRemover(filePath, compress);
+            customRemover.setMaxHistory(maxHistory);
+            customRemover.setTotalSizeCap(totalSizeCap);
+
+            // TimeBasedRollingPolicy(부모 클래스)의 archiveRemover 필드 교체
+            Field field = TimeBasedRollingPolicy.class.getDeclaredField("archiveRemover");
+            field.setAccessible(true);
+            field.set(rollingPolicy, customRemover);
+
+            log.debug("[UniversalLogger] 커스텀 ArchiveRemover 주입 완료: {}", filePath);
+        } catch (Exception e) {
+            log.warn("[UniversalLogger] 커스텀 ArchiveRemover 주입 실패 - maxHistory가 동작하지 않을 수 있습니다. 원인: {}",
+                    e.getMessage());
+        }
+    }
 
     /**
      * 임계값 필터 추가
