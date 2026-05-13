@@ -1,4 +1,4 @@
-# Universal Logger Java - CLAUDE.md
+﻿# Universal Logger Java - CLAUDE.md
 
 ## 프로젝트 개요
 Logback/Log4j2 기반 통합 로깅 라이브러리 + SQL 자동 캡처. Java 8+, Maven 멀티모듈.
@@ -40,7 +40,7 @@ build.bat
 
 ## 패키지 구조
 
-### Core (`com.universallogger`)
+### Core (`io.universallogger`)
 | 패키지 | 역할 |
 |---------|------|
 | `config` | LoggerConfig (설정 모델), LoggerConfigBuilder |
@@ -52,7 +52,7 @@ build.bat
 | `utils` | ProfileResolver (프로파일 자동 감지) |
 | `validation` | ConfigValidator |
 
-### Logback (`com.universallogger.logback`)
+### Logback (`io.universallogger.logback`)
 | 패키지 | 역할 |
 |---------|------|
 | (루트) | LoggerInstance (Builder 패턴, 핵심 초기화) |
@@ -60,7 +60,7 @@ build.bat
 | `formatters` | ConsoleFormatter, FileFormatter |
 | `spring` | SpringBootConfiguration, SpringConfiguration, @EnableUniversalLogger |
 
-### Log4j2 (`com.universallogger.log4j2`)
+### Log4j2 (`io.universallogger.log4j2`)
 | 패키지 | 역할 |
 |---------|------|
 | (루트) | ConfigurationFactory (@Plugin, SPI) |
@@ -74,7 +74,7 @@ build.bat
 - **Builder**: LoggerInstance.Builder, LoggerConfig.Builder
 
 ## 코드 컨벤션
-- 패키지: 소문자 (`com.universallogger.config`)
+- 패키지: 소문자 (`io.universallogger.config`)
 - 클래스: PascalCase, 인터페이스에 I 프리픽스 없음
 - 메서드: camelCase
 - 상수: UPPER_SNAKE_CASE
@@ -106,10 +106,10 @@ universal-logger:
 
 ## 쉐이딩 전략 (충돌 방지)
 ```
-com.fasterxml.jackson → com.universallogger.shaded.jackson
-org.yaml.snakeyaml   → com.universallogger.shaded.snakeyaml
-org.apache.http      → com.universallogger.shaded.http
-javax.mail           → com.universallogger.shaded.mail
+com.fasterxml.jackson → io.universallogger.shaded.jackson
+org.yaml.snakeyaml   → io.universallogger.shaded.snakeyaml
+org.apache.http      → io.universallogger.shaded.http
+javax.mail           → io.universallogger.shaded.mail
 ```
 Spring, SLF4J, MySQL Connector는 제외 (사용자 제공).
 

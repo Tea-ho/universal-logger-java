@@ -1,1 +1,1 @@
-com.universallogger.logback.spring.SpringBootConfiguration
+io.universallogger.logback.spring.SpringBootConfiguration

@@ -1,4 +1,4 @@
-# Universal Logger - User Guide
+﻿# Universal Logger - User Guide
 
 ## 개요
 
@@ -68,7 +68,7 @@ Universal Logger는 아래 로깅 프레임워크 중 **하나를 선택**하여
 <dependencies>
     <!-- Universal Logger Logback -->
     <dependency>
-        <groupId>com.universallogger</groupId>
+        <groupId>io.universallogger</groupId>
         <artifactId>universal-logger-logback</artifactId>
         <version>1.0.0</version>
         <scope>system</scope>
@@ -112,7 +112,7 @@ Universal Logger는 아래 로깅 프레임워크 중 **하나를 선택**하여
 <dependencies>
     <!-- Universal Logger Log4j2 -->
     <dependency>
-        <groupId>com.universallogger</groupId>
+        <groupId>io.universallogger</groupId>
         <artifactId>universal-logger-log4j2</artifactId>
         <version>1.0.0</version>
         <scope>system</scope>
@@ -375,7 +375,7 @@ universal-logger.sql-capture.enabled=false
 ex> `ServerConfig.java`
 
 ```java
-import com.universallogger.logback.spring.EnableUniversalLogger;
+import io.universallogger.logback.spring.EnableUniversalLogger;
 
 @EnableUniversalLogger(
     applicationName = "MyApp",  // 애플리케이션 이름 (로그 경로 {appName} 치환용)

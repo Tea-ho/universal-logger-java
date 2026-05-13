@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 REM Universal Logger Java - Local Maven Install Script (Windows)
 
 echo ======================================
@@ -48,7 +48,7 @@ if %ERRORLEVEL% EQU 0 (
     echo You can now use it in other projects:
     echo.
     echo ^<dependency^>
-    echo     ^<groupId^>com.universallogger^</groupId^>
+    echo     ^<groupId^>io.universallogger^</groupId^>
     echo     ^<artifactId^>universal-logger-core^</artifactId^>
     echo     ^<version^>1.0.0^</version^>
     echo ^</dependency^>

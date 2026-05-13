@@ -6,7 +6,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.universallogger</groupId>
+        <groupId>io.universallogger</groupId>
         <artifactId>universal-logger-parent</artifactId>
         <version>1.0.0</version>
     </parent>
@@ -20,7 +20,7 @@
     <dependencies>
         <!-- Core 모듈 -->
         <dependency>
-            <groupId>com.universallogger</groupId>
+            <groupId>io.universallogger</groupId>
             <artifactId>universal-logger-core</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -115,34 +115,34 @@
                                 <!-- Jackson -->
                                 <relocation>
                                     <pattern>com.fasterxml.jackson</pattern>
-                                    <shadedPattern>com.universallogger.shaded.jackson</shadedPattern>
+                                    <shadedPattern>io.universallogger.shaded.jackson</shadedPattern>
                                 </relocation>
                                 <!-- SnakeYAML -->
                                 <relocation>
                                     <pattern>org.yaml.snakeyaml</pattern>
-                                    <shadedPattern>com.universallogger.shaded.snakeyaml</shadedPattern>
+                                    <shadedPattern>io.universallogger.shaded.snakeyaml</shadedPattern>
                                 </relocation>
                                 <!-- HttpClient -->
                                 <relocation>
                                     <pattern>org.apache.http</pattern>
-                                    <shadedPattern>com.universallogger.shaded.http</shadedPattern>
+                                    <shadedPattern>io.universallogger.shaded.http</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>org.apache.commons.codec</pattern>
-                                    <shadedPattern>com.universallogger.shaded.commons.codec</shadedPattern>
+                                    <shadedPattern>io.universallogger.shaded.commons.codec</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>org.apache.commons.logging</pattern>
-                                    <shadedPattern>com.universallogger.shaded.commons.logging</shadedPattern>
+                                    <shadedPattern>io.universallogger.shaded.commons.logging</shadedPattern>
                                 </relocation>
                                 <!-- JavaMail -->
                                 <relocation>
                                     <pattern>javax.mail</pattern>
-                                    <shadedPattern>com.universallogger.shaded.mail</shadedPattern>
+                                    <shadedPattern>io.universallogger.shaded.mail</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>com.sun.mail</pattern>
-                                    <shadedPattern>com.universallogger.shaded.sun.mail</shadedPattern>
+                                    <shadedPattern>io.universallogger.shaded.sun.mail</shadedPattern>
                                 </relocation>
                             </relocations>
 

@@ -166,11 +166,11 @@ run_examples() {
     log_info "Running examples..."
 
     log_info "Running quick start example:"
-    $MAVEN_CMD exec:java -Dexec.mainClass="com.universallogger.examples.QuickStart" -Dexec.classpathScope=compile
+    $MAVEN_CMD exec:java -Dexec.mainClass="io.universallogger.examples.QuickStart" -Dexec.classpathScope=compile
 
     echo ""
     log_info "Running basic usage example:"
-    $MAVEN_CMD exec:java -Dexec.mainClass="com.universallogger.examples.BasicUsage" -Dexec.classpathScope=compile
+    $MAVEN_CMD exec:java -Dexec.mainClass="io.universallogger.examples.BasicUsage" -Dexec.classpathScope=compile
 
     log_info "Examples execution complete"
 }
@@ -183,13 +183,13 @@ show_completion() {
     echo "Usage:"
     echo "1. Add Maven dependency:"
     echo "   <dependency>"
-    echo "       <groupId>com.universallogger</groupId>"
+    echo "       <groupId>io.universallogger</groupId>"
     echo "       <artifactId>universal-logger</artifactId>"
     echo "       <version>1.0.0</version>"
     echo "   </dependency>"
     echo ""
     echo "2. Use in Java code:"
-    echo "   import com.universallogger.UniversalLogger;"
+    echo "   import io.universallogger.UniversalLogger;"
     echo "   UniversalLogger.init(\"logging.yml\");"
     echo "   UniversalLogger.info(\"Hello World!\");"
     echo ""

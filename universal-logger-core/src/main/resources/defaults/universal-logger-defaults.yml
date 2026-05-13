@@ -11,7 +11,7 @@ global:
 
 levels:
   root: "INFO"
-  com.universallogger: "DEBUG"
+  io.universallogger: "DEBUG"
 
 sql:
   parameterSubstitution: true
